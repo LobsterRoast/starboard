@@ -351,6 +351,7 @@ version = "0.1.0"
 dependencies = [
  "evdev",
  "json",
+ "libc",
  "serde_json",
  "tokio",
 ]
