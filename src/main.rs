@@ -43,6 +43,9 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
     for event in dir {
         let path_buf = event.unwrap().path();
         let path = path_buf.to_str().unwrap();
+        if !path.starts_with("/dev/input/event") {
+            continue;
+        }
         let device = Device::open(&path).expect(&format!("Failed to open device at {}\n", path));
         if device.name().unwrap() == "Microsoft X-Box 360 pad 0" {
             return Ok(device);
