@@ -54,7 +54,8 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
     Err("Could not access the Steam Deck's input system.")
 }
 async fn client() {
-    let socket = UdpSocket::bind("0.0.0.0:9999").await.expect("Could not create a UDP Socket.\n");
+    let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
+    socket.connect("0.0.0.0:9999").await.expect("Could not connect to the local network.\n");
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
     while true {
         let key_states: AttributeSet<KeyCode> = device.get_key_state().expect("Failed to get device key states.\n");
