@@ -4,11 +4,18 @@ use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard};
 use tokio::net::UdpSocket;
 use std::io;
-use tokio::time::{sleep, Duration};
+use std::str::from_utf8;
+use serde_json::Value;
 
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
-async fn udp_handling(stream: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
-// ... Steam Deck Stuff
+async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
+    let mut buf: [u8; 512] = [0; 512];
+    let size = socket.recv(&mut buf).await.unwrap();
+    if size > 0 {
+        let raw: &str = from_utf8(&buf[..size]).expect("Unable to parse received packet into a utf8 format.\n");
+        let parsed: Value = serde_json::from_str(raw).expect("Unable to parse utf8 into json format.\n");
+        println!("{}", parsed["Data"]);
+    }
 }
 
 #[tokio::main]
@@ -43,10 +50,6 @@ async fn main() {
                 KeyCode::BTN_START,
                 KeyCode::BTN_SELECT
     ];
-
-    let properties = [
-        PropType::DIRECT
-    ];
     // This is all the info needed to initialize the joysticks
     let axis_info: AbsInfo = AbsInfo::new(0, -32768, 32768, 0, deadzone, 0);
     let left_x_axis_setup: UinputAbsSetup = UinputAbsSetup::new(AbsoluteAxisCode::ABS_X, axis_info.clone());
@@ -74,7 +77,7 @@ async fn main() {
             .expect("Could not enable the gamepad buttons.");
     let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
                                                     .expect("Could not build the Virtual Device.")));
-    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await.expect("Could not create a UDP Socket."));
+    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:9999").await.expect("Could not create a UDP Socket."));
     tokio::spawn(udp_handling(device.clone(), socket.clone()));
     while !exit {
         let mut device_lock: MutexGuard<VirtualDevice> = device.lock().await;
