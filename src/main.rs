@@ -152,7 +152,7 @@ async fn main() {
     for arg in env::args() {
         if arg == "--client" && is_server == false {
             is_client = true;
-            client();
+            client().await;
         }
         else if arg == "--server" && is_client == false {
             is_server = true;
