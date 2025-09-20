@@ -1,13 +1,12 @@
 use evdev::uinput::*;
 use evdev::*;
-use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard};
 use tokio::net::UdpSocket;
-use std::io;
-use std::fs;
+use std::{io, fs, env};
 use std::str::from_utf8;
+use std::sync::Arc;
 use serde_json::Value;
-use std::env;
+use serde_json::{json, to_vec};
 use libc::input_absinfo;
 
 const KEYS: [KeyCode; 10] = [
@@ -34,7 +33,8 @@ async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>
                         .expect("Unable to parse received packet into a utf8 format.\n");
         let parsed: Value = serde_json::from_str(raw)
                                         .expect("Unable to parse utf8 into json format.\n");
-        println!("{}", parsed["Data"]);
+        let pressed_keys = &parsed["keys"];
+        let abs_values = &parsed["abs_values"];
     }
 }
 
@@ -53,14 +53,27 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
     }
     Err("Could not access the Steam Deck's input system.")
 }
-fn client() {
+async fn client() {
+    let socket = UdpSocket::bind("0.0.0.0:9999").await.expect("Could not create a UDP Socket.\n");
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
     while true {
         let key_states: AttributeSet<KeyCode> = device.get_key_state().expect("Failed to get device key states.\n");
+        let pressed_keys: Vec<u16> = key_states.iter()
+                                                    .map(|k| k.0)
+                                                    .collect();
         let abs_states: [input_absinfo; 64] = device.get_abs_state().expect("Failed to get device abs states");
-        for state in abs_states {
-            println!("{}", state.maximum);
-        }
+        let abs_values: [i32; 8] = [
+                                abs_states[0].value,
+                                abs_states[1].value,
+                                abs_states[2].value,
+                                abs_states[3].value,
+                                abs_states[4].value,
+                                abs_states[5].value,
+                                abs_states[16].value,
+                                abs_states[17].value
+        ];
+        let json = json!({"keys": pressed_keys, "abs_values": abs_values});
+        socket.send(to_vec(&json).unwrap().as_slice());
     }
 }
 
