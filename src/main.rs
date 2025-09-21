@@ -24,7 +24,7 @@ const KEYS: [KeyCode; 10] = [
             ];
 
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
-async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
+async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>, framerate: &u64) {
     let mut buf: [u8; 512] = [0; 512];
     loop {
         let size = socket.recv(&mut buf)
@@ -36,9 +36,9 @@ async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>
             let parsed: Value = serde_json::from_str(raw)
                                             .expect("Unable to parse utf8 into json format.\n");
             let pressed_keys = &parsed["keys"];
-            println!("{}", pressed_keys);
             let abs_values = &parsed["abs_values"];
         }
+        sleep(Duration::from_millis(1000/framerate));
     }
 }
 
@@ -85,7 +85,7 @@ async fn client(framerate: &u64) {
     }
 }
 
-async fn server() {
+async fn server(framerate: &u64) {
     let input_id: InputId = InputId::new(BusType::BUS_VIRTUAL, 0, 0, 0);
     
     // This is all the info needed to initialize the joysticks and analog trigger inputs
@@ -133,7 +133,7 @@ async fn server() {
     let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
                                                     .expect("Could not build the Virtual Device.\n")));
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:9999").await.expect("Could not create a UDP Socket.\n"));
-    tokio::spawn(udp_handling(device.clone(), socket.clone()));
+    tokio::spawn(udp_handling(device.clone(), socket.clone(), framerate));
     loop {}
 }
 #[tokio::main]
@@ -155,7 +155,7 @@ async fn main() {
             client(&framerate).await;
         }
         else if is_server {
-            server().await;
+            server(&framerate).await;
         }
     }
 }
