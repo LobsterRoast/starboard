@@ -62,7 +62,7 @@ async fn client() {
     socket.set_broadcast(true);
     socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
-    while true {
+    loop {
         let key_states: AttributeSet<KeyCode> = device.get_key_state().expect("Failed to get device key states.\n");
         let pressed_keys: Vec<u16> = key_states.iter()
                                                     .map(|k| k.0)
@@ -84,7 +84,6 @@ async fn client() {
 }
 
 async fn server() {
-    let mut exit = false;
     let input_id: InputId = InputId::new(BusType::BUS_VIRTUAL, 0, 0, 0);
     
     // This is all the info needed to initialize the joysticks and analog trigger inputs
@@ -133,7 +132,7 @@ async fn server() {
                                                     .expect("Could not build the Virtual Device.\n")));
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:9999").await.expect("Could not create a UDP Socket.\n"));
     tokio::spawn(udp_handling(device.clone(), socket.clone()));
-    while !exit {
+    loop {
         let mut device_lock: MutexGuard<VirtualDevice> = device.lock().await;
         let event = [
                     InputEvent::new(EventType::ABSOLUTE.0, AbsoluteAxisCode::ABS_X.0, 32000),
