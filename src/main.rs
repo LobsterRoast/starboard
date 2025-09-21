@@ -79,7 +79,7 @@ async fn client() {
                                 abs_states[17].value
         ];
         let json = json!({"keys": pressed_keys, "abs_values": abs_values});
-        socket.send(to_vec(&json).unwrap().as_slice());
+        socket.send(to_vec(&json).unwrap().as_slice()).await;
     }
 }
 
