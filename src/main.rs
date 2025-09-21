@@ -25,16 +25,19 @@ const KEYS: [KeyCode; 10] = [
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
 async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
     let mut buf: [u8; 512] = [0; 512];
-    let size = socket.recv(&mut buf)
-                     .await
-                     .unwrap();
-    if size > 0 {
-        let raw: &str = from_utf8(&buf[..size])
-                        .expect("Unable to parse received packet into a utf8 format.\n");
-        let parsed: Value = serde_json::from_str(raw)
-                                        .expect("Unable to parse utf8 into json format.\n");
-        let pressed_keys = &parsed["keys"];
-        let abs_values = &parsed["abs_values"];
+    loop {
+        let size = socket.recv(&mut buf)
+                         .await
+                         .unwrap();
+        if size > 0 {
+            let raw: &str = from_utf8(&buf[..size])
+                            .expect("Unable to parse received packet into a utf8 format.\n");
+            let parsed: Value = serde_json::from_str(raw)
+                                            .expect("Unable to parse utf8 into json format.\n");
+            let pressed_keys = &parsed["keys"];
+            println!("{}", pressed_keys);
+            let abs_values = &parsed["abs_values"];
+        }
     }
 }
 
@@ -53,9 +56,10 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
     }
     Err("Could not access the Steam Deck's input system.")
 }
+
 async fn client() {
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
-    socket.connect("0.0.0.0:9999").await.expect("Could not connect to the local network.\n");
+    socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
     while true {
         let key_states: AttributeSet<KeyCode> = device.get_key_state().expect("Failed to get device key states.\n");
