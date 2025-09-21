@@ -2,6 +2,7 @@ use evdev::uinput::*;
 use evdev::*;
 use tokio::sync::{Mutex, MutexGuard};
 use tokio::net::UdpSocket;
+use tokio::time::*;
 use std::{io, fs, env};
 use std::str::from_utf8;
 use std::sync::Arc;
@@ -57,7 +58,7 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
     Err("Could not access the Steam Deck's input system.")
 }
 
-async fn client() {
+async fn client(framerate: &u64) {
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     socket.set_broadcast(true);
     socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
@@ -80,6 +81,7 @@ async fn client() {
         ];
         let json = json!({"keys": pressed_keys, "abs_values": abs_values});
         socket.send(to_vec(&json).unwrap().as_slice()).await;
+        sleep(Duration::from_millis(1000/framerate));
     }
 }
 
@@ -132,35 +134,27 @@ async fn server() {
                                                     .expect("Could not build the Virtual Device.\n")));
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:9999").await.expect("Could not create a UDP Socket.\n"));
     tokio::spawn(udp_handling(device.clone(), socket.clone()));
-    loop {
-        let mut device_lock: MutexGuard<VirtualDevice> = device.lock().await;
-        let event = [
-                    InputEvent::new(EventType::ABSOLUTE.0, AbsoluteAxisCode::ABS_X.0, 32000),
-                    InputEvent::new(EventType::KEY.0, KeyCode::BTN_SOUTH.0, 1),
-                    InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0),
-                    ];
-        device_lock.emit(&event);
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        let event = [
-                    InputEvent::new(EventType::ABSOLUTE.0, AbsoluteAxisCode::ABS_X.0, 0),
-                    InputEvent::new(EventType::KEY.0, KeyCode::BTN_SOUTH.0, 0),
-                    InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0),
-                    ];
-        device_lock.emit(&event);
-    
-    }
+    loop {}
 }
 #[tokio::main]
 async fn main() {
+    let mut framerate: u64 = 60;
     let mut is_client = false;
     let mut is_server = false;
     for arg in env::args() {
         if arg == "--client" && is_server == false {
             is_client = true;
-            client().await;
         }
         else if arg == "--server" && is_client == false {
             is_server = true;
+        }
+        if arg.starts_with("--fps=") {
+            framerate = arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n");
+        }
+        if is_client {
+            client(&framerate).await;
+        }
+        else if is_server {
             server().await;
         }
     }
