@@ -59,6 +59,7 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
 
 async fn client() {
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
+    socket.set_broadcast(true);
     socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
     while true {
