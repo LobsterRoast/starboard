@@ -12,34 +12,66 @@ use serde_json::{json, to_vec};
 use libc::input_absinfo;
 
 const KEYS: [KeyCode; 10] = [
-            KeyCode::BTN_NORTH,
-            KeyCode::BTN_SOUTH,
-            KeyCode::BTN_EAST,
-            KeyCode::BTN_WEST,
-            KeyCode::BTN_THUMBL,
-            KeyCode::BTN_THUMBR,
-            KeyCode::BTN_TR,
-            KeyCode::BTN_TL,
-            KeyCode::BTN_START,
-            KeyCode::BTN_SELECT
-            ];
+    KeyCode::BTN_NORTH,
+    KeyCode::BTN_SOUTH,
+    KeyCode::BTN_EAST,
+    KeyCode::BTN_WEST,
+    KeyCode::BTN_THUMBL,
+    KeyCode::BTN_THUMBR,
+    KeyCode::BTN_TR,
+    KeyCode::BTN_TL,
+    KeyCode::BTN_START,
+    KeyCode::BTN_SELECT
+];
+
+const ABS: [AbsoluteAxisCode; 8] = [
+    AbsoluteAxisCode::ABS_X,
+    AbsoluteAxisCode::ABS_Y,
+    AbsoluteAxisCode::ABS_Z,
+    AbsoluteAxisCode::ABS_RX,
+    AbsoluteAxisCode::ABS_RY,
+    AbsoluteAxisCode::ABS_RZ,
+    AbsoluteAxisCode::ABS_HAT0X,
+    AbsoluteAxisCode::ABS_HAT0Y
+];
 
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
-async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>, framerate: Arc<u64>) {
+async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
     let mut buf: [u8; 512] = [0; 512];
     loop {
         let size = socket.recv(&mut buf)
                          .await
                          .unwrap();
-        if size > 0 {
-            let raw: &str = from_utf8(&buf[..size])
-                            .expect("Unable to parse received packet into a utf8 format.\n");
-            let parsed: Value = serde_json::from_str(raw)
-                                            .expect("Unable to parse utf8 into json format.\n");
-            let pressed_keys = &parsed["keys"];
-            let abs_values = &parsed["abs_values"];
+        if size <= 0 {
+            continue;
         }
-        sleep(Duration::from_millis(1000/framerate.deref()));
+
+        let raw: &str = from_utf8(&buf[..size])
+        .expect("Unable to parse received packet into a utf8 format.\n");
+        let parsed: Value = serde_json::from_str(raw)
+        .expect("Unable to parse utf8 into json format.\n");
+        let pressed_keys: Vec<u64> = parsed["keys"]
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .map(|k| k.as_u64().unwrap())
+                                .collect();
+        let abs_values: Vec<i64> = parsed["abs_values"]
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .map(|a| a.as_i64().unwrap())
+                                .collect();
+        let mut device_locked = device.lock().await;
+        let mut events: Vec<InputEvent> = Vec::new();
+        for key in pressed_keys {
+            events.push(InputEvent::new(EventType::KEY.0, key as u16, 1));
+        }
+        for i in 0..8 {
+            events.push(InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, abs_values[i] as i32));
+        }
+        events.push(InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0));
+        device_locked.emit(events.as_slice());
     }
 }
 
@@ -71,14 +103,14 @@ async fn client(framerate: Arc<u64>) {
                                                     .collect();
         let abs_states: [input_absinfo; 64] = device.get_abs_state().expect("Failed to get device abs states");
         let abs_values: [i32; 8] = [
-                                abs_states[0].value,
-                                abs_states[1].value,
-                                abs_states[2].value,
-                                abs_states[3].value,
-                                abs_states[4].value,
-                                abs_states[5].value,
-                                abs_states[16].value,
-                                abs_states[17].value
+            abs_states[0].value,
+            abs_states[1].value,
+            abs_states[2].value,
+            abs_states[3].value,
+            abs_states[4].value,
+            abs_states[5].value,
+            abs_states[16].value,
+            abs_states[17].value
         ];
         let json = json!({"keys": pressed_keys, "abs_values": abs_values});
         socket.send(to_vec(&json).unwrap().as_slice()).await;
@@ -86,7 +118,7 @@ async fn client(framerate: Arc<u64>) {
     }
 }
 
-async fn server(framerate: Arc<u64>) {
+async fn server() {
     let input_id: InputId = InputId::new(BusType::BUS_VIRTUAL, 0, 0, 0);
     
     // This is all the info needed to initialize the joysticks and analog trigger inputs
@@ -134,7 +166,7 @@ async fn server(framerate: Arc<u64>) {
     let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
                                                     .expect("Could not build the Virtual Device.\n")));
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:9999").await.expect("Could not create a UDP Socket.\n"));
-    tokio::spawn(udp_handling(device.clone(), socket.clone(), framerate));
+    tokio::spawn(udp_handling(device.clone(), socket.clone()));
     loop {}
 }
 #[tokio::main]
@@ -156,7 +188,7 @@ async fn main() {
             client(framerate.clone()).await;
         }
         else if is_server {
-            server(framerate.clone()).await;
+            server().await;
         }
     }
 }
