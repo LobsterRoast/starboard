@@ -4,6 +4,7 @@ use tokio::sync::{Mutex, MutexGuard};
 use tokio::net::UdpSocket;
 use tokio::time::*;
 use std::{io, fs, env};
+use std::ops::Deref;
 use std::str::from_utf8;
 use std::sync::Arc;
 use serde_json::Value;
@@ -24,7 +25,7 @@ const KEYS: [KeyCode; 10] = [
             ];
 
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
-async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>, framerate: &u64) {
+async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>, framerate: Arc<u64>) {
     let mut buf: [u8; 512] = [0; 512];
     loop {
         let size = socket.recv(&mut buf)
@@ -38,7 +39,7 @@ async fn udp_handling(_device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>
             let pressed_keys = &parsed["keys"];
             let abs_values = &parsed["abs_values"];
         }
-        sleep(Duration::from_millis(1000/framerate));
+        sleep(Duration::from_millis(1000/framerate.deref()));
     }
 }
 
@@ -58,7 +59,7 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
     Err("Could not access the Steam Deck's input system.")
 }
 
-async fn client(framerate: &u64) {
+async fn client(framerate: Arc<u64>) {
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     socket.set_broadcast(true);
     socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
@@ -81,11 +82,11 @@ async fn client(framerate: &u64) {
         ];
         let json = json!({"keys": pressed_keys, "abs_values": abs_values});
         socket.send(to_vec(&json).unwrap().as_slice()).await;
-        sleep(Duration::from_millis(1000/framerate));
+        sleep(Duration::from_millis(1000/framerate.deref()));
     }
 }
 
-async fn server(framerate: &u64) {
+async fn server(framerate: Arc<u64>) {
     let input_id: InputId = InputId::new(BusType::BUS_VIRTUAL, 0, 0, 0);
     
     // This is all the info needed to initialize the joysticks and analog trigger inputs
@@ -138,7 +139,7 @@ async fn server(framerate: &u64) {
 }
 #[tokio::main]
 async fn main() {
-    let mut framerate: u64 = 60;
+    let mut framerate: Arc<u64> = Arc::new(60);
     let mut is_client = false;
     let mut is_server = false;
     for arg in env::args() {
@@ -149,13 +150,13 @@ async fn main() {
             is_server = true;
         }
         if arg.starts_with("--fps=") {
-            framerate = arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n");
+            framerate = Arc::new(arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n"));
         }
         if is_client {
-            client(&framerate).await;
+            client(framerate.clone()).await;
         }
         else if is_server {
-            server(&framerate).await;
+            server(framerate.clone()).await;
         }
     }
 }
