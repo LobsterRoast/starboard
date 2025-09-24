@@ -7,9 +7,17 @@ use std::{io, fs, env};
 use std::ops::Deref;
 use std::str::from_utf8;
 use std::sync::Arc;
+use std::collections::HashMap;
 use serde_json::Value;
 use serde_json::{json, to_vec};
 use libc::input_absinfo;
+
+#[derive(Default)]
+pub struct States {
+    key_states: HashMap<KeyCode, i32>,
+    abs_states: HashMap<AbsoluteAxisCode, i32>
+}
+
 
 const KEYS: [KeyCode; 10] = [
     KeyCode::BTN_NORTH,
@@ -22,8 +30,8 @@ const KEYS: [KeyCode; 10] = [
     KeyCode::BTN_TL,
     KeyCode::BTN_START,
     KeyCode::BTN_SELECT
-];
-
+    ];
+    
 const ABS: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_X,
     AbsoluteAxisCode::ABS_Y,
@@ -33,23 +41,40 @@ const ABS: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_RZ,
     AbsoluteAxisCode::ABS_HAT0X,
     AbsoluteAxisCode::ABS_HAT0Y
-];
+    ];
+        
+impl States {
+    pub fn new() -> States {
+        let mut states: States = Default::default();
+        states.key_states = HashMap::new();
+        for key in KEYS {
+            states.key_states.insert(key, 0);
+        }
+        states.abs_states = HashMap::new();
+        for abs in ABS {
+            states.abs_states.insert(abs, 0);
+        }
+        states
+    }
+}
 
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
+// todo: figure out why the latency is longer than the heat death of the universe
 async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
+    let mut states: States = States::new();
     let mut buf: [u8; 512] = [0; 512];
     loop {
         let size = socket.recv(&mut buf)
-                         .await
-                         .unwrap();
+        .await
+        .unwrap();
         if size <= 0 {
             continue;
         }
-
+        
         let raw: &str = from_utf8(&buf[..size])
-        .expect("Unable to parse received packet into a utf8 format.\n");
+                        .expect("Unable to parse received packet into a utf8 format.\n");
         let parsed: Value = serde_json::from_str(raw)
-        .expect("Unable to parse utf8 into json format.\n");
+                        .expect("Unable to parse utf8 into json format.\n");
         let pressed_keys: Vec<u64> = parsed["keys"]
                                 .as_array()
                                 .unwrap()
@@ -68,7 +93,10 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
             events.push(InputEvent::new(EventType::KEY.0, key as u16, 1));
         }
         for i in 0..8 {
-            events.push(InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, abs_values[i] as i32));
+            let mut cached_state = states.abs_states.get_mut(&ABS[i]).unwrap();
+            *cached_state = (*cached_state as i64 + abs_values[i]) as i32;
+            events.push(InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, *cached_state));
+            
         }
         events.push(InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0));
         device_locked.emit(events.as_slice());
@@ -92,6 +120,7 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
 }
 
 async fn client(framerate: Arc<u64>) {
+    let mut states: States = States::new();
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     socket.set_broadcast(true);
     socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
@@ -102,18 +131,30 @@ async fn client(framerate: Arc<u64>) {
                                                     .map(|k| k.0)
                                                     .collect();
         let abs_states: [input_absinfo; 64] = device.get_abs_state().expect("Failed to get device abs states");
-        let abs_values: [i32; 8] = [
-            abs_states[0].value,
-            abs_states[1].value,
-            abs_states[2].value,
-            abs_states[3].value,
-            abs_states[4].value,
-            abs_states[5].value,
-            abs_states[16].value,
-            abs_states[17].value
+        let abs_values: [(AbsoluteAxisCode, i32); 8] = [
+            (AbsoluteAxisCode::ABS_X, abs_states[0].value),
+            (AbsoluteAxisCode::ABS_Y, abs_states[1].value),
+            (AbsoluteAxisCode::ABS_Z, abs_states[2].value),
+            (AbsoluteAxisCode::ABS_RX, abs_states[3].value),
+            (AbsoluteAxisCode::ABS_RY, abs_states[4].value),
+            (AbsoluteAxisCode::ABS_RZ, abs_states[5].value),
+            (AbsoluteAxisCode::ABS_HAT0X, abs_states[16].value),
+            (AbsoluteAxisCode::ABS_HAT0Y, abs_states[17].value)
         ];
-        let json = json!({"keys": pressed_keys, "abs_values": abs_values});
-        socket.send(to_vec(&json).unwrap().as_slice()).await;
+        let mut changed_abs: [i64; 8] = [0; 8];
+        let mut has_delta = false;
+        for i in 0..8 {
+            let code: &AbsoluteAxisCode  = &ABS[i];
+            changed_abs[i] = abs_values[i].1 as i64 - states.abs_states[code] as i64;
+            has_delta = &changed_abs[i] != &0;
+            let abs_state = states.abs_states[code];
+            let mut_state = states.abs_states.get_mut(code).unwrap();
+            *mut_state = (abs_state as i64 + changed_abs[i]) as i32;
+        }
+        let json = json!({"keys": pressed_keys, "abs_values": changed_abs});
+        if pressed_keys.len() > 0 || has_delta {
+            socket.send(to_vec(&json).unwrap().as_slice()).await;
+        }
         sleep(Duration::from_millis(1000/framerate.deref()));
     }
 }
@@ -171,6 +212,7 @@ async fn server() {
 }
 #[tokio::main]
 async fn main() {
+
     let mut framerate: Arc<u64> = Arc::new(60);
     let mut is_client = false;
     let mut is_server = false;
