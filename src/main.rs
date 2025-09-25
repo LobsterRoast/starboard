@@ -14,7 +14,7 @@ use libc::input_absinfo;
 
 #[derive(Default)]
 pub struct States {
-    key_states: HashMap<KeyCode, i32>,
+    key_states: HashMap<u64, i32>,
     abs_states: HashMap<AbsoluteAxisCode, i32>
 }
 
@@ -48,7 +48,7 @@ impl States {
         let mut states: States = Default::default();
         states.key_states = HashMap::new();
         for key in KEYS {
-            states.key_states.insert(key, 0);
+            states.key_states.insert(key.0 as u64, 0);
         }
         states.abs_states = HashMap::new();
         for abs in ABS {
@@ -90,7 +90,14 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         let mut device_locked = device.lock().await;
         let mut events: Vec<InputEvent> = Vec::new();
         for key in pressed_keys {
-            events.push(InputEvent::new(EventType::KEY.0, key as u16, 1));
+            let mut cached_key_state = states.key_states.get_mut(&key).unwrap();
+            if *cached_key_state == 0 {
+                *cached_key_state = 1;
+            }
+            else {
+                *cached_key_state =0;
+            }
+            events.push(InputEvent::new(EventType::KEY.0, key as u16, *cached_key_state));
         }
         for i in 0..8 {
             let mut cached_state = states.abs_states.get_mut(&ABS[i]).unwrap();
