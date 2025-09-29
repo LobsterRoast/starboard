@@ -14,7 +14,7 @@ use libc::input_absinfo;
 
 #[derive(Default)]
 pub struct States {
-    key_states: HashMap<u64, i32>,
+    key_states: Vec<u16>,
     abs_states: HashMap<AbsoluteAxisCode, i32>
 }
 
@@ -42,14 +42,10 @@ const ABS: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_HAT0X,
     AbsoluteAxisCode::ABS_HAT0Y
     ];
-        
 impl States {
     pub fn new() -> States {
         let mut states: States = Default::default();
-        states.key_states = HashMap::new();
-        for key in KEYS {
-            states.key_states.insert(key.0 as u64, 0);
-        }
+        states.key_states = Vec::new();
         states.abs_states = HashMap::new();
         for abs in ABS {
             states.abs_states.insert(abs, 0);
@@ -75,12 +71,14 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
                         .expect("Unable to parse received packet into a utf8 format.\n");
         let parsed: Value = serde_json::from_str(raw)
                         .expect("Unable to parse utf8 into json format.\n");
-        let pressed_keys: Vec<u64> = parsed["keys"]
+        let changed_keys: Vec<u64> = parsed["keys"]
                                 .as_array()
                                 .unwrap()
                                 .iter()
                                 .map(|k| k.as_u64().unwrap())
                                 .collect();
+        let pressed_keys: Vec<u64> = Vec::new();
+        let unpressed_keys: Vec<u64> = Vec::new();
         let abs_values: Vec<i64> = parsed["abs_values"]
                                 .as_array()
                                 .unwrap()
@@ -89,15 +87,17 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
                                 .collect();
         let mut device_locked = device.lock().await;
         let mut events: Vec<InputEvent> = Vec::new();
-        for key in pressed_keys {
-            let mut cached_key_state = states.key_states.get_mut(&key).unwrap();
-            if *cached_key_state == 0 {
-                *cached_key_state = 1;
+        for i in 0..changed_keys.len() {
+            if !states.key_states.contains(&(changed_keys[i] as u16)) {
+                states.key_states.push(changed_keys[i] as u16);
+                events.push(InputEvent::new(EventType::KEY.0, changed_keys[i].try_into().unwrap(), 1));
             }
-            else {
-                *cached_key_state =0;
+        }
+        for i in 0..states.key_states.len() {
+            if changed_keys.contains(&(states.key_states[i] as u64)) {
+                states.key_states.remove(i);
+                events.push(InputEvent::new(EventType::KEY.0, changed_keys[i].try_into().unwrap(), 0));
             }
-            events.push(InputEvent::new(EventType::KEY.0, key as u16, *cached_key_state));
         }
         for i in 0..8 {
             let mut cached_state = states.abs_states.get_mut(&ABS[i]).unwrap();
@@ -137,6 +137,7 @@ async fn client(framerate: Arc<u64>) {
         let pressed_keys: Vec<u16> = key_states.iter()
                                                     .map(|k| k.0)
                                                     .collect();
+        let mut changed_keys: Vec<u16> = Vec::new();
         let abs_states: [input_absinfo; 64] = device.get_abs_state().expect("Failed to get device abs states");
         let abs_values: [(AbsoluteAxisCode, i32); 8] = [
             (AbsoluteAxisCode::ABS_X, abs_states[0].value),
@@ -150,6 +151,18 @@ async fn client(framerate: Arc<u64>) {
         ];
         let mut changed_abs: [i64; 8] = [0; 8];
         let mut has_delta = false;
+        for i in 0..pressed_keys.len() {
+            if !states.key_states.contains(&pressed_keys[i]) {
+                states.key_states.push(pressed_keys[i]);
+                changed_keys.push(pressed_keys[i]);
+            }
+        }
+        for i in 0..states.key_states.len() {
+            if !pressed_keys.contains(&states.key_states[i]) {
+                states.key_states.remove(i);
+                changed_keys.push(states.key_states[i]);
+            }
+        }
         for i in 0..8 {
             let code: &AbsoluteAxisCode  = &ABS[i];
             changed_abs[i] = abs_values[i].1 as i64 - states.abs_states[code] as i64;
@@ -158,7 +171,7 @@ async fn client(framerate: Arc<u64>) {
             let mut_state = states.abs_states.get_mut(code).unwrap();
             *mut_state = (abs_state as i64 + changed_abs[i]) as i32;
         }
-        let json = json!({"keys": pressed_keys, "abs_values": changed_abs});
+        let json = json!({"keys": changed_keys, "abs_values": changed_abs});
         if pressed_keys.len() > 0 || has_delta {
             socket.send(to_vec(&json).unwrap().as_slice()).await;
         }
