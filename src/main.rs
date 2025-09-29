@@ -175,7 +175,7 @@ async fn client(framerate: Arc<u64>) {
         if pressed_keys.len() > 0 || has_delta {
             socket.send(to_vec(&json).unwrap().as_slice()).await;
         }
-        sleep(Duration::from_millis(1000/framerate.deref()));
+        sleep(Duration::from_millis(1000/framerate.deref())).await;
     }
 }
 
