@@ -11,6 +11,10 @@ use std::collections::HashMap;
 use serde_json::Value;
 use serde_json::{json, to_vec};
 use libc::input_absinfo;
+use std::sync::OnceLock;
+
+
+static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
 #[derive(Default)]
 pub struct States {
@@ -160,7 +164,7 @@ async fn client(framerate: Arc<u64>) {
                 changed_keys.push(pressed_keys[i]);
             }
         }
-        if (states.key_states.len() > 0) {
+        if states.key_states.len() > 0 {
             for i in 0..states.key_states.len() {
                 if pressed_keys.contains(&states.key_states[i]) {
                     break;
@@ -243,16 +247,28 @@ async fn main() {
     let mut framerate: Arc<u64> = Arc::new(60);
     let mut is_client = false;
     let mut is_server = false;
+    let mut is_debug = false;
     for arg in env::args() {
-        if arg == "--client" && is_server == false {
-            is_client = true;
+        let arg = arg.as_str();
+        match arg {
+            "--client" => {
+                is_client = !is_server
+            },
+            "--server" => {
+                is_server = !is_client
+            },
+            "--debug" => {
+                is_debug = true;
+            },
+            &_ => {}
         }
-        else if arg == "--server" && is_client == false {
-            is_server = true;
-        }
+
         if arg.starts_with("--fps=") {
             framerate = Arc::new(arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n"));
         }
+
+        DEBUG_MODE.set(is_debug);
+
         if is_client {
             client(framerate.clone()).await;
         }
