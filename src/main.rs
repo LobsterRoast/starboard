@@ -151,14 +151,20 @@ async fn client(framerate: Arc<u64>) {
         ];
         let mut changed_abs: [i64; 8] = [0; 8];
         let mut has_delta = false;
-        for i in 0..pressed_keys.len() {
-            if !states.key_states.contains(&pressed_keys[i]) {
+        if (pressed_keys.len() > 0) {
+            for i in 0..pressed_keys.len() {
+                if states.key_states.contains(&pressed_keys[i]) {
+                    break;
+                }
                 states.key_states.push(pressed_keys[i]);
                 changed_keys.push(pressed_keys[i]);
             }
         }
-        for i in 0..states.key_states.len() {
-            if !pressed_keys.contains(&states.key_states[i]) {
+        if (states.key_states.len() > 0) {
+            for i in 0..states.key_states.len() {
+                if pressed_keys.contains(&states.key_states[i]) {
+                    break;
+                }
                 states.key_states.remove(i);
                 changed_keys.push(states.key_states[i]);
             }
@@ -175,6 +181,7 @@ async fn client(framerate: Arc<u64>) {
         if pressed_keys.len() > 0 || has_delta {
             socket.send(to_vec(&json).unwrap().as_slice()).await;
         }
+        // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
         sleep(Duration::from_millis(1000/framerate.deref())).await;
     }
 }
