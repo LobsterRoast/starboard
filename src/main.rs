@@ -248,26 +248,37 @@ async fn main() {
     let mut is_client = false;
     let mut is_server = false;
     let mut is_debug = false;
+    // ARGS:
+    // --client             --- Opens starboard in client (controller) mode
+    // --server             --- Opens starboard in server (PC) mode
+    // --debug              --- Opens starboard in debug mode, which prints extra information to the console
+    // --fps=[framerate]    --- Syncs input pulling to the specified framerate
     for arg in env::args() {
         let arg = arg.as_str();
+        if !arg.starts_with("--") {
+            continue;
+        }
         match arg {
             "--client" => is_client = !is_server,
             "--server" => is_server = !is_client,
             "--debug"  => is_debug = true,
-            _          => {}
+            _          => println!("Didn't recognize argument '{}'", arg)
         }
-
         if arg.starts_with("--fps=") {
             framerate = Arc::new(arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n"));
         }
-
-        DEBUG_MODE.set(is_debug);
-
-        if is_client {
-            client(framerate.clone()).await;
-        }
-        else if is_server {
-            server().await;
-        }
+        
+    }
+    if is_debug {
+        println!("Debug mode activated.");
+    }
+    DEBUG_MODE.set(is_debug);
+    if is_client {
+        println!("Starting starboard in client mode.");
+        client(framerate.clone()).await;
+    }
+    else if is_server {
+        println!("Starting starboard in server mode.");
+        server().await;
     }
 }
