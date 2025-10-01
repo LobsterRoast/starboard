@@ -1,6 +1,6 @@
 use evdev::uinput::*;
 use evdev::*;
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 use tokio::net::UdpSocket;
 use tokio::time::*;
 use std::{io, fs, env};
@@ -8,8 +8,7 @@ use std::ops::Deref;
 use std::str::from_utf8;
 use std::sync::Arc;
 use std::collections::HashMap;
-use serde_json::Value;
-use serde_json::{json, to_vec};
+use serde_json::{json, to_vec, Value};
 use libc::input_absinfo;
 use std::sync::OnceLock;
 
@@ -81,8 +80,6 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
                                 .iter()
                                 .map(|k| k.as_u64().unwrap())
                                 .collect();
-        let pressed_keys: Vec<u64> = Vec::new();
-        let unpressed_keys: Vec<u64> = Vec::new();
         let abs_values: Vec<i64> = parsed["abs_values"]
                                 .as_array()
                                 .unwrap()
@@ -104,13 +101,13 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
             }
         }
         for i in 0..8 {
-            let mut cached_state = states.abs_states.get_mut(&ABS[i]).unwrap();
+            let cached_state = states.abs_states.get_mut(&ABS[i]).unwrap();
             *cached_state = (*cached_state as i64 + abs_values[i]) as i32;
             events.push(InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, *cached_state));
             
         }
         events.push(InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0));
-        device_locked.emit(events.as_slice());
+        let _ = device_locked.emit(events.as_slice());
     }
 }
 
@@ -133,7 +130,7 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
 async fn client(framerate: Arc<u64>) {
     let mut states: States = States::new();
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
-    socket.set_broadcast(true);
+    let _ = socket.set_broadcast(true);
     socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
     loop {
@@ -155,7 +152,7 @@ async fn client(framerate: Arc<u64>) {
         ];
         let mut changed_abs: [i64; 8] = [0; 8];
         let mut has_delta = false;
-        if (pressed_keys.len() > 0) {
+        if pressed_keys.len() > 0 {
             for i in 0..pressed_keys.len() {
                 if states.key_states.contains(&pressed_keys[i]) {
                     break;
@@ -183,7 +180,7 @@ async fn client(framerate: Arc<u64>) {
         }
         let json = json!({"keys": changed_keys, "abs_values": changed_abs});
         if pressed_keys.len() > 0 || has_delta {
-            socket.send(to_vec(&json).unwrap().as_slice()).await;
+            let _ = socket.send(to_vec(&json).unwrap().as_slice()).await;
         }
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
         sleep(Duration::from_millis(1000/framerate.deref())).await;
@@ -243,11 +240,11 @@ async fn server() {
 }
 #[tokio::main]
 async fn main() {
-
     let mut framerate: Arc<u64> = Arc::new(60);
     let mut is_client = false;
     let mut is_server = false;
     let mut is_debug = false;
+
     // ARGS:
     // --client             --- Opens starboard in client (controller) mode
     // --server             --- Opens starboard in server (PC) mode
@@ -267,16 +264,18 @@ async fn main() {
         if arg.starts_with("--fps=") {
             framerate = Arc::new(arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n"));
         }
-        
     }
+
+    let _ = DEBUG_MODE.set(is_debug);
     if is_debug {
         println!("Debug mode activated.");
     }
-    DEBUG_MODE.set(is_debug);
+
     if is_client {
         println!("Starting starboard in client mode.");
         client(framerate.clone()).await;
     }
+
     else if is_server {
         println!("Starting starboard in server mode.");
         server().await;
