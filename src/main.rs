@@ -251,16 +251,10 @@ async fn main() {
     for arg in env::args() {
         let arg = arg.as_str();
         match arg {
-            "--client" => {
-                is_client = !is_server
-            },
-            "--server" => {
-                is_server = !is_client
-            },
-            "--debug" => {
-                is_debug = true;
-            },
-            &_ => {}
+            "--client" => is_client = !is_server,
+            "--server" => is_server = !is_client,
+            "--debug"  => is_debug = true,
+            _          => {}
         }
 
         if arg.starts_with("--fps=") {
