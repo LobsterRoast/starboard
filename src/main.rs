@@ -6,12 +6,10 @@ use tokio::time::*;
 use std::{io, fs, env};
 use std::ops::Deref;
 use std::str::from_utf8;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::collections::HashMap;
 use serde_json::{json, to_vec, Value};
 use libc::input_absinfo;
-use std::sync::OnceLock;
-
 
 static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
@@ -45,6 +43,7 @@ const ABS: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_HAT0X,
     AbsoluteAxisCode::ABS_HAT0Y
     ];
+
 impl States {
     pub fn new() -> States {
         let mut states: States = Default::default();
@@ -166,8 +165,8 @@ async fn client(framerate: Arc<u64>) {
                 if pressed_keys.contains(&states.key_states[i]) {
                     break;
                 }
-                states.key_states.remove(i);
                 changed_keys.push(states.key_states[i]);
+                states.key_states.remove(i);
             }
         }
         for i in 0..8 {
