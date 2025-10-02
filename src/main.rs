@@ -106,9 +106,10 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
                 key_states.push(changed_keys[i] as u16);
             }
         }
+        let mut queue_for_removal: Vec<usize> = Vec::new();
         for i in 0..states.key_states.len() {
             if changed_keys.contains(&(states.key_states[i] as u64)) {
-                key_states.remove(i);
+                queue_for_removal.push(i);
                 debug!("Key release: {}", states.key_states[i]);
                 events.push(InputEvent::new(EventType::KEY.0, changed_keys[i].try_into().unwrap(), 0));
             }
@@ -117,11 +118,14 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
                 events.push(InputEvent::new(EventType::KEY.0, states.key_states[i].try_into().unwrap(), 1));
             }
         }
+        queue_for_removal.sort();
+        queue_for_removal.reverse();
+        for i in queue_for_removal {
+            key_states.remove(i);
+        }
         states.key_states = key_states;
         for i in 0..8 {
-            let cached_state = states.abs_states.get_mut(&ABS[i]).unwrap();
-            *cached_state = (*cached_state as i64 + abs_values[i]) as i32;
-            events.push(InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, *cached_state));
+            events.push(InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, abs_values[i].try_into().unwrap()));
             
         }
         events.push(InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0));
@@ -168,8 +172,6 @@ async fn client(framerate: Arc<u64>) {
             (AbsoluteAxisCode::ABS_HAT0X, abs_states[16].value),
             (AbsoluteAxisCode::ABS_HAT0Y, abs_states[17].value)
         ];
-        let mut changed_abs: [i64; 8] = [0; 8];
-        let mut has_delta = false;
         if pressed_keys.len() > 0 {
             for i in 0..pressed_keys.len() {
                 if states.key_states.contains(&pressed_keys[i]) {
@@ -196,21 +198,11 @@ async fn client(framerate: Arc<u64>) {
                 states.key_states.remove(i);
             }
         }
-        for i in 0..8 {
-            let code: &AbsoluteAxisCode  = &ABS[i];
-            changed_abs[i] = abs_values[i].1 as i64 - states.abs_states[code] as i64;
-            if &changed_abs[i] != &0 {
-                has_delta = true;
-                debug!("Analog delta detected on code {}: State is {}", code.0, &changed_abs[i]);
-            }
-            let abs_state = states.abs_states[code];
-            let mut_state = states.abs_states.get_mut(code).unwrap();
-            *mut_state = (abs_state as i64 + changed_abs[i]) as i32;
-        }
-        let json = json!({"keys": changed_keys, "abs_values": changed_abs});
-        if pressed_keys.len() > 0 || has_delta {
-            let _ = socket.send(to_vec(&json).unwrap().as_slice()).await;
-        }
+        let abs_values_int: Vec<i32> = abs_values.iter()
+                                       .map(|i| i.1)
+                                       .collect();
+        let json = json!({"keys": changed_keys, "abs_values": abs_values_int});
+        let _ = socket.send(to_vec(&json).unwrap().as_slice()).await;
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
         sleep(Duration::from_millis(1000/framerate.deref())).await;
     }
