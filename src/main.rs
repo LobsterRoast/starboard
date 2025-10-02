@@ -181,6 +181,7 @@ async fn client(framerate: Arc<u64>) {
                     break;
                 }
                 changed_keys.push(states.key_states[i]);
+                queue_for_removal.push(i);
                 debug!("Key release detected on KeyCode: {}", states.key_states[i]);
             }
             for i in queue_for_removal {
