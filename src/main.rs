@@ -13,6 +13,19 @@ use libc::input_absinfo;
 
 static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
+macro_rules! debug {
+    ($fmt:expr, $($args:tt)*) => {
+        if *DEBUG_MODE.get().unwrap() {
+            println!(concat!("[DEBUG] ", $fmt), $($args)*);
+        }
+    };
+    ($fmt:expr) => {
+        if *DEBUG_MODE.get().unwrap() {
+            println!(concat!("[DEBUG] ", $fmt));   
+        }
+    };
+}
+
 #[derive(Default)]
 pub struct States {
     key_states: Vec<u16>,
@@ -158,6 +171,7 @@ async fn client(framerate: Arc<u64>) {
                 }
                 states.key_states.push(pressed_keys[i]);
                 changed_keys.push(pressed_keys[i]);
+                debug!("Key delta detected on KeyCode: {}", pressed_keys[i]);
             }
         }
         if states.key_states.len() > 0 {
@@ -167,12 +181,16 @@ async fn client(framerate: Arc<u64>) {
                 }
                 changed_keys.push(states.key_states[i]);
                 states.key_states.remove(i);
+                debug!("Key delta detected on KeyCode: {}", pressed_keys[i]);
             }
         }
         for i in 0..8 {
             let code: &AbsoluteAxisCode  = &ABS[i];
             changed_abs[i] = abs_values[i].1 as i64 - states.abs_states[code] as i64;
-            has_delta = &changed_abs[i] != &0;
+            if &changed_abs[i] != &0 {
+                has_delta = true;
+                debug!("Analog delta detected on code {}: State is {}", code.0, &changed_abs[i]);
+            }
             let abs_state = states.abs_states[code];
             let mut_state = states.abs_states.get_mut(code).unwrap();
             *mut_state = (abs_state as i64 + changed_abs[i]) as i32;
@@ -266,9 +284,7 @@ async fn main() {
     }
 
     let _ = DEBUG_MODE.set(is_debug);
-    if is_debug {
-        println!("Debug mode activated.");
-    }
+    debug!("Debug mode is on.");
 
     if is_client {
         println!("Starting starboard in client mode.");
