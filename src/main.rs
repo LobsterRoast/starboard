@@ -171,7 +171,7 @@ async fn client(framerate: Arc<u64>) {
                 }
                 states.key_states.push(pressed_keys[i]);
                 changed_keys.push(pressed_keys[i]);
-                debug!("Key delta detected on KeyCode: {}", pressed_keys[i]);
+                debug!("Key press detected on KeyCode: {}", pressed_keys[i]);
             }
         }
         if states.key_states.len() > 0 {
@@ -181,7 +181,7 @@ async fn client(framerate: Arc<u64>) {
                     break;
                 }
                 changed_keys.push(states.key_states[i]);
-                debug!("Key delta detected on KeyCode: {}", states.key_states[i]);
+                debug!("Key release detected on KeyCode: {}", states.key_states[i]);
             }
             for i in queue_for_removal {
                 states.key_states.remove(i);
