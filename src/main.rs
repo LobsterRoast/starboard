@@ -180,7 +180,7 @@ async fn client(framerate: Arc<u64>) {
                     break;
                 }
                 changed_keys.push(states.key_states[i]);
-                debug!("Key delta detected on KeyCode: {}", pressed_keys[i]);
+                debug!("Key delta detected on KeyCode: {}", states.key_states[i]);
                 states.key_states.remove(i);
             }
         }
