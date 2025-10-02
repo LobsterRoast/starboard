@@ -175,7 +175,7 @@ async fn client(framerate: Arc<u64>) {
             }
         }
         if states.key_states.len() > 0 {
-            let queue_for_removal: Vec<usize>  = Vec::new();
+            let mut queue_for_removal: Vec<usize>  = Vec::new();
             for i in 0..states.key_states.len() {
                 if pressed_keys.contains(&states.key_states[i]) {
                     break;
