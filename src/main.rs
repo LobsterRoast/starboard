@@ -175,12 +175,15 @@ async fn client(framerate: Arc<u64>) {
             }
         }
         if states.key_states.len() > 0 {
+            let queue_for_removal: Vec<usize>  = Vec::new();
             for i in 0..states.key_states.len() {
                 if pressed_keys.contains(&states.key_states[i]) {
                     break;
                 }
                 changed_keys.push(states.key_states[i]);
                 debug!("Key delta detected on KeyCode: {}", states.key_states[i]);
+            }
+            for i in queue_for_removal {
                 states.key_states.remove(i);
             }
         }
