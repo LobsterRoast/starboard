@@ -100,18 +100,24 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
                                 .collect();
         let mut device_locked = device.lock().await;
         let mut events: Vec<InputEvent> = Vec::new();
+        let mut key_states = states.key_states.clone();
         for i in 0..changed_keys.len() {
             if !states.key_states.contains(&(changed_keys[i] as u16)) {
-                states.key_states.push(changed_keys[i] as u16);
-                events.push(InputEvent::new(EventType::KEY.0, changed_keys[i].try_into().unwrap(), 1));
+                key_states.push(changed_keys[i] as u16);
             }
         }
         for i in 0..states.key_states.len() {
             if changed_keys.contains(&(states.key_states[i] as u64)) {
-                states.key_states.remove(i);
+                key_states.remove(i);
+                debug!("Key release: {}", changed_keys[i]);
                 events.push(InputEvent::new(EventType::KEY.0, changed_keys[i].try_into().unwrap(), 0));
             }
+            else {
+                debug!("Key stay: {}", changed_keys[i]);
+                events.push(InputEvent::new(EventType::KEY.0, changed_keys[i].try_into().unwrap(), 1));
+            }
         }
+        states.key_states = key_states;
         for i in 0..8 {
             let cached_state = states.abs_states.get_mut(&ABS[i]).unwrap();
             *cached_state = (*cached_state as i64 + abs_values[i]) as i32;
