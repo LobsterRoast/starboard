@@ -109,12 +109,12 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         for i in 0..states.key_states.len() {
             if changed_keys.contains(&(states.key_states[i] as u64)) {
                 key_states.remove(i);
-                debug!("Key release: {}", changed_keys[i]);
+                debug!("Key release: {}", states.key_states[i]);
                 events.push(InputEvent::new(EventType::KEY.0, changed_keys[i].try_into().unwrap(), 0));
             }
             else {
-                debug!("Key stay: {}", changed_keys[i]);
-                events.push(InputEvent::new(EventType::KEY.0, changed_keys[i].try_into().unwrap(), 1));
+                debug!("Key stay: {}", states.key_states[i]);
+                events.push(InputEvent::new(EventType::KEY.0, states.key_states[i].try_into().unwrap(), 1));
             }
         }
         states.key_states = key_states;
@@ -190,6 +190,8 @@ async fn client(framerate: Arc<u64>) {
                 queue_for_removal.push(i);
                 debug!("Key release detected on KeyCode: {}", states.key_states[i]);
             }
+            queue_for_removal.sort();
+            queue_for_removal.reverse();
             for i in queue_for_removal {
                 states.key_states.remove(i);
             }
