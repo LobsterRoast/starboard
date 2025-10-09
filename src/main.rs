@@ -13,6 +13,7 @@ use libc::input_absinfo;
 
 static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
+// This macro is essentially just a version of println! that will only run if DEBUG_MODE is True.
 macro_rules! debug {
     ($fmt:expr, $($args:tt)*) => {
         if *DEBUG_MODE.get().unwrap() {
@@ -28,11 +29,13 @@ macro_rules! debug {
 
 #[derive(Default)]
 pub struct States {
-    key_states: Vec<u16>,
+    key_states: Vec<u64>,
     abs_states: HashMap<AbsoluteAxisCode, i32>
 }
 
-
+// Iterable constant list of all the keys that will be used.
+// Note: North/South/East/West are equivalent to Up/Down/Right/Left.
+// Note: For some reason, Valve did expose the back buttons on the Steam Deck to uinput. Idk if I'll add support for those.
 const KEYS: [KeyCode; 10] = [
     KeyCode::BTN_NORTH,
     KeyCode::BTN_SOUTH,
@@ -45,7 +48,9 @@ const KEYS: [KeyCode; 10] = [
     KeyCode::BTN_START,
     KeyCode::BTN_SELECT
     ];
-    
+
+// Iterable constant array of all the analog values that will be used. Absolute is code for Analog in this case.
+// For some reason, the D-Pad is an analog value. ABS_HAT0(X/Y) refers to the D-Pad values.
 const ABS: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_X,
     AbsoluteAxisCode::ABS_Y,
@@ -74,6 +79,7 @@ impl States {
 async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
     let mut states: States = States::new();
     let mut buf: [u8; 512] = [0; 512];
+    let mut iteration: u64 = 0;
     loop {
         let size = socket.recv(&mut buf)
         .await
@@ -101,35 +107,33 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         let mut device_locked = device.lock().await;
         let mut events: Vec<InputEvent> = Vec::new();
         let mut key_states = states.key_states.clone();
-        for i in 0..changed_keys.len() {
-            if !states.key_states.contains(&(changed_keys[i] as u16)) {
-                key_states.push(changed_keys[i] as u16);
-            }
-        }
-        let mut queue_for_removal: Vec<usize> = Vec::new();
-        for i in 0..states.key_states.len() {
-            if changed_keys.contains(&(states.key_states[i] as u64)) {
-                queue_for_removal.push(i);
-                debug!("Key release: {}", states.key_states[i]);
-                events.push(InputEvent::new(EventType::KEY.0, changed_keys[i].try_into().unwrap(), 0));
+        let mut queue_for_removal: Vec<u64> = Vec::new();
+        for key in changed_keys {
+            if states.key_states.contains(&key) {
+                queue_for_removal.push(key);
+                debug!("Key Release: {} Iteration: {}", key, iteration);
+                events.push(InputEvent::new(EventType::KEY.0, key as u16, 0));
             }
             else {
-                debug!("Key stay: {}", states.key_states[i]);
-                events.push(InputEvent::new(EventType::KEY.0, states.key_states[i].try_into().unwrap(), 1));
+                key_states.push(key);
+                debug!("Key Push: {} Iteration: {}", key, iteration);
             }
-        }
+        }        
         queue_for_removal.sort();
         queue_for_removal.reverse();
-        for i in queue_for_removal {
-            key_states.remove(i);
+        for key in queue_for_removal {
+            key_states.retain(|&x| x != key );
         }
         states.key_states = key_states;
+        for key in &states.key_states {
+                events.push(InputEvent::new(EventType::KEY.0, *key as u16, 1));
+        }
         for i in 0..8 {
             events.push(InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, abs_values[i].try_into().unwrap()));
-            
         }
         events.push(InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0));
         let _ = device_locked.emit(events.as_slice());
+        iteration += 1;
     }
 }
 
@@ -149,18 +153,53 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
     Err("Could not access the Steam Deck's input system.")
 }
 
+fn gen_json(pressed_keys: Vec<u64>, abs_values: [(AbsoluteAxisCode, i32); 8], states: &mut States) -> Value {
+    let mut changed_keys: Vec<u64> = Vec::new();
+    if pressed_keys.len() > 0 {
+                for i in 0..pressed_keys.len() {
+                    if states.key_states.contains(&pressed_keys[i]) {
+                        break;
+                    }
+                    states.key_states.push(pressed_keys[i]);
+                    changed_keys.push(pressed_keys[i]);
+                    debug!("Key press detected on KeyCode: {}", pressed_keys[i]);
+                }
+    }
+    if states.key_states.len() > 0 {
+        let mut queue_for_removal: Vec<usize>  = Vec::new();
+        for i in 0..states.key_states.len() {
+            if pressed_keys.contains(&states.key_states[i]) {
+                break;
+            }
+            changed_keys.push(states.key_states[i]);
+            queue_for_removal.push(i);
+            debug!("Key release detected on KeyCode: {}", states.key_states[i]);
+        }
+        queue_for_removal.sort();
+        queue_for_removal.reverse();
+        for i in queue_for_removal {
+            states.key_states.remove(i);
+        }
+    }
+    let abs_values_int: Vec<i32> = abs_values.iter()
+                                .map(|i| i.1)
+                                .collect();
+    json!({"keys": changed_keys, "abs_values": abs_values_int})
+}
+
 async fn client(framerate: Arc<u64>) {
     let mut states: States = States::new();
+    // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     let _ = socket.set_broadcast(true);
+    // Broadcast to all devices on port 9999. The port will be changeable at some point once the latency issue is fixed.
     socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
     loop {
         let key_states: AttributeSet<KeyCode> = device.get_key_state().expect("Failed to get device key states.\n");
-        let pressed_keys: Vec<u16> = key_states.iter()
-                                                    .map(|k| k.0)
-                                                    .collect();
-        let mut changed_keys: Vec<u16> = Vec::new();
+        let pressed_keys: Vec<u64> = key_states.iter()
+                                               .map(|k| k.0 as u64)
+                                               .collect();
         let abs_states: [input_absinfo; 64] = device.get_abs_state().expect("Failed to get device abs states");
         let abs_values: [(AbsoluteAxisCode, i32); 8] = [
             (AbsoluteAxisCode::ABS_X, abs_states[0].value),
@@ -172,36 +211,8 @@ async fn client(framerate: Arc<u64>) {
             (AbsoluteAxisCode::ABS_HAT0X, abs_states[16].value),
             (AbsoluteAxisCode::ABS_HAT0Y, abs_states[17].value)
         ];
-        if pressed_keys.len() > 0 {
-            for i in 0..pressed_keys.len() {
-                if states.key_states.contains(&pressed_keys[i]) {
-                    break;
-                }
-                states.key_states.push(pressed_keys[i]);
-                changed_keys.push(pressed_keys[i]);
-                debug!("Key press detected on KeyCode: {}", pressed_keys[i]);
-            }
-        }
-        if states.key_states.len() > 0 {
-            let mut queue_for_removal: Vec<usize>  = Vec::new();
-            for i in 0..states.key_states.len() {
-                if pressed_keys.contains(&states.key_states[i]) {
-                    break;
-                }
-                changed_keys.push(states.key_states[i]);
-                queue_for_removal.push(i);
-                debug!("Key release detected on KeyCode: {}", states.key_states[i]);
-            }
-            queue_for_removal.sort();
-            queue_for_removal.reverse();
-            for i in queue_for_removal {
-                states.key_states.remove(i);
-            }
-        }
-        let abs_values_int: Vec<i32> = abs_values.iter()
-                                       .map(|i| i.1)
-                                       .collect();
-        let json = json!({"keys": changed_keys, "abs_values": abs_values_int});
+
+        let json = gen_json(pressed_keys, abs_values, &mut states);
         let _ = socket.send(to_vec(&json).unwrap().as_slice()).await;
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
         sleep(Duration::from_millis(1000/framerate.deref())).await;
@@ -244,8 +255,8 @@ async fn server() {
             .with_absolute_axis(&right_x_axis_setup)
             .expect("Could not enable the X-axis of the right joystick\n")
             .with_absolute_axis(&right_y_axis_setup)
-            .expect("Could not enable the Y-axis of the right joystick\n")
-            .with_absolute_axis(&right_z_axis_setup)
+            .expect("Could not enable the Y-axis of the right joystick\n") 
+            .with_absolute_axis(&right_z_axis_setup)  // There couldn't have been a more concise way to do this????
             .expect("Could not enable the analog inputs in the right trigger\n")
             .with_absolute_axis(&dpad_x_axis_setup)
             .expect("Could not enable the x axis on the D-pad\n")           
@@ -261,7 +272,7 @@ async fn server() {
 }
 #[tokio::main]
 async fn main() {
-    let mut framerate: Arc<u64> = Arc::new(60);
+    let mut framerate: Arc<u64> = Arc::new(60);  // Default framerate to 60
     let mut is_client = false;
     let mut is_server = false;
     let mut is_debug = false;
@@ -270,7 +281,8 @@ async fn main() {
     // --client             --- Opens starboard in client (controller) mode
     // --server             --- Opens starboard in server (PC) mode
     // --debug              --- Opens starboard in debug mode, which prints extra information to the console
-    // --fps=[framerate]    --- Syncs input pulling to the specified framerate
+    // --fps=[framerate]    --- Syncs input polling to the specified framerate
+
     for arg in env::args() {
         let arg = arg.as_str();
         if !arg.starts_with("--") {
@@ -289,6 +301,8 @@ async fn main() {
 
     let _ = DEBUG_MODE.set(is_debug);
     debug!("Debug mode is on.");
+
+    // The program should not be able to run in both server and client mode.
 
     if is_client {
         println!("Starting starboard in client mode.");
