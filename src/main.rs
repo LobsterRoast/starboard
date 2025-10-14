@@ -10,6 +10,7 @@ use std::sync::{Arc, OnceLock};
 use std::collections::HashMap;
 use serde_json::{json, to_vec, Value};
 use libc::input_absinfo;
+use chrono::{DateTime, Local};
 
 static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
@@ -23,6 +24,22 @@ macro_rules! debug {
     ($fmt:expr) => {
         if *DEBUG_MODE.get().unwrap() {
             println!(concat!("[DEBUG] ", $fmt));   
+        }
+    };
+}
+
+macro_rules! debug_fn {
+    ($debug:expr, $default:expr) => {
+        if *DEBUG_MODE.get().unwrap() {
+            $debug();
+        }
+        else {
+            $default();
+        }
+    };
+    ($debug:expr) => {
+        if *DEBUG_MODE.get().unwrap() {
+            $debug();
         }
     };
 }
@@ -104,6 +121,9 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
                                 .iter()
                                 .map(|a| a.as_i64().unwrap())
                                 .collect();
+        let packet_time = DateTime::parse_from_str(parsed["time"].as_str().unwrap(), "%H,%M,%S,%3f").unwrap();
+        let current_time: DateTime<Local> = Local::now();
+        let delta = current_time.signed_duration_since(packet_time).to_string();
         let mut device_locked = device.lock().await;
         let mut events: Vec<InputEvent> = Vec::new();
         let mut key_states = states.key_states.clone();
@@ -111,7 +131,7 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         for key in changed_keys {
             if states.key_states.contains(&key) {
                 queue_for_removal.push(key);
-                debug!("Key Release: {} Iteration: {}", key, iteration);
+                debug!("Key Release: {} Iteration: {} Latency: {}", key, iteration, delta);   
                 events.push(InputEvent::new(EventType::KEY.0, key as u16, 0));
             }
             else {
@@ -153,6 +173,11 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
     Err("Could not access the Steam Deck's input system.")
 }
 
+fn get_formatted_time() -> String {
+    let dt: DateTime<Local> = Local::now();
+    dt.format("%H,%M,%S,%3f").to_string()
+}
+
 fn gen_json(pressed_keys: Vec<u64>, abs_values: [(AbsoluteAxisCode, i32); 8], states: &mut States) -> Value {
     let mut changed_keys: Vec<u64> = Vec::new();
     if pressed_keys.len() > 0 {
@@ -184,7 +209,7 @@ fn gen_json(pressed_keys: Vec<u64>, abs_values: [(AbsoluteAxisCode, i32); 8], st
     let abs_values_int: Vec<i32> = abs_values.iter()
                                 .map(|i| i.1)
                                 .collect();
-    json!({"keys": changed_keys, "abs_values": abs_values_int})
+    json!({"keys": changed_keys, "abs_values": abs_values_int, "time": get_formatted_time()})
 }
 
 async fn client(framerate: Arc<u64>) {
