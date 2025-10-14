@@ -10,7 +10,7 @@ use std::sync::{Arc, OnceLock};
 use std::collections::HashMap;
 use serde_json::{json, to_vec, Value};
 use libc::input_absinfo;
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, FixedOffset};
 
 static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
@@ -91,6 +91,40 @@ impl States {
     }
 }
 
+
+async fn get_json_data(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Value> {
+    let size = socket.recv(buf)
+                .await
+                .unwrap();
+    if size <= 0 {
+        return None;
+    }
+    let raw: &str = from_utf8(&buf[..size])
+                    .expect("Unable to parse received packet into a utf8 format.\n");
+    Some(serde_json::from_str(raw).expect("Unable to parse utf8 into json format.\n"))
+}
+
+fn parse_changed_keys(json: &Value) -> Vec<u64> {
+    return json["keys"]
+    .as_array()
+    .unwrap()
+    .iter()
+    .map(|k| k.as_u64().unwrap())
+    .collect();
+}
+
+fn parse_abs_values(json: &Value) -> Vec<i64> {
+    return json["abs_values"]
+    .as_array()
+    .unwrap()
+    .iter()
+    .map(|k| k.as_i64().unwrap())
+    .collect();
+}
+
+fn parse_timestamp(json: &Value) -> DateTime<FixedOffset> {
+    DateTime::parse_from_str(json["time"].as_str().unwrap(), "%H,%M,%S,%3f").unwrap()
+}
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
 // todo: figure out why the latency is longer than the heat death of the universe
 async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
@@ -98,32 +132,15 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
     let mut buf: [u8; 512] = [0; 512];
     let mut iteration: u64 = 0;
     loop {
-        let size = socket.recv(&mut buf)
-        .await
-        .unwrap();
-        if size <= 0 {
-            continue;
-        }
-        
-        let raw: &str = from_utf8(&buf[..size])
-                        .expect("Unable to parse received packet into a utf8 format.\n");
-        let parsed: Value = serde_json::from_str(raw)
-                        .expect("Unable to parse utf8 into json format.\n");
-        let changed_keys: Vec<u64> = parsed["keys"]
-                                .as_array()
-                                .unwrap()
-                                .iter()
-                                .map(|k| k.as_u64().unwrap())
-                                .collect();
-        let abs_values: Vec<i64> = parsed["abs_values"]
-                                .as_array()
-                                .unwrap()
-                                .iter()
-                                .map(|a| a.as_i64().unwrap())
-                                .collect();
-        let packet_time = DateTime::parse_from_str(parsed["time"].as_str().unwrap(), "%H,%M,%S,%3f").unwrap();
-        let current_time: DateTime<Local> = Local::now();
-        let delta = current_time.signed_duration_since(packet_time).to_string();
+        let parsed = match get_json_data(&socket, &mut buf).await {
+            Some(e) => e,
+            None => continue
+        };
+        let changed_keys: Vec<u64> = parse_changed_keys(&parsed);
+        let abs_values: Vec<i64> = parse_abs_values(&parsed);
+        let packet_time = parse_timestamp(&parsed);
+        //let current_time: DateTime<Local> = Local::now();
+        //let delta = current_time.signed_duration_since(packet_time).to_string();
         let mut device_locked = device.lock().await;
         let mut events: Vec<InputEvent> = Vec::new();
         let mut key_states = states.key_states.clone();
@@ -131,7 +148,7 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         for key in changed_keys {
             if states.key_states.contains(&key) {
                 queue_for_removal.push(key);
-                debug!("Key Release: {} Iteration: {} Latency: {}", key, iteration, delta);   
+                //debug!("Key Release: {} Iteration: {} Latency: {}", key, iteration, delta);   
                 events.push(InputEvent::new(EventType::KEY.0, key as u16, 0));
             }
             else {
@@ -175,7 +192,7 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
 
 fn get_formatted_time() -> String {
     let dt: DateTime<Local> = Local::now();
-    dt.format("%H,%M,%S,%3f").to_string()
+    format!("{}", dt.format("%H,%M,%S,%3f"))
 }
 
 fn gen_json(pressed_keys: Vec<u64>, abs_values: [(AbsoluteAxisCode, i32); 8], states: &mut States) -> Value {
@@ -236,7 +253,7 @@ async fn client(framerate: Arc<u64>) {
             (AbsoluteAxisCode::ABS_HAT0X, abs_states[16].value),
             (AbsoluteAxisCode::ABS_HAT0Y, abs_states[17].value)
         ];
-
+        
         let json = gen_json(pressed_keys, abs_values, &mut states);
         let _ = socket.send(to_vec(&json).unwrap().as_slice()).await;
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
@@ -295,6 +312,7 @@ async fn server() {
     tokio::spawn(udp_handling(device.clone(), socket.clone()));
     loop {}
 }
+
 #[tokio::main]
 async fn main() {
     let mut framerate: Arc<u64> = Arc::new(60);  // Default framerate to 60
