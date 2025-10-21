@@ -3,7 +3,7 @@ use evdev::*;
 use tokio::sync::Mutex;
 use tokio::net::UdpSocket;
 use tokio::time::*;
-use std::{io, fs, env};
+use std::{fs, env};
 use std::ops::Deref;
 use std::str::from_utf8;
 use std::sync::{Arc, OnceLock};
@@ -24,22 +24,6 @@ macro_rules! debug {
     ($fmt:expr) => {
         if *DEBUG_MODE.get().unwrap() {
             println!(concat!("[DEBUG] ", $fmt));   
-        }
-    };
-}
-
-macro_rules! debug_fn {
-    ($debug:expr, $default:expr) => {
-        if *DEBUG_MODE.get().unwrap() {
-            $debug();
-        }
-        else {
-            $default();
-        }
-    };
-    ($debug:expr) => {
-        if *DEBUG_MODE.get().unwrap() {
-            $debug();
         }
     };
 }
@@ -123,8 +107,9 @@ fn parse_abs_values(json: &Value) -> Vec<i64> {
 }
 
 fn parse_timestamp(json: &Value) -> DateTime<FixedOffset> {
-    DateTime::parse_from_str(json["time"].as_str().unwrap(), "%H,%M,%S,%3f").unwrap()
+    DateTime::parse_from_str(json["time"].as_str().unwrap(), "%Y,%m,%d,%H,%M,%S,%3f,%z").expect("Unable to get timestamp from packet")
 }
+
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
 // todo: figure out why the latency is longer than the heat death of the universe
 async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
@@ -139,8 +124,8 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         let changed_keys: Vec<u64> = parse_changed_keys(&parsed);
         let abs_values: Vec<i64> = parse_abs_values(&parsed);
         let packet_time = parse_timestamp(&parsed);
-        //let current_time: DateTime<Local> = Local::now();
-        //let delta = current_time.signed_duration_since(packet_time).to_string();
+        let current_time: DateTime<Local> = Local::now();
+        let delta = current_time.signed_duration_since(packet_time).num_milliseconds();
         let mut device_locked = device.lock().await;
         let mut events: Vec<InputEvent> = Vec::new();
         let mut key_states = states.key_states.clone();
@@ -148,12 +133,12 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         for key in changed_keys {
             if states.key_states.contains(&key) {
                 queue_for_removal.push(key);
-                //debug!("Key Release: {} Iteration: {} Latency: {}", key, iteration, delta);   
+                debug!("Key Release: {} Iteration: {} Latency: {}ms", key, iteration, delta);   
                 events.push(InputEvent::new(EventType::KEY.0, key as u16, 0));
             }
             else {
                 key_states.push(key);
-                debug!("Key Push: {} Iteration: {}", key, iteration);
+                debug!("Key Push: {} Iteration: {} Latency: {}ms", key, iteration, delta);
             }
         }        
         queue_for_removal.sort();
@@ -192,7 +177,7 @@ fn get_steam_deck_device() -> Result<Device, &'static str> {
 
 fn get_formatted_time() -> String {
     let dt: DateTime<Local> = Local::now();
-    format!("{}", dt.format("%H,%M,%S,%3f"))
+    format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
 }
 
 fn gen_json(pressed_keys: Vec<u64>, abs_values: [(AbsoluteAxisCode, i32); 8], states: &mut States) -> Value {
@@ -231,17 +216,22 @@ fn gen_json(pressed_keys: Vec<u64>, abs_values: [(AbsoluteAxisCode, i32); 8], st
 
 async fn client(framerate: Arc<u64>) {
     let mut states: States = States::new();
+    
     // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     let _ = socket.set_broadcast(true);
     // Broadcast to all devices on port 9999. The port will be changeable at some point once the latency issue is fixed.
     socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
+
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
+
     loop {
+
         let key_states: AttributeSet<KeyCode> = device.get_key_state().expect("Failed to get device key states.\n");
         let pressed_keys: Vec<u64> = key_states.iter()
                                                .map(|k| k.0 as u64)
                                                .collect();
+
         let abs_states: [input_absinfo; 64] = device.get_abs_state().expect("Failed to get device abs states");
         let abs_values: [(AbsoluteAxisCode, i32); 8] = [
             (AbsoluteAxisCode::ABS_X, abs_states[0].value),
@@ -256,6 +246,7 @@ async fn client(framerate: Arc<u64>) {
         
         let json = gen_json(pressed_keys, abs_values, &mut states);
         let _ = socket.send(to_vec(&json).unwrap().as_slice()).await;
+    
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
         sleep(Duration::from_millis(1000/framerate.deref())).await;
     }
