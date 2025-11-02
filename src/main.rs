@@ -126,28 +126,29 @@ fn parse_timestamp(date: &str) -> DateTime<FixedOffset> {
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
 // todo: figure out why the latency is longer than the heat death of the universe
 async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
-    let  states: States = States::new();
+    let mut states: States = States::new();
     let mut buf: [u8; 512] = [0; 512];
     let mut iteration: u64 = 0;
-    let mut events: Vec<InputEvent> = Vec::new();
     loop {
         let mut packet: Packet = match get_packet(&socket, &mut buf).await {
             Some(v) => v,
             None => continue
         };
-
+        
+        let mut events: Vec<InputEvent> = Vec::new();
+        
         let timestamp = parse_timestamp(&packet.timestamp);
-        for i in 0..KEYS_BITS.len() {
-            let key = &KEYS_BITS[i].0;
-            let bit = &KEYS_BITS[i].1;
-            let key_pressed: i32 = (packet.key_states & bit).into();
-            let key_pressed_cached: i32 = (states.key_states & bit).into();
+        for (key, bit) in KEYS_BITS.iter() {
+            let key_pressed: u16 = packet.key_states & bit;
+            let key_pressed_cached: u16 = states.key_states & bit;
             if key_pressed != key_pressed_cached {
-                let event = InputEvent::new(EventType::KEY.0, key.0, key_pressed);
+                let event = InputEvent::new(EventType::KEY.0, key.0, key_pressed.into());
                 events.push(event);
             }
         }
 
+        states.key_states = packet.key_states;
+        
         for i in 0..8 {
             let abs_state = packet.abs_states[i];
             let event = InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, abs_state);
@@ -156,7 +157,6 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
 
         let synchronization_event = InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0);
         events.push(synchronization_event);
-
 
         let mut device_locked = device.lock().await;
         let _ = device_locked.emit(events.as_slice());
@@ -200,9 +200,9 @@ async fn client(framerate: Arc<u64>) {
                                         .map(|k| k.0)
                                         .collect();
         let mut bitmask: u16 = 0;
-        for i in 0..KEYS.len() {
-            if pressed_keys.contains(&KEYS_BITS[i].0.0) {
-                bitmask ^= 1 << i;
+        for (key, bit) in KEYS_BITS.iter() {
+            if pressed_keys.contains(&key.0) {
+                bitmask |= bit;
             }
         }
 
@@ -221,6 +221,7 @@ async fn client(framerate: Arc<u64>) {
         let timestamp = get_formatted_time();
 
         let conf: Configuration = bincode::config::standard();
+        debug!("BITMASK: {}\nABS: {:?}\n TIME: {}", bitmask, abs_values, timestamp);
         let packet: Packet = Packet::new(bitmask, abs_values, timestamp);
         let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
         let _ = socket.send(bytes.as_slice()).await;
