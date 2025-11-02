@@ -37,7 +37,7 @@ pub struct Packet {
 
 #[derive(Default)]
 pub struct States {
-    key_states: Vec<u64>,
+    key_states: u16,
     abs_states: HashMap<AbsoluteAxisCode, i32>
 }
 
@@ -96,7 +96,7 @@ impl Packet {
 impl States {
     pub fn new() -> States {
         let mut states: States = Default::default();
-        states.key_states = Vec::new();
+        states.key_states = 0;
         states.abs_states = HashMap::new();
         for abs in ABS {
             states.abs_states.insert(abs, 0);
@@ -129,6 +129,7 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
     let  states: States = States::new();
     let mut buf: [u8; 512] = [0; 512];
     let mut iteration: u64 = 0;
+    let mut events: Vec<InputEvent> = Vec::new();
     loop {
         let mut packet: Packet = match get_packet(&socket, &mut buf).await {
             Some(v) => v,
@@ -136,10 +137,29 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         };
 
         let timestamp = parse_timestamp(&packet.timestamp);
+        for i in 0..KEYS_BITS.len() {
+            let key = &KEYS_BITS[i].0;
+            let bit = &KEYS_BITS[i].1;
+            let key_pressed: i32 = (packet.key_states & bit).into();
+            let key_pressed_cached: i32 = (states.key_states & bit).into();
+            if key_pressed != key_pressed_cached {
+                let event = InputEvent::new(EventType::KEY.0, key.0, key_pressed);
+                events.push(event);
+            }
+        }
+
+        for i in 0..8 {
+            let abs_state = packet.abs_states[i];
+            let event = InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, abs_state);
+            events.push(event);
+        }
+
+        let synchronization_event = InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0);
+        events.push(synchronization_event);
 
 
         let mut device_locked = device.lock().await;
-        //let _ = device_locked.emit(events.as_slice());
+        let _ = device_locked.emit(events.as_slice());
         iteration += 1;
     }
 }
@@ -179,7 +199,6 @@ async fn client(framerate: Arc<u64>) {
         let pressed_keys: Vec<u16> = key_states.iter()
                                         .map(|k| k.0)
                                         .collect();
-        let mut packet: Vec<u8> = Vec::new();
         let mut bitmask: u16 = 0;
         for i in 0..KEYS.len() {
             if pressed_keys.contains(&KEYS_BITS[i].0.0) {
