@@ -221,7 +221,6 @@ async fn client(framerate: Arc<u64>) {
         let timestamp = get_formatted_time();
 
         let conf: Configuration = bincode::config::standard();
-        debug!("BITMASK: {}\nABS: {:?}\n TIME: {}", bitmask, abs_values, timestamp);
         let packet: Packet = Packet::new(bitmask, abs_values, timestamp);
         let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
         let _ = socket.send(bytes.as_slice()).await;
