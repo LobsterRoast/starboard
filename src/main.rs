@@ -5,10 +5,10 @@ use tokio::net::UdpSocket;
 use tokio::time::*;
 use std::{fs, env};
 use std::ops::Deref;
-use std::str::from_utf8;
 use std::sync::{Arc, OnceLock};
 use std::collections::HashMap;
-use serde_json::{json, to_vec, Value};
+use bincode::config::Configuration;
+use bincode::{encode_to_vec, decode_from_slice};
 use libc::input_absinfo;
 use chrono::{DateTime, Local, FixedOffset};
 
@@ -26,6 +26,13 @@ macro_rules! debug {
             println!(concat!("[DEBUG] ", $fmt));   
         }
     };
+}
+
+#[derive(bincode::Encode, bincode::Decode, Default)]
+pub struct Packet {
+    key_states: u16,
+    abs_states: [i32; 8],
+    timestamp: String
 }
 
 #[derive(Default)]
@@ -50,6 +57,19 @@ const KEYS: [KeyCode; 10] = [
     KeyCode::BTN_SELECT
     ];
 
+const KEYS_BITS: [(KeyCode, u16); 10] = [
+    (KeyCode::BTN_NORTH,  0b0000000000000001),
+    (KeyCode::BTN_SOUTH,  0b0000000000000010),
+    (KeyCode::BTN_EAST,   0b0000000000000100),
+    (KeyCode::BTN_WEST,   0b0000000000001000),
+    (KeyCode::BTN_THUMBL, 0b0000000000010000),
+    (KeyCode::BTN_THUMBR, 0b0000000000100000),
+    (KeyCode::BTN_TR,     0b0000000001000000),
+    (KeyCode::BTN_TL,     0b0000000010000000),
+    (KeyCode::BTN_START,  0b0000000100000000),
+    (KeyCode::BTN_SELECT, 0b0000001000000000)
+    ];
+
 // Iterable constant array of all the analog values that will be used. Absolute is code for Analog in this case.
 // For some reason, the D-Pad is an analog value. ABS_HAT0(X/Y) refers to the D-Pad values.
 const ABS: [AbsoluteAxisCode; 8] = [
@@ -63,6 +83,16 @@ const ABS: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_HAT0Y
     ];
 
+impl Packet {
+    pub fn new(key_states: u16, abs_states: [i32; 8], timestamp: String) -> Packet {
+        let mut packet: Packet = Default::default();
+        packet.key_states = key_states;
+        packet.abs_states = abs_states;
+        packet.timestamp = timestamp;
+        packet
+    }
+}
+
 impl States {
     pub fn new() -> States {
         let mut states: States = Default::default();
@@ -75,86 +105,41 @@ impl States {
     }
 }
 
-
-async fn get_json_data(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Value> {
+async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Packet> {
     let size = socket.recv(buf)
                 .await
                 .unwrap();
     if size <= 0 {
         return None;
     }
-    let raw: &str = from_utf8(&buf[..size])
-                    .expect("Unable to parse received packet into a utf8 format.\n");
-    Some(serde_json::from_str(raw).expect("Unable to parse utf8 into json format.\n"))
+
+    let conf: Configuration = bincode::config::standard();
+    let packet = decode_from_slice::<Packet, Configuration>(buf, conf).expect("Unable to decode packet data.\n");
+
+    Some(packet.0)
 }
 
-fn parse_changed_keys(json: &Value) -> Vec<u64> {
-    return json["keys"]
-    .as_array()
-    .unwrap()
-    .iter()
-    .map(|k| k.as_u64().unwrap())
-    .collect();
-}
-
-fn parse_abs_values(json: &Value) -> Vec<i64> {
-    return json["abs_values"]
-    .as_array()
-    .unwrap()
-    .iter()
-    .map(|k| k.as_i64().unwrap())
-    .collect();
-}
-
-fn parse_timestamp(json: &Value) -> DateTime<FixedOffset> {
-    DateTime::parse_from_str(json["time"].as_str().unwrap(), "%Y,%m,%d,%H,%M,%S,%3f,%z").expect("Unable to get timestamp from packet")
+fn parse_timestamp(date: &str) -> DateTime<FixedOffset> {
+    DateTime::parse_from_str(date, "%Y,%m,%d,%H,%M,%S,%3f,%z").expect("Unable to get timestamp from packet.\n")
 }
 
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
 // todo: figure out why the latency is longer than the heat death of the universe
 async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
-    let mut states: States = States::new();
+    let  states: States = States::new();
     let mut buf: [u8; 512] = [0; 512];
     let mut iteration: u64 = 0;
     loop {
-        let parsed = match get_json_data(&socket, &mut buf).await {
-            Some(e) => e,
+        let mut packet: Packet = match get_packet(&socket, &mut buf).await {
+            Some(v) => v,
             None => continue
         };
-        let changed_keys: Vec<u64> = parse_changed_keys(&parsed);
-        let abs_values: Vec<i64> = parse_abs_values(&parsed);
-        let packet_time = parse_timestamp(&parsed);
-        let current_time: DateTime<Local> = Local::now();
-        let delta = current_time.signed_duration_since(packet_time).num_milliseconds();
+
+        let timestamp = parse_timestamp(&packet.timestamp);
+
+
         let mut device_locked = device.lock().await;
-        let mut events: Vec<InputEvent> = Vec::new();
-        let mut key_states = states.key_states.clone();
-        let mut queue_for_removal: Vec<u64> = Vec::new();
-        for key in changed_keys {
-            if states.key_states.contains(&key) {
-                queue_for_removal.push(key);
-                debug!("Key Release: {} Iteration: {} Latency: {}ms", key, iteration, delta);   
-                events.push(InputEvent::new(EventType::KEY.0, key as u16, 0));
-            }
-            else {
-                key_states.push(key);
-                debug!("Key Push: {} Iteration: {} Latency: {}ms", key, iteration, delta);
-            }
-        }        
-        queue_for_removal.sort();
-        queue_for_removal.reverse();
-        for key in queue_for_removal {
-            key_states.retain(|&x| x != key );
-        }
-        states.key_states = key_states;
-        for key in &states.key_states {
-                events.push(InputEvent::new(EventType::KEY.0, *key as u16, 1));
-        }
-        for i in 0..8 {
-            events.push(InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, abs_values[i].try_into().unwrap()));
-        }
-        events.push(InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0));
-        let _ = device_locked.emit(events.as_slice());
+        //let _ = device_locked.emit(events.as_slice());
         iteration += 1;
     }
 }
@@ -180,43 +165,7 @@ fn get_formatted_time() -> String {
     format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
 }
 
-fn gen_json(pressed_keys: Vec<u64>, abs_values: [(AbsoluteAxisCode, i32); 8], states: &mut States) -> Value {
-    let mut changed_keys: Vec<u64> = Vec::new();
-    if pressed_keys.len() > 0 {
-                for i in 0..pressed_keys.len() {
-                    if states.key_states.contains(&pressed_keys[i]) {
-                        break;
-                    }
-                    states.key_states.push(pressed_keys[i]);
-                    changed_keys.push(pressed_keys[i]);
-                    debug!("Key press detected on KeyCode: {}", pressed_keys[i]);
-                }
-    }
-    if states.key_states.len() > 0 {
-        let mut queue_for_removal: Vec<usize>  = Vec::new();
-        for i in 0..states.key_states.len() {
-            if pressed_keys.contains(&states.key_states[i]) {
-                break;
-            }
-            changed_keys.push(states.key_states[i]);
-            queue_for_removal.push(i);
-            debug!("Key release detected on KeyCode: {}", states.key_states[i]);
-        }
-        queue_for_removal.sort();
-        queue_for_removal.reverse();
-        for i in queue_for_removal {
-            states.key_states.remove(i);
-        }
-    }
-    let abs_values_int: Vec<i32> = abs_values.iter()
-                                .map(|i| i.1)
-                                .collect();
-    json!({"keys": changed_keys, "abs_values": abs_values_int, "time": get_formatted_time()})
-}
-
-async fn client(framerate: Arc<u64>) {
-    let mut states: States = States::new();
-    
+async fn client(framerate: Arc<u64>) {    
     // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     let _ = socket.set_broadcast(true);
@@ -226,26 +175,36 @@ async fn client(framerate: Arc<u64>) {
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
 
     loop {
-
         let key_states: AttributeSet<KeyCode> = device.get_key_state().expect("Failed to get device key states.\n");
-        let pressed_keys: Vec<u64> = key_states.iter()
-                                               .map(|k| k.0 as u64)
-                                               .collect();
+        let pressed_keys: Vec<u16> = key_states.iter()
+                                        .map(|k| k.0)
+                                        .collect();
+        let mut packet: Vec<u8> = Vec::new();
+        let mut bitmask: u16 = 0;
+        for i in 0..KEYS.len() {
+            if pressed_keys.contains(&KEYS_BITS[i].0.0) {
+                bitmask ^= 1 << i;
+            }
+        }
 
         let abs_states: [input_absinfo; 64] = device.get_abs_state().expect("Failed to get device abs states");
-        let abs_values: [(AbsoluteAxisCode, i32); 8] = [
-            (AbsoluteAxisCode::ABS_X, abs_states[0].value),
-            (AbsoluteAxisCode::ABS_Y, abs_states[1].value),
-            (AbsoluteAxisCode::ABS_Z, abs_states[2].value),
-            (AbsoluteAxisCode::ABS_RX, abs_states[3].value),
-            (AbsoluteAxisCode::ABS_RY, abs_states[4].value),
-            (AbsoluteAxisCode::ABS_RZ, abs_states[5].value),
-            (AbsoluteAxisCode::ABS_HAT0X, abs_states[16].value),
-            (AbsoluteAxisCode::ABS_HAT0Y, abs_states[17].value)
+        let abs_values: [i32; 8] = [
+            abs_states[0].value,
+            abs_states[1].value,
+            abs_states[2].value,
+            abs_states[3].value,
+            abs_states[4].value,
+            abs_states[5].value,
+            abs_states[16].value,
+            abs_states[17].value
         ];
         
-        let json = gen_json(pressed_keys, abs_values, &mut states);
-        let _ = socket.send(to_vec(&json).unwrap().as_slice()).await;
+        let timestamp = get_formatted_time();
+
+        let conf: Configuration = bincode::config::standard();
+        let packet: Packet = Packet::new(bitmask, abs_values, timestamp);
+        let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
+        let _ = socket.send(bytes.as_slice()).await;
     
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
         sleep(Duration::from_millis(1000/framerate.deref())).await;
@@ -300,8 +259,11 @@ async fn server() {
     let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
                                                     .expect("Could not build the Virtual Device.\n")));
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:9999").await.expect("Could not create a UDP Socket.\n"));
+    
     tokio::spawn(udp_handling(device.clone(), socket.clone()));
-    loop {}
+    loop {
+        sleep(Duration::from_secs(100)).await;
+    }
 }
 
 #[tokio::main]
