@@ -112,11 +112,13 @@ async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Pack
     if size <= 0 {
         return None;
     }
-
     let conf: Configuration = bincode::config::standard();
-    let packet = decode_from_slice::<Packet, Configuration>(buf, conf).expect("Unable to decode packet data.\n");
+    let packet = decode_from_slice::<Packet, Configuration>(buf, conf);
+    return match packet {
+        Ok(v) => Some(v.0),
+        Err(e) => None
+    }
 
-    Some(packet.0)
 }
 
 fn parse_timestamp(date: &str) -> DateTime<FixedOffset> {
@@ -224,6 +226,7 @@ async fn client(framerate: Arc<u64>) {
         let conf: Configuration = bincode::config::standard();
         let packet: Packet = Packet::new(bitmask, abs_values, timestamp);
         let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
+        let _ = socket.send(bytes.as_slice()).await;
         let _ = socket.send(bytes.as_slice()).await;
     
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
