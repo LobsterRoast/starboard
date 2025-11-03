@@ -177,6 +177,14 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
     }
 }
 
+fn get_ip(default: String, ip: Arc<String>) -> String {
+    if *ip == "0".to_string() {
+        return "0.0.0.0".to_string();
+    }
+    else {
+        return default;
+    }
+}
 fn get_steam_deck_device() -> Result<Device, &'static str> {
     let dir = fs::read_dir("/dev/input/").expect("/dev/input does not exist.\n");
     for event in dir {
@@ -198,12 +206,16 @@ fn get_formatted_time() -> String {
     format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
 }
 
-async fn client(framerate: Arc<u64>) {    
+async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {    
     // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     let _ = socket.set_broadcast(true);
-    // Broadcast to all devices on port 9999. The port will be changeable at some point once the latency issue is fixed.
-    socket.connect("255.255.255.255:9999").await.expect("Could not connect to the local network.\n");
+
+    let connect_ip = get_ip("255.255.255.255".to_string(), ip);
+    let address = format!("{}:{}", connect_ip, port);
+
+    // Broadcast to all devices on the given port.
+    socket.connect(address).await.expect("Could not connect to the local network.\n");
 
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
 
@@ -244,7 +256,7 @@ async fn client(framerate: Arc<u64>) {
     }
 }
 
-async fn server() {
+async fn server(ip: Arc<String>, port: Arc<u16>) {
     let input_id: InputId = InputId::new(BusType::BUS_VIRTUAL, 0, 0, 0);
     
     // This is all the info needed to initialize the joysticks and analog trigger inputs
@@ -291,7 +303,9 @@ async fn server() {
             .expect("Could not enable the gamepad buttons.");
     let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
                                                     .expect("Could not build the Virtual Device.\n")));
-    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:9999").await.expect("Could not create a UDP Socket.\n"));
+    let bind_ip = get_ip("0.0.0.0".to_string(), ip);
+    let bind_address = format!("{}:{}", bind_ip, port);
+    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind(bind_address).await.expect("Could not create a UDP Socket.\n"));
     
     tokio::spawn(udp_handling(device.clone(), socket.clone()));
     loop {
@@ -303,6 +317,7 @@ async fn server() {
 async fn main() {
     let mut framerate: Arc<u64> = Arc::new(60);  // Default framerate to 60
     let mut ip: Arc<String> = Arc::new("0".to_string());
+    let mut port: Arc<u16> = Arc::new(8080);
     let mut is_client = false;
     let mut is_server = false;
     let mut is_debug = false;
@@ -313,28 +328,47 @@ async fn main() {
     // --debug              --- Opens starboard in debug mode, which prints extra information to the console
     // --fps=[framerate]    --- Syncs input polling to the specified framerate
     // --ip=[ipv4 address]  --- custom ipv4; default is the local network
+    // --port=[port]        --- custom port; default is 8080
 
     for arg in env::args() {
         let arg = arg.as_str();
+
         if !arg.starts_with("--") {
             continue;
         }
+
         match arg {
             "--client" => is_client = !is_server,
             "--server" => is_server = !is_client,
             "--debug"  => is_debug = true,
             _          => println!("Didn't recognize argument '{}'", arg)
         }
+
         if arg.starts_with("--fps=") {
             framerate = Arc::new(arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n"));
         }
+
         if arg.starts_with("--ip=") {
+
             ip = Arc::new(arg.strip_prefix("--ip=").unwrap().to_string());
             let quartets = ip.split('.');
+            
+            // ip must be in valid ipv4 format (i.e. 255.255.255.255)
+            assert_eq!(quartets.clone().count(), 4, "ip must be in 4 quarters (i.e. 255.255.255.255).");
+            
             for quartet in quartets {
-                let quartet_byte = quartet.parse::<u8>().expect("Unable to parse ip quarter into unsigned 8-bit integer.\n");
+                let quartet_byte = quartet
+                                    .parse::<u8>()
+                                    .expect("Unable to parse ip quarter into unsigned 8-bit integer.\n");
                 assert!(quartet_byte < 255, "Invalid ip address.");
             }
+        }
+
+        if arg.starts_with("--port=") {
+            port = Arc::new(arg.strip_prefix("--port=")
+                            .unwrap()
+                            .parse::<u16>()
+                            .expect("Unable to parse ip into unsigned 16-bit integer.\n"));
         }
     }
 
@@ -345,11 +379,11 @@ async fn main() {
 
     if is_client {
         println!("Starting starboard in client mode.");
-        client(framerate.clone()).await;
+        client(framerate.clone(), ip.clone(), port.clone()).await;
     }
 
     else if is_server {
         println!("Starting starboard in server mode.");
-        server().await;
+        server(ip.clone(), port.clone()).await;
     }
 }
