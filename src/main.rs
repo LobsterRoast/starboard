@@ -121,8 +121,15 @@ async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Pack
 
 }
 
-fn parse_timestamp(date: &str) -> DateTime<FixedOffset> {
-    DateTime::parse_from_str(date, "%Y,%m,%d,%H,%M,%S,%3f,%z").expect("Unable to get timestamp from packet.\n")
+fn parse_timestamp(date: &str) -> Option<DateTime<FixedOffset>> {
+    let timestamp = DateTime::parse_from_str(date, "%Y,%m,%d,%H,%M,%S,%3f,%z");
+    return match timestamp {
+        Ok(v) => Some(v),
+        Err(e) => {
+            println!("Unable to decode timestamp.");
+            None
+        }
+    }
 }
 
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
@@ -139,7 +146,10 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         
         let mut events: Vec<InputEvent> = Vec::new();
         
-        let timestamp = parse_timestamp(&packet.timestamp);
+        if *DEBUG_MODE.get().unwrap() {
+            let timestamp = parse_timestamp(&packet.timestamp);
+        }
+        
         for (key, key_bit) in KEYS_BITS.iter() {
             let key_pressed: u16 = packet.key_states & key_bit;
             let key_pressed_cached: u16 = states.key_states & key_bit;
@@ -292,6 +302,7 @@ async fn server() {
 #[tokio::main]
 async fn main() {
     let mut framerate: Arc<u64> = Arc::new(60);  // Default framerate to 60
+    let mut ip: Arc<String> = Arc::new("0".to_string());
     let mut is_client = false;
     let mut is_server = false;
     let mut is_debug = false;
@@ -301,6 +312,7 @@ async fn main() {
     // --server             --- Opens starboard in server (PC) mode
     // --debug              --- Opens starboard in debug mode, which prints extra information to the console
     // --fps=[framerate]    --- Syncs input polling to the specified framerate
+    // --ip=[ipv4 address]  --- custom ipv4; default is the local network
 
     for arg in env::args() {
         let arg = arg.as_str();
@@ -315,6 +327,14 @@ async fn main() {
         }
         if arg.starts_with("--fps=") {
             framerate = Arc::new(arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n"));
+        }
+        if arg.starts_with("--ip=") {
+            ip = Arc::new(arg.strip_prefix("--ip=").unwrap().to_string());
+            let quartets = ip.split('.');
+            for quartet in quartets {
+                let quartet_byte = quartet.parse::<u8>().expect("Unable to parse ip quarter into unsigned 8-bit integer.\n");
+                assert!(quartet_byte < 255, "Invalid ip address.");
+            }
         }
     }
 
