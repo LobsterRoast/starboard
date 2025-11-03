@@ -59,8 +59,8 @@ const KEYS: [KeyCode; 10] = [
 
 const KEYS_BITS: [(KeyCode, u16); 10] = [
     (KeyCode::BTN_NORTH,  0b0000000000000001),
-    (KeyCode::BTN_SOUTH,  0b0000000000000010),
-    (KeyCode::BTN_EAST,   0b0000000000000100),
+    (KeyCode::BTN_SOUTH,  0b0000000000000100),
+    (KeyCode::BTN_EAST,   0b0000000000000010),
     (KeyCode::BTN_WEST,   0b0000000000001000),
     (KeyCode::BTN_THUMBL, 0b0000000000010000),
     (KeyCode::BTN_THUMBR, 0b0000000000100000),
@@ -130,7 +130,7 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
     let mut buf: [u8; 512] = [0; 512];
     let mut iteration: u64 = 0;
     loop {
-        let mut packet: Packet = match get_packet(&socket, &mut buf).await {
+        let packet: Packet = match get_packet(&socket, &mut buf).await {
             Some(v) => v,
             None => continue
         };
