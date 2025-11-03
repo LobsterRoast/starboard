@@ -59,8 +59,8 @@ const KEYS: [KeyCode; 10] = [
 
 const KEYS_BITS: [(KeyCode, u16); 10] = [
     (KeyCode::BTN_NORTH,  0b0000000000000001),
-    (KeyCode::BTN_SOUTH,  0b0000000000000100),
-    (KeyCode::BTN_EAST,   0b0000000000000010),
+    (KeyCode::BTN_SOUTH,  0b0000000000000010),
+    (KeyCode::BTN_EAST,   0b0000000000000100),
     (KeyCode::BTN_WEST,   0b0000000000001000),
     (KeyCode::BTN_THUMBL, 0b0000000000010000),
     (KeyCode::BTN_THUMBR, 0b0000000000100000),
@@ -142,11 +142,8 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
             let key_pressed: u16 = packet.key_states & key_bit;
             let key_pressed_cached: u16 = states.key_states & key_bit;
             if key_pressed != key_pressed_cached {
-                let key_pressed: i32 = key_pressed.into();
-                if key_bit == &2 {
-                    debug!("Key Pressed: {}", key_pressed);
-                }
-                let event = InputEvent::new(EventType::KEY.0, key.0, key_pressed.into());
+                let event_value = (key_pressed != 0) as i32;
+                let event = InputEvent::new(EventType::KEY.0, key.0, event_value);
                 events.push(event);
             }
         }
