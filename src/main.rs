@@ -138,15 +138,19 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         let mut events: Vec<InputEvent> = Vec::new();
         
         let timestamp = parse_timestamp(&packet.timestamp);
-        for (key, bit) in KEYS_BITS.iter() {
-            let key_pressed: u16 = packet.key_states & bit;
-            let key_pressed_cached: u16 = states.key_states & bit;
+        for (key, key_bit) in KEYS_BITS.iter() {
+            let key_pressed: u16 = packet.key_states & key_bit;
+            let key_pressed_cached: u16 = states.key_states & key_bit;
             if key_pressed != key_pressed_cached {
+                let key_pressed: i32 = key_pressed.into();
+                if key_bit == &2 {
+                    debug!("Key Pressed: {}", key_pressed);
+                }
                 let event = InputEvent::new(EventType::KEY.0, key.0, key_pressed.into());
                 events.push(event);
             }
         }
-
+        
         states.key_states = packet.key_states;
         
         for i in 0..8 {
