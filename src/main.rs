@@ -234,6 +234,16 @@ fn get_ip(default: String, ip: Arc<String>) -> String {
     }
 }
 
+fn get_controller_message(controller: &GameController) -> String {
+    let name = controller.name();
+    let mapping = controller.mapping();
+    return format!("
+    Controller found:\n
+        Name: {}\n
+        Mapping: {}\n"
+    , name, mapping);
+}
+
 fn get_contoller(controller_subsystem: GameControllerSubsystem) -> Result<GameController, &'static str> {
     let joystick_count = controller_subsystem.num_joysticks().expect("Unable to count controllers.\n");
     if joystick_count < 1 {
@@ -243,7 +253,10 @@ fn get_contoller(controller_subsystem: GameControllerSubsystem) -> Result<GameCo
     for i in 0..joystick_count {
         if controller_subsystem.is_game_controller(i) {
             return Ok(match controller_subsystem.open(i) {
-                Ok(v) => v,
+                Ok(v) => {
+                    debug!("{}", get_controller_message(&v));
+                    v
+                },
                 Err(e) => panic!("{}", e)
             })
         }
@@ -268,22 +281,6 @@ fn get_dpad_value(a: bool, b: bool) -> i32 {
     }
 
     return -1;  // b is activated but not a
-}
-
-fn get_steam_deck_device() -> Result<Device, &'static str> {
-    let dir = fs::read_dir("/dev/input/").expect("/dev/input does not exist.\n");
-    for event in dir {
-        let path_buf = event.unwrap().path();
-        let path = path_buf.to_str().unwrap();
-        if !path.starts_with("/dev/input/event") {
-            continue;
-        }
-        let device = Device::open(&path).expect(&format!("Failed to open device at {}\n", path));
-        if device.name().unwrap() == "Microsoft X-Box 360 pad 0" {
-            return Ok(device);
-        }
-    }
-    Err("Could not access the Steam Deck's input system.")
 }
 
 fn get_formatted_time() -> String {
