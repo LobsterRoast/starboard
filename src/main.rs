@@ -297,6 +297,8 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
 
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
     let controller_subsystem = sdl_context.game_controller().expect("Unable to enable SDL Game Controller Subsystem.\n");
+    controller_subsystem.set_event_state(true);
+    
     let controller = match get_contoller(controller_subsystem) {
         Ok(v) => v,
         Err(e) => panic!("{}", e)
