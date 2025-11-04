@@ -237,7 +237,7 @@ fn get_ip(default: String, ip: Arc<String>) -> String {
 fn get_controller_message(controller: &GameController) -> String {
     let name = controller.name();
     let mapping = controller.mapping();
-    return format!("Controller found:\n Name: {}\n  Mapping: {}\n", name, mapping);
+    return format!("Controller found:\nName: {}\nMapping: {}\n", name, mapping);
 }
 
 fn get_contoller(controller_subsystem: GameControllerSubsystem) -> Result<GameController, &'static str> {
