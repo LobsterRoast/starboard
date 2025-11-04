@@ -11,7 +11,7 @@ use bincode::config::Configuration;
 use bincode::{encode_to_vec, decode_from_slice};
 use libc::input_absinfo;
 use chrono::{DateTime, Local, FixedOffset};
-use sdl2::controller::{GameController, Button};
+use sdl2::controller::{GameController, Button, Axis};
 use sdl2::{Sdl, GameControllerSubsystem};
 
 static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
@@ -100,6 +100,15 @@ const BIN_KEYS: [u16; 14] = [
 
 // Iterable constant array of all the analog values that will be used. Absolute is code for Analog in this case.
 // For some reason, the D-Pad is an analog value. ABS_HAT0(X/Y) refers to the D-Pad values.
+const SDL_AXES: [Axis; 6] = [
+    Axis::LeftX,
+    Axis::LeftY,
+    Axis::TriggerLeft,
+    Axis::RightX,
+    Axis::RightY,
+    Axis::TriggerRight
+];
+
 const ABS: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_X,
     AbsoluteAxisCode::ABS_Y,
@@ -109,7 +118,7 @@ const ABS: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_RZ,
     AbsoluteAxisCode::ABS_HAT0X,
     AbsoluteAxisCode::ABS_HAT0Y
-    ];
+];
 
 impl Packet {
     pub fn new(key_states: u16, abs_states: [i32; 8], timestamp: String) -> Packet {
@@ -243,6 +252,24 @@ fn get_contoller(controller_subsystem: GameControllerSubsystem) -> Result<GameCo
     Err("No valid controllers found to connect to.")
 }
 
+// uinput treats the Steam Deck as an analog input. SDL treats it as a binary one.
+// This function takes 2 binary inputs and outputs a signed integer to represent them.
+fn get_dpad_value(a: bool, b: bool) -> i32 {
+    if a & b {
+        return 0;  // both are activated
+    }
+
+    if !(a | b) {
+        return 0;  // neither are activated
+    }
+
+    if a {
+        return 1;  // a is activated but not b
+    }
+
+    return -1;  // b is activated but not a
+}
+
 fn get_steam_deck_device() -> Result<Device, &'static str> {
     let dir = fs::read_dir("/dev/input/").expect("/dev/input does not exist.\n");
     for event in dir {
@@ -282,8 +309,6 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
         Err(e) => panic!("{}", e)
     };
 
-    let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
-
     loop {
         let mut pressed_keys: Vec<Button> = Vec::new();
         for key in SDL_KEYS {
@@ -299,22 +324,22 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
             }
         }
 
-        let abs_states: [input_absinfo; 64] = device.get_abs_state().expect("Failed to get device abs states");
-        let abs_values: [i32; 8] = [
-            abs_states[0].value,
-            abs_states[1].value,
-            abs_states[2].value,
-            abs_states[3].value,
-            abs_states[4].value,
-            abs_states[5].value,
-            abs_states[16].value,
-            abs_states[17].value
-        ];
-        
+        let mut axis_values: [i32; 8] = [0; 8];
+        for i in 0..6 {
+            axis_values[i] = controller.axis(SDL_AXES[i]) as i32;
+        }
+
+        // dpad treated as a binary input by SDL, so this converts it to analog
+        axis_values[6] = get_dpad_value(controller.button(Button::DPadRight), 
+                                        controller.button(Button::DPadLeft));
+        axis_values[7] = get_dpad_value(controller.button(Button::DPadUp), 
+                                        controller.button(Button::DPadDown));
+
+
         let timestamp = get_formatted_time();
 
         let conf: Configuration = bincode::config::standard();
-        let packet: Packet = Packet::new(bitmask, abs_values, timestamp);
+        let packet: Packet = Packet::new(bitmask, axis_values, timestamp);
         let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
         let _ = socket.send(bytes.as_slice()).await;
         let _ = socket.send(bytes.as_slice()).await;
