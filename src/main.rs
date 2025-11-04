@@ -317,6 +317,7 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
         let mut bitmask: u16 = 0;
         for i in 0..14 {
             if pressed_keys.contains(&SDL_KEYS[i]) {
+                debug!("Button pressed: {:?}", &SDL_KEYS[i]);
                 bitmask |= BIN_KEYS[i];
             }
         }
