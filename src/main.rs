@@ -296,6 +296,8 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     socket.connect(address).await.expect("Could not connect to the local network.\n");
 
     sdl2::hint::set("SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1");
+    sdl2::hint::set("SDL_HINT_NO_SIGNAL_HANDLERS", "1");
+
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
     let controller_subsystem = sdl_context.game_controller().expect("Unable to enable SDL Game Controller Subsystem.\n");
     controller_subsystem.set_event_state(true);
