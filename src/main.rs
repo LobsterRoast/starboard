@@ -11,6 +11,8 @@ use bincode::config::Configuration;
 use bincode::{encode_to_vec, decode_from_slice};
 use libc::input_absinfo;
 use chrono::{DateTime, Local, FixedOffset};
+use sdl2::controller::{GameController, Button};
+use sdl2::{Sdl, GameControllerSubsystem};
 
 static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
@@ -41,34 +43,60 @@ pub struct States {
     abs_states: HashMap<AbsoluteAxisCode, i32>
 }
 
-// Iterable constant list of all the keys that will be used.
-// Note: North/South/East/West are equivalent to Up/Down/Right/Left.
-// Note: For some reason, Valve did expose the back buttons on the Steam Deck to uinput. Idk if I'll add support for those.
-const KEYS: [KeyCode; 10] = [
+// The client side cannot use evdev to get controller inputs
+// This is because evdev cannot read the triggers on the back of the Steam Deck
+// Also, for whatever reason, the evdev device for the Steam Deck only seems to work
+// with some sort of Steam game open.
+const SDL_KEYS: [Button; 14] = [
+    Button::Y,
+    Button::A,
+    Button::B,
+    Button::X,
+    Button::LeftStick,
+    Button::RightStick,
+    Button::LeftShoulder,
+    Button::RightShoulder,
+    Button::Start,
+    Button::Guide,
+    Button::Paddle1,
+    Button::Paddle2,
+    Button::Paddle3,
+    Button::Paddle4
+];
+
+const EVDEV_KEYS: [KeyCode; 14] = [
     KeyCode::BTN_NORTH,
     KeyCode::BTN_SOUTH,
     KeyCode::BTN_EAST,
     KeyCode::BTN_WEST,
     KeyCode::BTN_THUMBL,
     KeyCode::BTN_THUMBR,
-    KeyCode::BTN_TR,
     KeyCode::BTN_TL,
+    KeyCode::BTN_TR,
     KeyCode::BTN_START,
-    KeyCode::BTN_SELECT
-    ];
+    KeyCode::BTN_SELECT,
+    KeyCode::BTN_TRIGGER_HAPPY1,
+    KeyCode::BTN_TRIGGER_HAPPY2,
+    KeyCode::BTN_TRIGGER_HAPPY3,
+    KeyCode::BTN_TRIGGER_HAPPY4
+];
 
-const KEYS_BITS: [(KeyCode, u16); 10] = [
-    (KeyCode::BTN_NORTH,  0b0000000000000001),
-    (KeyCode::BTN_SOUTH,  0b0000000000000010),
-    (KeyCode::BTN_EAST,   0b0000000000000100),
-    (KeyCode::BTN_WEST,   0b0000000000001000),
-    (KeyCode::BTN_THUMBL, 0b0000000000010000),
-    (KeyCode::BTN_THUMBR, 0b0000000000100000),
-    (KeyCode::BTN_TR,     0b0000000001000000),
-    (KeyCode::BTN_TL,     0b0000000010000000),
-    (KeyCode::BTN_START,  0b0000000100000000),
-    (KeyCode::BTN_SELECT, 0b0000001000000000)
-    ];
+const BIN_KEYS: [u16; 14] = [
+    0b0000000000000001,
+    0b0000000000000010,
+    0b0000000000000100,
+    0b0000000000001000,
+    0b0000000000010000,
+    0b0000000000100000,
+    0b0000000001000000,
+    0b0000000010000000,
+    0b0000000100000000,
+    0b0000001000000000,
+    0b0000010000000000,
+    0b0000100000000000,
+    0b0001000000000000,
+    0b0010000000000000
+];
 
 // Iterable constant array of all the analog values that will be used. Absolute is code for Analog in this case.
 // For some reason, the D-Pad is an analog value. ABS_HAT0(X/Y) refers to the D-Pad values.
@@ -133,7 +161,6 @@ fn parse_timestamp(date: &str) -> Option<DateTime<FixedOffset>> {
 }
 
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
-// todo: figure out why the latency is longer than the heat death of the universe
 async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
     let mut states: States = States::new();
     let mut buf: [u8; 512] = [0; 512];
@@ -147,15 +174,27 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         let mut events: Vec<InputEvent> = Vec::new();
         
         if *DEBUG_MODE.get().unwrap() {
-            let timestamp = parse_timestamp(&packet.timestamp);
+            let timestamp = match parse_timestamp(&packet.timestamp) {
+                Some(packet_time) => {
+                    let current_time = Local::now();
+                    let time_delta = current_time.signed_duration_since(packet_time)
+                                                    .num_milliseconds();
+                    debug!("Packet received with a latency of {}ms.", time_delta);
+                },
+                None => {
+                    debug!("Could not parse a received timestamp.")
+                }
+            };
         }
         
-        for (key, key_bit) in KEYS_BITS.iter() {
+        for i in 0..14 {
+            let key_bit = BIN_KEYS[i];
+            let key_evdev = EVDEV_KEYS[i];
             let key_pressed: u16 = packet.key_states & key_bit;
             let key_pressed_cached: u16 = states.key_states & key_bit;
             if key_pressed != key_pressed_cached {
                 let event_value = (key_pressed != 0) as i32;
-                let event = InputEvent::new(EventType::KEY.0, key.0, event_value);
+                let event = InputEvent::new(EventType::KEY.0, key_evdev.0, event_value);
                 events.push(event);
             }
         }
@@ -185,6 +224,25 @@ fn get_ip(default: String, ip: Arc<String>) -> String {
         return default;
     }
 }
+
+fn get_contoller(controller_subsystem: GameControllerSubsystem) -> Result<GameController, &'static str> {
+    let joystick_count = controller_subsystem.num_joysticks().expect("Unable to count controllers.\n");
+    if joystick_count < 1 {
+        return Err("No controllers found to connect to.");
+    }
+
+    for i in 0..joystick_count {
+        if controller_subsystem.is_game_controller(i) {
+            return Ok(match controller_subsystem.open(i) {
+                Ok(v) => v,
+                Err(e) => panic!("{}", e)
+            })
+        }
+    }
+    
+    Err("No valid controllers found to connect to.")
+}
+
 fn get_steam_deck_device() -> Result<Device, &'static str> {
     let dir = fs::read_dir("/dev/input/").expect("/dev/input does not exist.\n");
     for event in dir {
@@ -217,17 +275,27 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     // Broadcast to all devices on the given port.
     socket.connect(address).await.expect("Could not connect to the local network.\n");
 
+    let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
+    let controller_subsystem = sdl_context.game_controller().expect("Unable to enable SDL Game Controller Subsystem.\n");
+    let controller = match get_contoller(controller_subsystem) {
+        Ok(v) => v,
+        Err(e) => panic!("{}", e)
+    };
+
     let device: Device = get_steam_deck_device().expect("Could not access the Steam Deck's input system.");
 
     loop {
-        let key_states: AttributeSet<KeyCode> = device.get_key_state().expect("Failed to get device key states.\n");
-        let pressed_keys: Vec<u16> = key_states.iter()
-                                        .map(|k| k.0)
-                                        .collect();
+        let mut pressed_keys: Vec<Button> = Vec::new();
+        for key in SDL_KEYS {
+            if controller.button(key) {
+                pressed_keys.push(key);
+            }
+        }
+
         let mut bitmask: u16 = 0;
-        for (key, bit) in KEYS_BITS.iter() {
-            if pressed_keys.contains(&key.0) {
-                bitmask |= bit;
+        for i in 0..14 {
+            if pressed_keys.contains(&SDL_KEYS[i]) {
+                bitmask |= BIN_KEYS[i];
             }
         }
 
@@ -299,7 +367,7 @@ async fn server(ip: Arc<String>, port: Arc<u16>) {
             .expect("Could not enable the x axis on the D-pad\n")           
             .with_absolute_axis(&dpad_y_axis_setup)
             .expect("Could not enable the y axis on the D-pad\n")
-            .with_keys(&AttributeSet::from_iter(KEYS))
+            .with_keys(&AttributeSet::from_iter(EVDEV_KEYS))
             .expect("Could not enable the gamepad buttons.");
     let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
                                                     .expect("Could not build the Virtual Device.\n")));
