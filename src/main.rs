@@ -185,6 +185,25 @@ fn get_ip(default: String, ip: Arc<String>) -> String {
         return default;
     }
 }
+
+fn get_contoller(controller_subsystem: GameControllerSubsystem) -> Result<GameController, &'static str> {
+    let joystick_count = controller_subsystem.num_joysticks().expect("Unable to count controllers.\n");
+    if joystick_count < 1 {
+        return Err("No controllers found to connect to.");
+    }
+
+    for i in 0..joystick_count {
+        if controller_subsystem.is_game_controller(i) {
+            return Ok(match controller_subsystem.open(i) {
+                Ok(v) => v,
+                Err(e) => panic!("{}", e)
+            })
+        }
+    }
+    
+    Err("No valid controllers found to connect to.")
+}
+
 fn get_steam_deck_device() -> Result<Device, &'static str> {
     let dir = fs::read_dir("/dev/input/").expect("/dev/input does not exist.\n");
     for event in dir {
