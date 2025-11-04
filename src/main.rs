@@ -295,10 +295,15 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     // Broadcast to all devices on the given port.
     socket.connect(address).await.expect("Could not connect to the local network.\n");
 
+    std::env::set_var("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1");
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
     let controller_subsystem = sdl_context.game_controller().expect("Unable to enable SDL Game Controller Subsystem.\n");
     controller_subsystem.set_event_state(true);
+    sdl_context.joystick()
+        .expect("Could not get joystick subsystem.\n")
+        .set_event_state(true);
     
+
     let controller = match get_contoller(controller_subsystem) {
         Ok(v) => v,
         Err(e) => panic!("{}", e)
