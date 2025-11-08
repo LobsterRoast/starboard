@@ -12,7 +12,9 @@ use bincode::{encode_to_vec, decode_from_slice};
 use libc::input_absinfo;
 use chrono::{DateTime, Local, FixedOffset};
 use sdl2::controller::{GameController, Button, Axis};
-use sdl2::{Sdl, GameControllerSubsystem};
+use sdl2::event::EventType as SdlEventType;
+use sdl2::event::Event as SdlEvent;
+use sdl2::{Sdl, GameControllerSubsystem}; 
 
 static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
@@ -153,7 +155,7 @@ async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Pack
     let packet = decode_from_slice::<Packet, Configuration>(buf, conf);
     return match packet {
         Ok(v) => Some(v.0),
-        Err(e) => None
+        Err(_e) => None
     }
 
 }
@@ -162,7 +164,7 @@ fn parse_timestamp(date: &str) -> Option<DateTime<FixedOffset>> {
     let timestamp = DateTime::parse_from_str(date, "%Y,%m,%d,%H,%M,%S,%3f,%z");
     return match timestamp {
         Ok(v) => Some(v),
-        Err(e) => {
+        Err(_e) => {
             println!("Unable to decode timestamp.");
             None
         }
@@ -298,16 +300,14 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
 
-    sdl2::hint::set("SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1");
     sdl2::hint::set("SDL_HINT_NO_SIGNAL_HANDLERS", "1");
-    debug!("{}", sdl2::hint::get("SDL_HINT_NO_SIGNAL_HANDLERS").unwrap());
     
     let controller_subsystem = sdl_context.game_controller().expect("Unable to enable SDL Game Controller Subsystem.\n");
-    controller_subsystem.set_event_state(true);
     sdl_context.joystick()
         .expect("Could not get joystick subsystem.\n")
         .set_event_state(true);
     
+    let mut sdl_event_pump = sdl_context.event_pump().expect("Unable to generate event pump.");
 
     let controller = match get_contoller(controller_subsystem) {
         Ok(v) => v,
@@ -315,6 +315,14 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     };
 
     loop {
+        for event in sdl_event_pump.poll_iter() {
+            match event {
+                SdlEvent::ControllerButtonUp {..} => {debug!("Button press")},
+                SdlEvent::ControllerButtonDown {..} => {debug!("Button release")},
+                SdlEvent::ControllerAxisMotion {..} => {debug!("Axis Motion")},
+                _ => {}
+            }
+        }
         let mut pressed_keys: Vec<Button> = Vec::new();
         for key in SDL_KEYS {
             if controller.button(key) {
