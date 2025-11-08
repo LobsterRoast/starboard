@@ -1,3 +1,6 @@
+mod client;
+mod server;
+mod util;
 
 use evdev::uinput::*;
 use evdev::*;
@@ -25,229 +28,12 @@ use sdl2::{Sdl, GameControllerSubsystem};
 
 use gtk4 as gtk;
 use gtk::prelude::*;
-use gtk::{glib, Application, ApplicationWindow};
+use gtk::*;
 
 use rdev::display_size;
 
-static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
-
-// This macro is essentially just a version of println! that will only run if DEBUG_MODE is True.
-macro_rules! debug {
-    ($fmt:expr, $($args:tt)*) => {
-        if *DEBUG_MODE.get().unwrap() {
-            println!(concat!("[DEBUG] ", $fmt), $($args)*);
-        }
-    };
-    ($fmt:expr) => {
-        if *DEBUG_MODE.get().unwrap() {
-            println!(concat!("[DEBUG] ", $fmt));   
-        }
-    };
-}
-
-#[derive(bincode::Encode, bincode::Decode, Default)]
-pub struct Packet {
-    key_states: u16,
-    abs_states: [i32; 8],
-    timestamp: String
-}
-
-#[derive(Default)]
-pub struct States {
-    key_states: u16,
-    abs_states: HashMap<AbsoluteAxisCode, i32>
-}
-
-// The client side cannot use evdev to get controller inputs
-// This is because evdev cannot read the triggers on the back of the Steam Deck
-// Also, for whatever reason, the evdev device for the Steam Deck only seems to work
-// with some sort of Steam game open.
-const SDL_KEYS: [Button; 14] = [
-    Button::Y,
-    Button::A,
-    Button::B,
-    Button::X,
-    Button::LeftStick,
-    Button::RightStick,
-    Button::LeftShoulder,
-    Button::RightShoulder,
-    Button::Start,
-    Button::Guide,
-    Button::Paddle1,
-    Button::Paddle2,
-    Button::Paddle3,
-    Button::Paddle4
-];
-
-const EVDEV_KEYS: [KeyCode; 14] = [
-    KeyCode::BTN_NORTH,
-    KeyCode::BTN_SOUTH,
-    KeyCode::BTN_EAST,
-    KeyCode::BTN_WEST,
-    KeyCode::BTN_THUMBL,
-    KeyCode::BTN_THUMBR,
-    KeyCode::BTN_TL,
-    KeyCode::BTN_TR,
-    KeyCode::BTN_START,
-    KeyCode::BTN_SELECT,
-    KeyCode::BTN_TRIGGER_HAPPY1,
-    KeyCode::BTN_TRIGGER_HAPPY2,
-    KeyCode::BTN_TRIGGER_HAPPY3,
-    KeyCode::BTN_TRIGGER_HAPPY4
-];
-
-const BIN_KEYS: [u16; 14] = [
-    0b0000000000000001,
-    0b0000000000000010,
-    0b0000000000000100,
-    0b0000000000001000,
-    0b0000000000010000,
-    0b0000000000100000,
-    0b0000000001000000,
-    0b0000000010000000,
-    0b0000000100000000,
-    0b0000001000000000,
-    0b0000010000000000,
-    0b0000100000000000,
-    0b0001000000000000,
-    0b0010000000000000
-];
-
-// Iterable constant array of all the analog values that will be used. Absolute is code for Analog in this case.
-// For some reason, the D-Pad is an analog value. ABS_HAT0(X/Y) refers to the D-Pad values.
-const SDL_AXES: [Axis; 6] = [
-    Axis::LeftX,
-    Axis::LeftY,
-    Axis::TriggerLeft,
-    Axis::RightX,
-    Axis::RightY,
-    Axis::TriggerRight
-];
-
-const ABS: [AbsoluteAxisCode; 8] = [
-    AbsoluteAxisCode::ABS_X,
-    AbsoluteAxisCode::ABS_Y,
-    AbsoluteAxisCode::ABS_Z,
-    AbsoluteAxisCode::ABS_RX,
-    AbsoluteAxisCode::ABS_RY,
-    AbsoluteAxisCode::ABS_RZ,
-    AbsoluteAxisCode::ABS_HAT0X,
-    AbsoluteAxisCode::ABS_HAT0Y
-];
-
-impl Packet {
-    pub fn new(key_states: u16, abs_states: [i32; 8], timestamp: String) -> Packet {
-        let mut packet: Packet = Default::default();
-        packet.key_states = key_states;
-        packet.abs_states = abs_states;
-        packet.timestamp = timestamp;
-        packet
-    }
-}
-
-impl States {
-    pub fn new() -> States {
-        let mut states: States = Default::default();
-        states.key_states = 0;
-        states.abs_states = HashMap::new();
-        for abs in ABS {
-            states.abs_states.insert(abs, 0);
-        }
-        states
-    }
-}
-
-async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Packet> {
-    let size = socket.recv(buf)
-                .await
-                .unwrap();
-    if size <= 0 {
-        return None;
-    }
-    let conf: Configuration = bincode::config::standard();
-    let packet = decode_from_slice::<Packet, Configuration>(buf, conf);
-    return match packet {
-        Ok(v) => Some(v.0),
-        Err(_e) => None
-    }
-
-}
-
-fn parse_timestamp(date: &str) -> Option<DateTime<FixedOffset>> {
-    let timestamp = DateTime::parse_from_str(date, "%Y,%m,%d,%H,%M,%S,%3f,%z");
-    return match timestamp {
-        Ok(v) => Some(v),
-        Err(_e) => {
-            println!("Unable to decode timestamp.");
-            None
-        }
-    }
-}
-
-// This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
-async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
-    let mut states: States = States::new();
-    let mut buf: [u8; 512] = [0; 512];
-    let mut iteration: u64 = 0;
-    loop {
-        let packet: Packet = match get_packet(&socket, &mut buf).await {
-            Some(v) => v,
-            None => continue
-        };
-        
-        let mut events: Vec<InputEvent> = Vec::new();
-        
-        if *DEBUG_MODE.get().unwrap() {
-            let timestamp = match parse_timestamp(&packet.timestamp) {
-                Some(packet_time) => {
-                    let current_time = Local::now();
-                    let time_delta = current_time.signed_duration_since(packet_time)
-                                                    .num_milliseconds();
-                    debug!("Packet received with a latency of {}ms.", time_delta);
-                },
-                None => {
-                    debug!("Could not parse a received timestamp.")
-                }
-            };
-        }
-        
-        for i in 0..14 {
-            let key_bit = BIN_KEYS[i];
-            let key_evdev = EVDEV_KEYS[i];
-            let key_pressed: u16 = packet.key_states & key_bit;
-            let key_pressed_cached: u16 = states.key_states & key_bit;
-            if key_pressed != key_pressed_cached {
-                let event_value = (key_pressed != 0) as i32;
-                let event = InputEvent::new(EventType::KEY.0, key_evdev.0, event_value);
-                events.push(event);
-            }
-        }
-        
-        states.key_states = packet.key_states;
-        
-        for i in 0..8 {
-            let abs_state = packet.abs_states[i];
-            let event = InputEvent::new(EventType::ABSOLUTE.0, ABS[i].0, abs_state);
-            events.push(event);
-        }
-
-        let synchronization_event = InputEvent::new(EventType::SYNCHRONIZATION.0, SynchronizationCode::SYN_REPORT.0, 0);
-        events.push(synchronization_event);
-
-        let mut device_locked = device.lock().await;
-        let _ = device_locked.emit(events.as_slice());
-        iteration += 1;
-    }
-}
-
-fn get_ip(default: String, ip: Arc<String>) -> String {
-    if *ip == "0".to_string() {
-        return "0.0.0.0".to_string();
-    }
-    else {
-        return default;
-    }
-}
+use crate::util::*;
+use crate::server::server;
 
 fn get_controller_message(controller: &GameController) -> String {
     let name = controller.name();
@@ -328,24 +114,6 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
         Err(e) => panic!("{}", e)
     };
 
-    let app = Application::builder()
-                .application_id("com.starboard")
-                .build();
-
-    app.connect_activate(|app| {
-        let (x_res, y_res) = display_size().expect("Unable to fetch display resolution.");
-        let window = ApplicationWindow::builder()
-                        .application(app)
-                        .default_width(x_res.try_into().unwrap())
-                        .default_height(y_res.try_into().unwrap())
-                        .title("Starboard")
-                        .build();
-        
-        window.present();
-    });
-
-    app.run();
-
     loop {
         for event in sdl_event_pump.poll_iter() {
             match event {
@@ -392,63 +160,6 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
         sleep(Duration::from_millis(1000/framerate.deref())).await;
-    }
-}
-
-async fn server(ip: Arc<String>, port: Arc<u16>) {
-    let input_id: InputId = InputId::new(BusType::BUS_VIRTUAL, 0, 0, 0);
-    
-    // This is all the info needed to initialize the joysticks and analog trigger inputs
-    let axis_info: AbsInfo = AbsInfo::new(0, -32768, 32768, 16, 128, 0);
-    let trigger_axis_info: AbsInfo = AbsInfo::new(0, 0, 255, 0, 0, 0);
-    let dpad_axis_info: AbsInfo = AbsInfo::new(0, -1, 1, 0, 0, 0);
-    
-    let left_x_axis_setup: UinputAbsSetup = UinputAbsSetup::new(AbsoluteAxisCode::ABS_X, axis_info.clone());
-    let left_y_axis_setup: UinputAbsSetup = UinputAbsSetup::new(AbsoluteAxisCode::ABS_Y, axis_info.clone());
-    let left_z_axis_setup: UinputAbsSetup = UinputAbsSetup::new(AbsoluteAxisCode::ABS_Z, trigger_axis_info.clone());
-    
-    let right_x_axis_setup: UinputAbsSetup = UinputAbsSetup::new(AbsoluteAxisCode::ABS_RX, axis_info.clone());
-    let right_y_axis_setup: UinputAbsSetup = UinputAbsSetup::new(AbsoluteAxisCode::ABS_RY, axis_info.clone());
-    let right_z_axis_setup: UinputAbsSetup = UinputAbsSetup::new(AbsoluteAxisCode::ABS_RZ, trigger_axis_info.clone());
-
-    let dpad_x_axis_setup: UinputAbsSetup = UinputAbsSetup::new(AbsoluteAxisCode::ABS_HAT0X, dpad_axis_info.clone());
-    let dpad_y_axis_setup: UinputAbsSetup = UinputAbsSetup::new(AbsoluteAxisCode::ABS_HAT0Y, dpad_axis_info.clone());
-
-    // We must manually specify which buttons the virtual device will allow.
-    // The Steam Deck has 2 joysticks, 2 trackpads, and a lot of buttons.
-    // The buttons and joysticks should be simple to implement. For this
-    // prototype build, just the joystick axes will be enabled.
-    let builder: VirtualDeviceBuilder = VirtualDevice::builder()
-            .expect("Could not create a VirtualDeviceBuilder.\n")
-            .name("Starboard Virtual Gamepad")
-            .input_id(input_id)
-            .with_absolute_axis(&left_x_axis_setup)
-            .expect("Could not enable the X-axis of the left joystick\n")
-            .with_absolute_axis(&left_y_axis_setup)
-            .expect("Could not enable the Y-axis of the left joystick\n")
-            .with_absolute_axis(&left_z_axis_setup)
-            .expect("Could not enable the analog inputs in the left trigger\n")
-            .with_absolute_axis(&right_x_axis_setup)
-            .expect("Could not enable the X-axis of the right joystick\n")
-            .with_absolute_axis(&right_y_axis_setup)
-            .expect("Could not enable the Y-axis of the right joystick\n") 
-            .with_absolute_axis(&right_z_axis_setup)  // There couldn't have been a more concise way to do this????
-            .expect("Could not enable the analog inputs in the right trigger\n")
-            .with_absolute_axis(&dpad_x_axis_setup)
-            .expect("Could not enable the x axis on the D-pad\n")           
-            .with_absolute_axis(&dpad_y_axis_setup)
-            .expect("Could not enable the y axis on the D-pad\n")
-            .with_keys(&AttributeSet::from_iter(EVDEV_KEYS))
-            .expect("Could not enable the gamepad buttons.");
-    let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
-                                                    .expect("Could not build the Virtual Device.\n")));
-    let bind_ip = get_ip("0.0.0.0".to_string(), ip);
-    let bind_address = format!("{}:{}", bind_ip, port);
-    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind(bind_address).await.expect("Could not create a UDP Socket.\n"));
-    
-    tokio::spawn(udp_handling(device.clone(), socket.clone()));
-    loop {
-        sleep(Duration::from_secs(100)).await;
     }
 }
 

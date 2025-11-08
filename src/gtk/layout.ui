@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="GtkDialog" id="dialog1">
+    <property name="title">Starboard Settings</property>
+    <child internal-child="content_area">
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <property name="margin-top">12</property>
+        <property name="margin-bottom">12</property>
+        <property name="margin-start">12</property>
+        <property name="margin-end">12</property>
+        
+        <child>
+          <object class="GtkLabel">
+            <property name="label">Starboard Controller Settings</property>
+            <attributes>
+              <attribute name="weight" value="bold"/>
+              <attribute name="scale" value="1.5"/>
+            </attributes>
+          </object>
+        </child>
+
+        <child>
+          <object class="GtkGrid">
+            <property name="row-spacing">6</property>
+            <property name="column-spacing">12</property>
+            
+            <child>
+              <object class="GtkLabel">
+                <property name="label">IP Address:</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="row">0</property>
+                </layout>
+              </object>
+            </child>
+            
+            <child>
+              <object class="GtkEntry" id="ip_entry">
+                <property name="text">0.0.0.0</property>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="row">0</property>
+                </layout>
+              </object>
+            </child>
+
+            <child>
+              <object class="GtkLabel">
+                <property name="label">Port:</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="row">1</property>
+                </layout>
+              </object>
+            </child>
+            
+            <child>
+              <object class="GtkEntry" id="port_entry">
+                <property name="text">8080</property>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="row">1</property>
+                </layout>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child internal-child="action_area">
+          <object class="GtkBox">
+            <child>
+              <object class="GtkButton" id="ok_button">
+                <property name="label">_OK</property>
+                <property name="use-underline">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
