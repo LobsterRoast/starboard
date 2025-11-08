@@ -1,20 +1,33 @@
+
 use evdev::uinput::*;
 use evdev::*;
+
 use tokio::sync::Mutex;
 use tokio::net::UdpSocket;
 use tokio::time::*;
+
 use std::{fs, env};
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 use std::collections::HashMap;
+
 use bincode::config::Configuration;
 use bincode::{encode_to_vec, decode_from_slice};
+
 use libc::input_absinfo;
+
 use chrono::{DateTime, Local, FixedOffset};
+
 use sdl2::controller::{GameController, Button, Axis};
 use sdl2::event::EventType as SdlEventType;
 use sdl2::event::Event as SdlEvent;
-use sdl2::{Sdl, GameControllerSubsystem}; 
+use sdl2::{Sdl, GameControllerSubsystem};
+
+use gtk4 as gtk;
+use gtk::prelude::*;
+use gtk::{glib, Application, ApplicationWindow};
+
+use rdev::display_size;
 
 static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
@@ -286,6 +299,7 @@ fn get_formatted_time() -> String {
     format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
 }
 
+
 async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {    
     // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
@@ -313,6 +327,24 @@ async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
         Ok(v) => v,
         Err(e) => panic!("{}", e)
     };
+
+    let app = Application::builder()
+                .application_id("com.starboard")
+                .build();
+
+    app.connect_activate(|app| {
+        let (x_res, y_res) = display_size().expect("Unable to fetch display resolution.");
+        let window = ApplicationWindow::builder()
+                        .application(app)
+                        .default_width(x_res.try_into().unwrap())
+                        .default_height(y_res.try_into().unwrap())
+                        .title("Starboard")
+                        .build();
+        
+        window.present();
+    });
+
+    app.run();
 
     loop {
         for event in sdl_event_pump.poll_iter() {
