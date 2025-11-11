@@ -3,6 +3,7 @@ use tokio::net::UdpSocket;
 
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
+use std::collections::HashMap;
 
 use bincode::config::Configuration;
 use bincode::encode_to_vec;
@@ -97,28 +98,24 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     };
 
     let mut bitmask: u16 = 0;
+    let key_associations: &HashMap<Button, u16> = get_key_associations();
 
     loop {
         sdl_event_pump.pump_events();
         for event in sdl_event_pump.poll_iter() {
             match event {
                 SdlEvent::ControllerButtonUp { button, ..} => {
-                    debug!("Button release");
-                    for i in 0..SDL_KEYS.len() {
-                        if SDL_KEYS[i] == button {
-                            bitmask -= BIN_KEYS[i];
-                            break;
-                        }
-                    }
+                    bitmask -= match key_associations.get(&button) {
+                        Some(bin) => bin,
+                        None => break
+                    };
                 },
                 SdlEvent::ControllerButtonDown { button, ..} => {
                     debug!("Button press");
-                    for i in 0..SDL_KEYS.len() {
-                        if SDL_KEYS[i] == button {
-                            bitmask += BIN_KEYS[i];
-                            break;
-                        }
-                    }
+                    bitmask += match key_associations.get(&button) {
+                        Some(bin) => bin,
+                        None => break
+                    };
                 },
                 SdlEvent::ControllerAxisMotion {..} => {
                     debug!("Axis Motion");

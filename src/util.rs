@@ -21,6 +21,8 @@ use std::collections::HashMap;
 
 pub static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
+pub static SDL_KEY_ASSOCIATIONS: OnceLock<HashMap<Button, u16>> = OnceLock::new();
+
 // The client side cannot use evdev to get controller inputs
 // This is because evdev cannot read the triggers on the back of the Steam Deck
 // Also, for whatever reason, the evdev device for the Steam Deck only seems to work
@@ -140,4 +142,14 @@ pub fn get_ip(default: String, ip: Arc<String>) -> String {
     else {
         return default;
     }
+}
+
+pub fn get_key_associations() -> &'static HashMap<Button, u16> {
+    SDL_KEY_ASSOCIATIONS.get_or_init(|| {
+        let mut map: HashMap<Button, u16> = HashMap::new();
+        for i in 0..BIN_KEYS.len() {
+            map.insert(SDL_KEYS[i], BIN_KEYS[i]);
+        }
+        map
+    })
 }
