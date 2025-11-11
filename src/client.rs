@@ -12,10 +12,6 @@ use sdl2::event::EventType as SdlEventType;
 use sdl2::event::Event as SdlEvent;
 use sdl2::{Sdl, GameControllerSubsystem};
 
-use gtk4 as gtk;
-use gtk::prelude::*;
-use gtk::*;
-
 use chrono::{DateTime, Local, FixedOffset};
 
 use rdev::display_size;
@@ -101,13 +97,39 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
         Err(e) => panic!("{}", e)
     };
 
+    let mut bitmask: u16 = 0;
+
     loop {
+        sdl_event_pump.pump_events();
         for event in sdl_event_pump.poll_iter() {
             match event {
-                SdlEvent::ControllerButtonUp {..} => {debug!("Button press")},
-                SdlEvent::ControllerButtonDown {..} => {debug!("Button release")},
-                SdlEvent::ControllerAxisMotion {..} => {debug!("Axis Motion")},
-                _ => {}
+                SdlEvent::ControllerButtonUp { button, ..} => {
+                    debug!("Button press");
+                    for i in 0..SDL_KEYS.len() {
+                        if SDL_KEYS[i] == button {
+                            bitmask -= BIN_KEYS[i];
+                            break;
+                        }
+                    }
+                },
+                SdlEvent::ControllerButtonDown { button, ..} => {
+                    debug!("Button release");
+                    for i in 0..SDL_KEYS.len() {
+                        if SDL_KEYS[i] == button {
+                            bitmask += BIN_KEYS[i];
+                            break;
+                        }
+                    }
+                },
+                SdlEvent::ControllerAxisMotion {..} => {
+                    debug!("Axis Motion");
+                },
+                SdlEvent::Quit {..} => {
+                    return;
+                },
+                _ => {
+
+                }
             }
         }
         let mut pressed_keys: Vec<Button> = Vec::new();
