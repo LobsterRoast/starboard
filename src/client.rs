@@ -105,6 +105,7 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
         for event in sdl_event_pump.poll_iter() {
             match event {
                 SdlEvent::ControllerButtonUp { button, ..} => {
+                    debug!("Button release");
                     bitmask -= match key_associations.get(&button) {
                         Some(bin) => bin,
                         None => break
@@ -118,7 +119,6 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
                     };
                 },
                 SdlEvent::ControllerAxisMotion {..} => {
-                    debug!("Axis Motion");
                 },
                 SdlEvent::Quit {..} => {
                     return;
