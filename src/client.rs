@@ -103,7 +103,7 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
         for event in sdl_event_pump.poll_iter() {
             match event {
                 SdlEvent::ControllerButtonUp { button, ..} => {
-                    debug!("Button press");
+                    debug!("Button release");
                     for i in 0..SDL_KEYS.len() {
                         if SDL_KEYS[i] == button {
                             bitmask -= BIN_KEYS[i];
@@ -112,7 +112,7 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
                     }
                 },
                 SdlEvent::ControllerButtonDown { button, ..} => {
-                    debug!("Button release");
+                    debug!("Button press");
                     for i in 0..SDL_KEYS.len() {
                         if SDL_KEYS[i] == button {
                             bitmask += BIN_KEYS[i];
@@ -141,7 +141,6 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
         let mut bitmask: u16 = 0;
         for i in 0..14 {
             if pressed_keys.contains(&SDL_KEYS[i]) {
-                debug!("Button pressed: {:?}", &SDL_KEYS[i]);
                 bitmask |= BIN_KEYS[i];
             }
         }
