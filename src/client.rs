@@ -14,7 +14,6 @@ use sdl2::{Sdl, GameControllerSubsystem};
 
 use chrono::{DateTime, Local, FixedOffset};
 
-use rdev::display_size;
 use crate::util::*;
 use crate::debug;
 
