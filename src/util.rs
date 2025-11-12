@@ -107,11 +107,12 @@ pub struct InputPacket {
     pub timestamp: String
 }
 
+#[derive(bincode::Encode, bincode::Decode)]
 pub struct HapticPacket {
-    pub
+    pub strength: i32,
+    pub timestamp: String
 }
 
-#[derive(Default)]
 pub struct States {
     pub key_states: u16,
     pub abs_states: HashMap<AbsoluteAxisCode, i32>
@@ -129,13 +130,14 @@ impl InputPacket {
 
 impl States {
     pub fn new() -> States {
-        let mut states: States = Default::default();
-        states.key_states = 0;
-        states.abs_states = HashMap::new();
+        let mut abs_states_buf: HashMap<AbsoluteAxisCode, i32> = HashMap::new();
         for abs in EVDEV_AXES {
-            states.abs_states.insert(abs, 0);
+            abs_states_buf.insert(abs, 0);
         }
-        states
+        Self {
+            key_states: 0,
+            abs_states: abs_states_buf
+        }
     }
 }
 
