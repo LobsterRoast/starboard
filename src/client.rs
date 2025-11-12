@@ -139,10 +139,10 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     };
 
     let mut bitmask: u16 = 0;
+    let mut axis_values: [i32; 8] = [0; 8];
     let key_associations: &HashMap<Button, u16> = get_key_associations();
     
     loop {
-        let mut axis_values: [i32; 8] = [0; 8];
 
         sdl_event_pump.pump_events();
         for event in sdl_event_pump.poll_iter() {
