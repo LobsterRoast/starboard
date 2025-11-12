@@ -136,11 +136,11 @@ impl States {
 }
 
 pub fn get_ip(default: String, ip: Arc<String>) -> String {
-    if *ip == "0".to_string() {
-        return "0.0.0.0".to_string();
+    if *ip == "".to_string(){
+        return default;
     }
     else {
-        return default;
+        return ip.to_string();
     }
 }
 

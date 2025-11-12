@@ -14,7 +14,7 @@ use crate::client::client;
 #[tokio::main]
 async fn main() {
     let mut framerate: Arc<u64> = Arc::new(60);  // Default framerate to 60
-    let mut ip: Arc<String> = Arc::new("0".to_string());
+    let mut ip: Arc<String> = Arc::new("".to_string());
     let mut port: Arc<u16> = Arc::new(8080);
     let mut is_client = false;
     let mut is_server = false;
@@ -35,31 +35,26 @@ async fn main() {
             continue;
         }
 
-        match arg {
-            "--client" => is_client = !is_server,
-            "--server" => is_server = !is_client,
-            "--debug"  => is_debug = true,
-            _          => println!("Didn't recognize argument '{}'", arg)
-        }
-
         if arg.starts_with("--fps=") {
             framerate = Arc::new(arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n"));
+            continue;
         }
 
         if arg.starts_with("--ip=") {
-
-            ip = Arc::new(arg.strip_prefix("--ip=").unwrap().to_string());
-            let quartets = ip.split('.');
+            let ip_buf = arg.strip_prefix("--ip=").unwrap().to_string();
+            let quartets = ip_buf.split('.');
             
             // ip must be in valid ipv4 format (i.e. 255.255.255.255)
-            assert_eq!(quartets.clone().count(), 4, "ip must be in 4 quarters (i.e. 255.255.255.255).");
+            assert_eq!(quartets.clone().count(), 4, "ip must be in 4 quartets (i.e. 255.255.255.255).");
             
             for quartet in quartets {
                 let quartet_byte = quartet
                                     .parse::<u8>()
                                     .expect("Unable to parse ip quarter into unsigned 8-bit integer.\n");
-                assert!(quartet_byte < 255, "Invalid ip address.");
+                assert!(quartet_byte <= 255, "Invalid ip address.");
             }
+            ip = Arc::new(ip_buf);
+            continue;
         }
 
         if arg.starts_with("--port=") {
@@ -67,7 +62,16 @@ async fn main() {
                             .unwrap()
                             .parse::<u16>()
                             .expect("Unable to parse ip into unsigned 16-bit integer.\n"));
+            continue;
         }
+
+        match arg {
+            "--client" => is_client = !is_server,
+            "--server" => is_server = !is_client,
+            "--debug"  => is_debug = true,
+            _          => println!("Didn't recognize argument '{}'", arg)
+        }
+
     }
 
     let _ = DEBUG_MODE.set(is_debug);
