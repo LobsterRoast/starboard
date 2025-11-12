@@ -19,6 +19,7 @@ async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Pack
     let size = socket.recv(buf)
                 .await
                 .unwrap();
+    debug!("packet found");
     if size <= 0 {
         return None;
     }
@@ -50,7 +51,10 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
     loop {
         let packet: Packet = match get_packet(&socket, &mut buf).await {
             Some(v) => v,
-            None => continue
+            None => {
+                debug!("Packet received.");
+                continue
+            }
         };
         
         let mut events: Vec<InputEvent> = Vec::new();
@@ -68,7 +72,6 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
                 }
             };
         }
-        
         for i in 0..14 {
             let key_bit = BIN_KEYS[i];
             let key_evdev = EVDEV_KEYS[i];
@@ -146,8 +149,10 @@ pub async fn server(ip: Arc<String>, port: Arc<u16>) {
     let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
                                                     .expect("Could not build the Virtual Device.\n")));
     let bind_ip = get_ip("0.0.0.0".to_string(), ip);
-    let bind_address = format!("{}:{}", bind_ip, port);
-    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind(bind_address).await.expect("Could not create a UDP Socket.\n"));
+    let address = format!("{}:{}", bind_ip, port);
+    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind(&address).await.expect("Could not create a UDP Socket.\n"));
+
+    debug!("Server socket bound to {}.", address);
     
     tokio::spawn(udp_handling(device.clone(), socket.clone()));
     loop {

@@ -114,9 +114,10 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     let _ = socket.set_broadcast(true);
-
     let connect_ip = get_ip("255.255.255.255".to_string(), ip);
     let address = format!("{}:{}", connect_ip, port);
+
+    debug!("Client socket connected to {}.", &address);
 
     // Broadcast to all devices on the given port.
     socket.connect(address).await.expect("Could not connect to the local network.\n");
@@ -174,7 +175,6 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
         let conf: Configuration = bincode::config::standard();
         let packet: Packet = Packet::new(bitmask, axis_values, timestamp);
         let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
-        let _ = socket.send(bytes.as_slice()).await;
         let _ = socket.send(bytes.as_slice()).await;
     
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
