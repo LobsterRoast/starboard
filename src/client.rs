@@ -68,6 +68,47 @@ fn get_formatted_time() -> String {
     format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
 }
 
+// Returns a code if the button is D-Pad press (which requires special logic to convert to an analog value).
+fn button_press(button: Button, bitmask: &mut u16, key_associations: &HashMap<Button, u16>) -> i8 {
+    match button {
+        Button::DPadUp => return 1,
+        Button::DPadDown => return -1,
+        Button::DPadRight => return 2,
+        Button::DPadLeft => return -2,
+        _ => {}
+    }
+
+    if let Some(bin) = key_associations.get(&button) {
+        *bitmask += bin;
+    } else {
+        return 0;
+    }
+
+    0
+}
+
+fn button_release(button: Button, bitmask: &mut u16, key_associations: &HashMap<Button, u16>) -> i8 {
+    if let Some(bin) = key_associations.get(&button) {
+        *bitmask -= bin;
+    } else {
+        return 0;
+    }
+
+    0
+}
+
+fn axis_motion(axis: Axis, value: i16, axis_values: &mut [i32; 8]) {
+    let i = match axis {
+            Axis::LeftX => 0,
+            Axis::LeftY => 1,
+            Axis::TriggerLeft => 2,
+            Axis::RightX => 3,
+            Axis::RightY => 4,
+            Axis::TriggerRight => 5
+    };
+
+    axis_values[i] = value.try_into().unwrap();
+}
 
 pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {    
     // The binding isn't really necessary I'm pretty sure but whatever
@@ -79,7 +120,6 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
 
     // Broadcast to all devices on the given port.
     socket.connect(address).await.expect("Could not connect to the local network.\n");
-
     
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
 
@@ -99,63 +139,38 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
 
     let mut bitmask: u16 = 0;
     let key_associations: &HashMap<Button, u16> = get_key_associations();
-
+    
     loop {
+        let mut axis_values: [i32; 8] = [0; 8];
+
         sdl_event_pump.pump_events();
         for event in sdl_event_pump.poll_iter() {
             match event {
                 SdlEvent::ControllerButtonUp { button, ..} => {
                     debug!("Button release");
-                    bitmask -= match key_associations.get(&button) {
-                        Some(bin) => bin,
-                        None => break
-                    };
+                    button_release(button, &mut bitmask, &key_associations);
                 },
                 SdlEvent::ControllerButtonDown { button, ..} => {
                     debug!("Button press");
-                    bitmask += match key_associations.get(&button) {
-                        Some(bin) => bin,
-                        None => break
-                    };
+                    match button_press(button, &mut bitmask, &key_associations) {
+                        1  => { axis_values[6] = 1  },
+                        -1 => { axis_values[6] = -1 },
+                        2  => { axis_values[7] = 1  },
+                        -2 => { axis_values[7] = -1 },
+                        _  => {}
+                    }
                 },
-                SdlEvent::ControllerAxisMotion {..} => {
+                SdlEvent::ControllerAxisMotion { axis, value, ..} => {
+                    axis_motion(axis, value, &mut axis_values)
                 },
                 SdlEvent::Quit {..} => {
                     return;
                 },
-                _ => {
-
-                }
+                _ => {}
             }
         }
-        let mut pressed_keys: Vec<Button> = Vec::new();
-        for key in SDL_KEYS {
-            if controller.button(key) {
-                pressed_keys.push(key);
-            }
-        }
-
-        let mut bitmask: u16 = 0;
-        for i in 0..14 {
-            if pressed_keys.contains(&SDL_KEYS[i]) {
-                bitmask |= BIN_KEYS[i];
-            }
-        }
-
-        let mut axis_values: [i32; 8] = [0; 8];
-        for i in 0..6 {
-            axis_values[i] = controller.axis(SDL_AXES[i]) as i32;
-        }
-
-        // dpad treated as a binary input by SDL, so this converts it to analog
-        axis_values[6] = get_dpad_value(controller.button(Button::DPadRight), 
-                                        controller.button(Button::DPadLeft));
-        axis_values[7] = get_dpad_value(controller.button(Button::DPadUp), 
-                                        controller.button(Button::DPadDown));
-
 
         let timestamp = get_formatted_time();
-
         let conf: Configuration = bincode::config::standard();
         let packet: Packet = Packet::new(bitmask, axis_values, timestamp);
         let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
