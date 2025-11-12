@@ -15,7 +15,7 @@ use chrono::{DateTime, Local, FixedOffset};
 use crate::util::*;
 use crate::debug;
 
-async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Packet> {
+async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<InputPacket> {
     let size = socket.recv(buf)
                 .await
                 .unwrap();
@@ -23,7 +23,7 @@ async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Pack
         return None;
     }
     let conf: Configuration = bincode::config::standard();
-    let packet = decode_from_slice::<Packet, Configuration>(buf, conf);
+    let packet = decode_from_slice::<InputPacket, Configuration>(buf, conf);
     return match packet {
         Ok(v) => Some(v.0),
         Err(_e) => None
@@ -48,7 +48,7 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
     let mut buf: [u8; 512] = [0; 512];
     let mut iteration: u64 = 0;
     loop {
-        let packet: Packet = match get_packet(&socket, &mut buf).await {
+        let packet: InputPacket = match get_packet(&socket, &mut buf).await {
             Some(v) => v,
             None => {
                 debug!("Packet received.");

@@ -18,6 +18,12 @@ use chrono::{DateTime, Local, FixedOffset};
 use crate::util::*;
 use crate::debug;
 
+async fn get_haptic_packets(socket: Arc<UdpSocket>) {
+    let mut buf: [u8; 512] = [0; 512];
+    socket.recv(&mut buf);
+
+}
+
 fn get_formatted_time() -> String {
     let dt: DateTime<Local> = Local::now();
     format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
@@ -78,6 +84,7 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     socket.connect(address).await.expect("Could not connect to the local network.\n");
     
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
+    let haptic = sdl_context.haptic().expect("Unable to initialize SDL Haptic Subsystem.\n");
     
     let mut sdl_event_pump = sdl_context.event_pump().expect("Unable to generate event pump.");
 
@@ -115,7 +122,7 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
 
         let timestamp = get_formatted_time();
         let conf: Configuration = bincode::config::standard();
-        let packet: Packet = Packet::new(bitmask, axis_values, timestamp);
+        let packet: InputPacket = InputPacket::new(bitmask, axis_values, timestamp);
         let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
         let _ = socket.send(bytes.as_slice()).await;
     

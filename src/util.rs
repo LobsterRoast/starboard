@@ -101,10 +101,14 @@ pub const EVDEV_AXES: [AbsoluteAxisCode; 8] = [
 ];
 
 #[derive(bincode::Encode, bincode::Decode)]
-pub struct Packet {
+pub struct InputPacket {
     pub key_states: u16,
     pub abs_states: [i32; 8],
     pub timestamp: String
+}
+
+pub struct HapticPacket {
+    pub
 }
 
 #[derive(Default)]
@@ -113,7 +117,7 @@ pub struct States {
     pub abs_states: HashMap<AbsoluteAxisCode, i32>
 }
 
-impl Packet {
+impl InputPacket {
     pub fn new(key_states: u16, abs_states: [i32; 8], timestamp: String) -> Self {
         Self {
                 key_states: key_states,
