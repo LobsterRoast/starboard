@@ -144,7 +144,9 @@ pub async fn server(ip: Arc<String>, port: Arc<u16>) {
             .with_absolute_axis(&dpad_y_axis_setup)
             .expect("Could not enable the y axis on the D-pad\n")
             .with_keys(&AttributeSet::from_iter(EVDEV_KEYS))
-            .expect("Could not enable the gamepad buttons.");
+            .expect("Could not enable the gamepad buttons.\n")
+            .with_ff(&AttributeSet::from_iter([FFEffectCode::FF_RUMBLE]))
+            .expect("Could not enable haptics.\n");
     let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
                                                     .expect("Could not build the Virtual Device.\n")));
     let bind_ip = get_ip("0.0.0.0".to_string(), ip);
