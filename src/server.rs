@@ -19,7 +19,6 @@ async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<Pack
     let size = socket.recv(buf)
                 .await
                 .unwrap();
-    debug!("packet found");
     if size <= 0 {
         return None;
     }
