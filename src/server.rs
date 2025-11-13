@@ -15,6 +15,10 @@ use chrono::{DateTime, Local, FixedOffset};
 use crate::util::*;
 use crate::debug;
 
+const FF_EFFECTS: [FFEffectCode; 1] = [
+    FFEffectCode::FF_RUMBLE
+];
+
 async fn get_packet(socket: &Arc<UdpSocket>, buf: &mut [u8; 512]) -> Option<InputPacket> {
     let size = socket.recv(buf)
                 .await
@@ -145,8 +149,9 @@ pub async fn server(ip: Arc<String>, port: Arc<u16>) {
             .expect("Could not enable the y axis on the D-pad\n")
             .with_keys(&AttributeSet::from_iter(EVDEV_KEYS))
             .expect("Could not enable the gamepad buttons.\n")
-            .with_ff(&AttributeSet::from_iter([FFEffectCode::FF_RUMBLE]))
-            .expect("Could not enable haptics.\n");
+            .with_ff(&AttributeSet::from_iter(FF_EFFECTS))
+            .expect("Could not enable haptics.\n")
+            .with_ff_effects_max(1);
     let device: Arc<Mutex<VirtualDevice>> = Arc::new(Mutex::new(builder.build()
                                                     .expect("Could not build the Virtual Device.\n")));
     let bind_ip = get_ip("0.0.0.0".to_string(), ip);
