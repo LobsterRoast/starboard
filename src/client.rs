@@ -18,6 +18,7 @@ use chrono::{DateTime, Local, FixedOffset};
 use crate::util::*;
 use crate::debug;
 
+
 async fn get_haptic_packets(socket: Arc<UdpSocket>) {
     let mut buf: [u8; 512] = [0; 512];
     socket.recv(&mut buf);
@@ -71,6 +72,28 @@ fn axis_motion(axis: Axis, value: i16, axis_values: &mut [i32; 8]) {
     axis_values[i] = value.try_into().unwrap();
 }
 
+fn apply_deadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
+
+    let left_joystick: Vec<f64> = [axis_values[0], axis_values[1]]
+                            .into_iter()
+                            .map(|x| x as f64)
+                            .collect();
+    let right_joystick: Vec<f64> = [axis_values[3], axis_values[4]]
+                            .into_iter()
+                            .map(|x| x as f64)
+                            .collect();
+
+    if (left_joystick[0] * left_joystick[0] + left_joystick[1] * left_joystick[1]).sqrt() <= *deadzone {
+        axis_values[0] = 0;
+        axis_values[1] = 0;
+    }
+
+    if (right_joystick[0] * right_joystick[0] + right_joystick[1] * right_joystick[1]).sqrt() <= *deadzone {
+        axis_values[3] = 0;
+        axis_values[4] = 0;
+    }
+}
+
 pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {    
     // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
@@ -91,6 +114,8 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     let mut bitmask: u16 = 0;
     let mut axis_values: [i32; 8] = [0; 8];
     let key_associations: &HashMap<Button, u16> = get_key_associations();
+
+    let deadzone: f64 = 300.0;
     
     loop {
         sdl_event_pump.pump_events();
@@ -119,6 +144,8 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
                 _ => {}
             }
         }
+
+        apply_deadzones(&deadzone, &mut axis_values);
 
         let timestamp = get_formatted_time();
         let conf: Configuration = bincode::config::standard();
