@@ -67,10 +67,10 @@ async fn main() {
         }
 
         if arg.starts_with("--deadzone=") {
-            port = Arc::new(arg.strip_prefix("--deadzone=")
+            deadzone = arg.strip_prefix("--deadzone=")
                             .unwrap()
                             .parse::<f64>()
-                            .expect("Unable to parse deadzone argument into 64-bit floating-point number..\n"));
+                            .expect("Unable to parse deadzone argument into 64-bit floating-point number..\n");
             continue;
         }
 
