@@ -97,13 +97,9 @@ fn axis_motion(axis: Axis, value: i16, axis_values: &mut [i32; 8]) {
     axis_values[i] = value.try_into().unwrap();
 }
 
-fn apply_deadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
+fn apply_ldeadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
 
     let left_joystick: Vec<f64> = [axis_values[0], axis_values[1]]
-                            .into_iter()
-                            .map(|x| x as f64)
-                            .collect();
-    let right_joystick: Vec<f64> = [axis_values[3], axis_values[4]]
                             .into_iter()
                             .map(|x| x as f64)
                             .collect();
@@ -112,6 +108,13 @@ fn apply_deadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
         axis_values[0] = 0;
         axis_values[1] = 0;
     }
+}
+
+fn apply_rdeadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
+    let right_joystick: Vec<f64> = [axis_values[3], axis_values[4]]
+                            .into_iter()
+                            .map(|x| x as f64)
+                            .collect();
 
     if (right_joystick[0] * right_joystick[0] + right_joystick[1] * right_joystick[1]).sqrt() <= *deadzone {
         axis_values[3] = 0;
@@ -119,7 +122,7 @@ fn apply_deadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
     }
 }
 
-pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>, deadzone: f64) {    
+pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>, ldeadzone: f64, rdeadzone: f64) {    
     // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     let _ = socket.set_broadcast(true);
@@ -147,7 +150,6 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>, deadzo
     let key_associations: &HashMap<Button, u16> = get_key_associations();
     
     loop {
-
         sdl_event_pump.pump_events();
         for event in sdl_event_pump.poll_iter() {
             match event {
@@ -175,7 +177,9 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>, deadzo
             }
         }
 
-        apply_deadzones(&deadzone, &mut axis_values);
+        apply_ldeadzones(&ldeadzone, &mut axis_values);
+        apply_rdeadzones(&rdeadzone, &mut axis_values);
+
 
         let timestamp = get_formatted_time();
         let conf: Configuration = bincode::config::standard();
