@@ -18,11 +18,36 @@ use chrono::{DateTime, Local, FixedOffset};
 use crate::util::*;
 use crate::debug;
 
-
 async fn get_haptic_packets(socket: Arc<UdpSocket>) {
     let mut buf: [u8; 512] = [0; 512];
     socket.recv(&mut buf);
+}
 
+fn get_controller_message(controller: &GameController) -> String {
+    let name = controller.name();
+    let mapping = controller.mapping();
+    return format!("Controller found:\nName: {}\nMapping: {}\n", name, mapping);
+}
+
+fn get_contoller(controller_subsystem: GameControllerSubsystem) -> Result<GameController, &'static str> {
+    let joystick_count = controller_subsystem.num_joysticks().expect("Unable to count controllers.\n");
+    if joystick_count < 1 {
+        return Err("No controllers found to connect to.");
+    }
+
+    for i in 0..joystick_count {
+        if controller_subsystem.is_game_controller(i) {
+            return Ok(match controller_subsystem.open(i) {
+                Ok(v) => {
+                    debug!("{}", get_controller_message(&v));
+                    v
+                },
+                Err(e) => panic!("{}", e)
+            })
+        }
+    }
+    
+    Err("No valid controllers found to connect to.")
 }
 
 fn get_formatted_time() -> String {
@@ -107,9 +132,15 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     socket.connect(address).await.expect("Could not connect to the local network.\n");
     
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
+    let controller_subsystem = sdl_context.game_controller().expect("Unable to initialize SDL Controller Subsystem.\n");
     let haptic = sdl_context.haptic().expect("Unable to initialize SDL Haptic Subsystem.\n");
     
     let mut sdl_event_pump = sdl_context.event_pump().expect("Unable to generate event pump.");
+
+    let controller = match get_contoller(controller_subsystem) {
+        Ok(v) => v,
+        Err(e) => panic!("{}", e)
+    };
 
     let mut bitmask: u16 = 0;
     let mut axis_values: [i32; 8] = [0; 8];
@@ -118,6 +149,7 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     let deadzone: f64 = 300.0;
     
     loop {
+
         sdl_event_pump.pump_events();
         for event in sdl_event_pump.poll_iter() {
             match event {
