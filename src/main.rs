@@ -16,10 +16,11 @@ async fn main() {
     let mut framerate: Arc<u64> = Arc::new(60);  // Default framerate to 60
     let mut ip: Arc<String> = Arc::new("".to_string());
     let mut port: Arc<u16> = Arc::new(8080);
+    let mut deadzone = 3000.0;
     let mut is_client = false;
     let mut is_server = false;
     let mut is_debug = false;
-
+    
     // ARGS:
     // --client             --- Opens starboard in client (controller) mode
     // --server             --- Opens starboard in server (PC) mode
@@ -65,6 +66,14 @@ async fn main() {
             continue;
         }
 
+        if arg.starts_with("--deadzone=") {
+            port = Arc::new(arg.strip_prefix("--deadzone=")
+                            .unwrap()
+                            .parse::<f64>()
+                            .expect("Unable to parse deadzone argument into 64-bit floating-point number..\n"));
+            continue;
+        }
+
         match arg {
             "--client" => is_client = !is_server,
             "--server" => is_server = !is_client,
@@ -81,7 +90,7 @@ async fn main() {
 
     if is_client {
         println!("Starting starboard in client mode.");
-        client(framerate.clone(), ip.clone(), port.clone()).await;
+        client(framerate.clone(), ip.clone(), port.clone(), deadzone).await;
     }
 
     else if is_server {

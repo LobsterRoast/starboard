@@ -119,7 +119,7 @@ fn apply_deadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
     }
 }
 
-pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {    
+pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>, deadzone: f64) {    
     // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     let _ = socket.set_broadcast(true);
@@ -145,8 +145,6 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>) {
     let mut bitmask: u16 = 0;
     let mut axis_values: [i32; 8] = [0; 8];
     let key_associations: &HashMap<Button, u16> = get_key_associations();
-
-    let deadzone: f64 = 300.0;
     
     loop {
 
