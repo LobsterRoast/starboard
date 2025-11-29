@@ -109,7 +109,7 @@ pub struct InputPacket {
 
 #[derive(bincode::Encode, bincode::Decode)]
 pub struct HapticPacket {
-    pub strength: i32,
+    pub strength: f32,
     pub timestamp: String
 }
 

@@ -1,26 +1,62 @@
-use tokio::time::*;
-use tokio::net::UdpSocket;
+use tokio::{
+    time::*,
+    net::UdpSocket,
+    sync::Mutex
+};
 
-use std::ops::Deref;
-use std::sync::{Arc, OnceLock};
-use std::collections::HashMap;
+use std::{
+    ops::Deref,
+    sync::{Arc, OnceLock},
+    collections::HashMap
+};
 
-use bincode::config::Configuration;
-use bincode::encode_to_vec;
+use bincode::{
+    config::Configuration, 
+    {encode_to_vec, decode_from_slice}
+};
 
-use sdl2::controller::{GameController, Button, Axis};
-use sdl2::event::EventType as SdlEventType;
-use sdl2::event::Event as SdlEvent;
-use sdl2::{Sdl, GameControllerSubsystem};
+use sdl2::{
+    controller::{GameController, Button, Axis},
+    event::{EventType as SdlEventType, Event as SdlEvent},
+    Sdl,
+    GameControllerSubsystem,
+    haptic::Haptic
+};
 
 use chrono::{DateTime, Local, FixedOffset};
 
 use crate::util::*;
 use crate::debug;
 
-async fn get_haptic_packets(socket: Arc<UdpSocket>) {
-    let mut buf: [u8; 512] = [0; 512];
-    socket.recv(&mut buf);
+async fn get_haptic_packet(socket: &Arc<UdpSocket>) -> Option<HapticPacket> {
+    let mut buf: [u8; 128] = [0; 128];
+    let size = socket.recv(&mut buf)
+                .await
+                .unwrap();
+
+    if size <= 0 {
+        return None;
+    }
+
+    let conf: Configuration = bincode::config::standard();
+    let packet = decode_from_slice::<HapticPacket, Configuration>(&buf, conf);
+    return match packet {
+        Ok(v) => Some(v.0),
+        Err(_e) => None
+    }
+}
+
+async fn output(socket: Arc<UdpSocket>, haptic_subsystem: Arc<Mutex<Haptic>>) {
+    while true {
+        let packet = match get_haptic_packet(&socket).await {
+            Some(v) => v,
+            None => continue
+        };
+
+        let mut haptics_locked = haptic_subsystem.lock().await;
+        haptics_locked.rumble_stop();
+        haptics_locked.rumble_play(packet.strength, 1000);
+    }
 }
 
 fn get_controller_message(controller: &GameController) -> String {
@@ -132,7 +168,9 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>, ldeadz
     debug!("Client socket connected to {}.", &address);
 
     // Broadcast to all devices on the given port.
-    socket.connect(address).await.expect("Could not connect to the local network.\n");
+    socket.connect(address)
+        .await
+        .expect("Could not connect to the local network.\n");
     
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
     let controller_subsystem = sdl_context.game_controller().expect("Unable to initialize SDL Controller Subsystem.\n");
