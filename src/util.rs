@@ -141,8 +141,8 @@ impl States {
     }
 }
 
-pub fn get_ip(default: String, ip: Arc<String>) -> String {
-    if *ip == "".to_string(){
+pub fn get_ip(default: String, ip: String) -> String {
+    if ip == "".to_string(){
         return default;
     }
     else {

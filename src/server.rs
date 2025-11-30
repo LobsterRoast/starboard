@@ -104,7 +104,7 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
     }
 }
 
-pub async fn server(ip: Arc<String>, port: Arc<u16>) {
+pub async fn server(ip: String, port: u16) {
     let input_id: InputId = InputId::new(BusType::BUS_VIRTUAL, 0, 0, 0);
     
     // This is all the info needed to initialize the joysticks and analog trigger inputs

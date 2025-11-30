@@ -158,7 +158,7 @@ fn apply_rdeadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
     }
 }
 
-pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>, ldeadzone: f64, rdeadzone: f64) {    
+pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdeadzone: f64) {    
     // The binding isn't really necessary I'm pretty sure but whatever
     let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Could not create a UDP Socket.\n");
     let _ = socket.set_broadcast(true);
@@ -226,6 +226,6 @@ pub async fn client(framerate: Arc<u64>, ip: Arc<String>, port: Arc<u16>, ldeadz
         let _ = socket.send(bytes.as_slice()).await;
     
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
-        sleep(Duration::from_millis(1000/framerate.deref())).await;
+        sleep(Duration::from_millis(1000/&framerate)).await;
     }
 }

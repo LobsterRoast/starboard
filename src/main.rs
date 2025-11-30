@@ -13,9 +13,9 @@ use crate::client::client;
 
 #[tokio::main]
 async fn main() {
-    let mut framerate: Arc<u64> = Arc::new(60);  // Default framerate to 60
-    let mut ip: Arc<String> = Arc::new("".to_string());
-    let mut port: Arc<u16> = Arc::new(8080);
+    let mut framerate: u64 = 60;  // Default framerate to 60
+    let mut ip: String = "".to_string();
+    let mut port: u16 = 8080;
     let mut ldeadzone = 3000.0;
     let mut rdeadzone = 1500.0;
     let mut is_client = false;
@@ -38,7 +38,7 @@ async fn main() {
         }
 
         if arg.starts_with("--fps=") {
-            framerate = Arc::new(arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n"));
+            framerate = arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n");
             continue;
         }
 
@@ -55,15 +55,15 @@ async fn main() {
                                     .expect("Unable to parse ip quarter into unsigned 8-bit integer.\n");
                 assert!(quartet_byte <= 255, "Invalid ip address.");
             }
-            ip = Arc::new(ip_buf);
+            ip = ip_buf;
             continue;
         }
 
         if arg.starts_with("--port=") {
-            port = Arc::new(arg.strip_prefix("--port=")
-                            .unwrap()
-                            .parse::<u16>()
-                            .expect("Unable to parse ip into unsigned 16-bit integer.\n"));
+            port = arg.strip_prefix("--port=")
+                    .unwrap()
+                    .parse::<u16>()
+                    .expect("Unable to parse ip into unsigned 16-bit integer.\n");
             continue;
         }
 
