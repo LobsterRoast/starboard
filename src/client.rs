@@ -23,7 +23,7 @@ use chrono::{DateTime, FixedOffset, Local};
 use crate::debug;
 use crate::util::*;
 
-async fn get_haptic_packet(socket: &Arc<UdpSocket>) -> Option<HapticPacket> {
+async fn get_haptic_packet(socket: &UdpSocket) -> Option<HapticPacket> {
     let mut buf: [u8; 128] = [0; 128];
     let size = socket.recv(&mut buf).await.unwrap();
 
@@ -39,7 +39,7 @@ async fn get_haptic_packet(socket: &Arc<UdpSocket>) -> Option<HapticPacket> {
     };
 }
 
-async fn output(socket: Arc<UdpSocket>, sdl_context: Arc<Sdl>, controller: Arc<GameController>) {
+async fn output(socket: &UdpSocket, sdl_context: &Sdl, controller: &GameController) {
     let haptic_subsystem = sdl_context
         .haptic()
         .expect("Unable to initialize SDL Haptic Subsystem.\n");
@@ -57,7 +57,7 @@ async fn output(socket: Arc<UdpSocket>, sdl_context: Arc<Sdl>, controller: Arc<G
     }
 }
 
-async fn input(socket: Arc<UdpSocket>, sdl_context: Arc<Sdl>, framerate: u64, ldeadzone: f64, rdeadzone: f64) {
+async fn input(socket: &UdpSocket, sdl_context: &Sdl, framerate: &u64, ldeadzone: &f64, rdeadzone: &f64) {
     let mut sdl_event_pump = sdl_context
         .event_pump()
         .expect("Unable to generate event pump.");
@@ -78,7 +78,7 @@ async fn input(socket: Arc<UdpSocket>, sdl_context: Arc<Sdl>, framerate: u64, ld
         let _ = socket.send(bytes.as_slice()).await;
 
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
-        sleep(Duration::from_millis(1000 / &framerate)).await;
+        sleep(Duration::from_millis(1000 / framerate)).await;
     }
 }
 async fn get_udp_socket(ip: String, port: u16) -> Result<UdpSocket, &'static str> {
@@ -234,9 +234,9 @@ fn apply_rdeadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
 }
 
 pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdeadzone: f64) {
-    let socket = Arc::new(get_udp_socket(ip, port).await.unwrap());
+    let socket = get_udp_socket(ip, port).await.unwrap();
 
-    let sdl_context = Arc::new(sdl2::init().expect("Unable to initialize SDL.\n"));
+    let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
     let controller_subsystem = sdl_context
         .game_controller()
         .expect("Unable to initialize SDL Controller Subsystem.\n");
@@ -244,5 +244,9 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
         Ok(v) => v,
         Err(e) => panic!("{}", e)
     };
+    while true {
+        input(&socket, &sdl_context, &framerate, &ldeadzone, &rdeadzone);
+        output(&socket, &sdl_context, &controller);
+    }
 }
 
