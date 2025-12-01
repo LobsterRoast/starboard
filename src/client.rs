@@ -1,9 +1,10 @@
-use tokio::{net::UdpSocket, sync::Mutex, time::*};
+use tokio::time::*;
 
 use std::{
     collections::HashMap,
     ops::Deref,
     sync::{Arc, OnceLock},
+    net::UdpSocket
 };
 
 use bincode::{
@@ -25,7 +26,7 @@ use crate::util::*;
 
 async fn get_haptic_packet(socket: &UdpSocket) -> Option<HapticPacket> {
     let mut buf: [u8; 128] = [0; 128];
-    let size = socket.recv(&mut buf).await.unwrap();
+    let size = socket.recv(&mut buf).unwrap();
 
     if size <= 0 {
         return None;
@@ -75,7 +76,7 @@ async fn input(socket: &UdpSocket, sdl_context: &Sdl, framerate: &u64, ldeadzone
         let packet: InputPacket = InputPacket::new(bitmask, axis_values, timestamp);
 
         let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
-        let _ = socket.send(bytes.as_slice()).await;
+        let _ = socket.send(bytes.as_slice());
 
         // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
         sleep(Duration::from_millis(1000 / framerate)).await;
@@ -83,7 +84,7 @@ async fn input(socket: &UdpSocket, sdl_context: &Sdl, framerate: &u64, ldeadzone
 }
 async fn get_udp_socket(ip: String, port: u16) -> Result<UdpSocket, &'static str> {
     // The binding isn't really necessary I'm pretty sure but whatever
-    let socket = match UdpSocket::bind("0.0.0.0:0").await {
+    let socket = match UdpSocket::bind("0.0.0.0:0") {
         Ok(v) => v,
         Err(_e) => return Err("Could not create a UDP Socket."),
     };
@@ -95,7 +96,7 @@ async fn get_udp_socket(ip: String, port: u16) -> Result<UdpSocket, &'static str
     debug!("Client socket connected to {}.", &address);
 
     // Broadcast to all devices on the given port.
-    return match socket.connect(address).await {
+    return match socket.connect(address) {
         Ok(v) => Ok(socket),
         Err(_e) => Err("Could not connect to the local network."),
     };
