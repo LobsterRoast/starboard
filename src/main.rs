@@ -2,10 +2,7 @@ mod client;
 mod server;
 mod util;
 
-use std::sync::Arc;
-use std::{fs, env};
-
-use libc::input_absinfo;
+use std::env;
 
 use crate::util::*;
 use crate::server::server;

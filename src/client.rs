@@ -6,8 +6,7 @@ use tokio::{
 
 use std::{
     collections::{HashMap, VecDeque},
-    ops::Deref,
-    sync::{Arc, OnceLock}
+    sync::Arc
 };
 
 use bincode::{
@@ -16,13 +15,13 @@ use bincode::{
 };
 
 use sdl2::{
-    EventPump, GameControllerSubsystem, Sdl,
+    EventPump, GameControllerSubsystem,
     controller::{Axis, Button, GameController},
-    event::{Event as SdlEvent, EventType as SdlEventType},
+    event::Event as SdlEvent,
     haptic::Haptic,
 };
 
-use chrono::{DateTime, FixedOffset, Local};
+use chrono::{DateTime, Local};
 
 use crate::debug;
 use crate::util::*;
@@ -49,8 +48,10 @@ async fn haptic_reader(socket: Arc<UdpSocket>, incoming_packets: Arc<Mutex<VecDe
             Some(v) => v,
             None => continue
         };
-        let mut incoming_packets_locked = incoming_packets.try_lock().expect("Unable to lock incoming packet buffer.\n");
-        incoming_packets_locked.push_back(packet)
+
+        if let Ok(mut buf) = incoming_packets.try_lock() {
+            buf.push_back(packet);
+        }
     }
 }
 
@@ -66,7 +67,7 @@ async fn input(
     rdeadzone: &f64, bitmask: &mut u16, 
     axis_values: &mut [i32; 8], 
     key_associations: &HashMap<Button, u16>) {
-        
+
     handle_events(sdl_event_pump, bitmask, axis_values, key_associations);
     apply_ldeadzones(ldeadzone, axis_values);
     apply_rdeadzones(rdeadzone, axis_values);
@@ -74,8 +75,9 @@ async fn input(
     let timestamp = get_formatted_time();
     let packet: InputPacket = InputPacket::new(*bitmask, *axis_values, timestamp);
 
-    let mut outgoing_packets_locked = outgoing_packets.try_lock().expect("Unable to lock outgoing packet buffer.\n");
-    outgoing_packets_locked.push_back(packet);
+    if let Ok(mut buf) = outgoing_packets.try_lock() {
+        buf.push_back(packet);
+    }
 
     // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
     sleep(Duration::from_millis(1000 / framerate)).await;
@@ -83,18 +85,19 @@ async fn input(
 
 async fn input_sender(socket: Arc<UdpSocket>, outgoing_packets: Arc<Mutex<VecDeque<InputPacket>>>) {
     loop {
-        let mut outgoing_packets_locked = outgoing_packets.try_lock().expect("Unable to lock outgoing packet buffer.\n");
-
-        while outgoing_packets_locked.len() > 0 {
-            let packet = match outgoing_packets_locked.pop_front() {
-                Some(v) => v,
-                None => continue
-            };
-
-            let conf: Configuration = bincode::config::standard();
-            let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
-            let _ = socket.send(bytes.as_slice()).await;
+        if let Ok(mut buf) = outgoing_packets.try_lock() {
+            while buf.len() > 0 {
+                let packet = match buf.pop_front() {
+                    Some(v) => v,
+                    None => continue
+                };
+    
+                let conf: Configuration = bincode::config::standard();
+                let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
+                let _ = socket.send(bytes.as_slice()).await;
+            }
         }
+
     }
 }
 
@@ -113,7 +116,7 @@ async fn get_udp_socket(ip: String, port: u16) -> Result<UdpSocket, &'static str
 
     // Broadcast to all devices on the given port.
     return match socket.connect(address).await {
-        Ok(v) => Ok(socket),
+        Ok(_v) => Ok(socket),
         Err(_e) => Err("Could not connect to the local network."),
     };
 }
@@ -219,7 +222,7 @@ fn axis_motion(axis: Axis, value: i16, axis_values: &mut [i32; 8]) {
         Axis::TriggerRight => 5,
     };
 
-    axis_values[i] = value.try_into().unwrap();return
+    axis_values[i] = value.try_into().unwrap();
 }
 
 fn apply_ldeadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
@@ -273,9 +276,11 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
     let mut sdl_event_pump = sdl_context
         .event_pump()
         .expect("Unable to generate event pump.");
+    
     let mut bitmask: u16 = 0;
     let mut axis_values: [i32; 8] = [0; 8];
     let key_associations: &HashMap<Button, u16> = get_key_associations();
+
     let mut incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
     let mut outgoing_packets: Arc<Mutex<VecDeque<InputPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
 
@@ -293,12 +298,13 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
             &mut axis_values, 
             &key_associations).await;
         
-        let mut incoming_packets_locked = incoming_packets.try_lock().expect("Unable to lock incoming packet buffer.\n");
+        if let Ok(mut buf) = incoming_packets.try_lock() {
+            output(match buf.pop_front() {
+                Some(v) => v,
+                None => continue
+            }, &mut haptic).await;
+        }
 
-        output(match incoming_packets_locked.pop_front() {
-            Some(v) => v,
-            None => continue
-        }, &mut haptic);
     }
 }
 

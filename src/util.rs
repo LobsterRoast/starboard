@@ -2,7 +2,7 @@ use sdl2::controller::{Button, Axis};
 
 use evdev::{KeyCode, AbsoluteAxisCode};
 
-use std::sync::{Arc, OnceLock};
+use std::sync::OnceLock;
 use std::collections::HashMap;
 
 // This macro is essentially just a version of println! that will only run if DEBUG_MODE is True.
