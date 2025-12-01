@@ -1,10 +1,13 @@
-use tokio::time::*;
+use tokio::{
+    time::*,
+    sync::Mutex,
+    net::UdpSocket
+};
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     ops::Deref,
-    sync::{Arc, OnceLock},
-    net::UdpSocket
+    sync::{Arc, OnceLock}
 };
 
 use bincode::{
@@ -26,7 +29,7 @@ use crate::util::*;
 
 async fn get_haptic_packet(socket: &UdpSocket) -> Option<HapticPacket> {
     let mut buf: [u8; 128] = [0; 128];
-    let size = socket.recv(&mut buf).unwrap();
+    let size = socket.recv(&mut buf).await.unwrap();
 
     if size <= 0 {
         return None;
@@ -40,47 +43,64 @@ async fn get_haptic_packet(socket: &UdpSocket) -> Option<HapticPacket> {
     };
 }
 
-async fn output(socket: &UdpSocket, sdl_context: &Sdl, controller: &GameController) {
-    let haptic_subsystem = sdl_context
-        .haptic()
-        .expect("Unable to initialize SDL Haptic Subsystem.\n");
-    let mut haptic = haptic_subsystem
-        .open_from_joystick_id(controller.instance_id())
-        .unwrap();
-    let packet = match get_haptic_packet(&socket).await {
-        Some(v) => v,
-        None => continue,
-    };
+async fn haptic_reader(socket: Arc<UdpSocket>, incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>>) {
+    loop {
+        let packet = match get_haptic_packet(&socket).await {
+            Some(v) => v,
+            None => continue
+        };
+        let mut incoming_packets_locked = incoming_packets.try_lock().expect("Unable to lock incoming packet buffer.\n");
+        incoming_packets_locked.push_back(packet)
+    }
+}
 
+async fn output(packet: HapticPacket, haptic: &mut Haptic) {
     haptic.rumble_stop();
     haptic.rumble_play(packet.strength, 1000);
 }
 
-async fn input(socket: &UdpSocket, sdl_context: &Sdl, framerate: &u64, ldeadzone: &f64, rdeadzone: &f64) {
-    let mut sdl_event_pump = sdl_context
-        .event_pump()
-        .expect("Unable to generate event pump.");
-    let mut bitmask: u16 = 0;
-    let mut axis_values: [i32; 8] = [0; 8];
-    let key_associations: &HashMap<Button, u16> = get_key_associations();
-
-    handle_events(&mut sdl_event_pump, &mut bitmask, &mut axis_values, &key_associations);
-    apply_ldeadzones(&ldeadzone, &mut axis_values);
-    apply_rdeadzones(&rdeadzone, &mut axis_values);
+async fn input(
+    outgoing_packets: &mut Arc<Mutex<VecDeque<InputPacket>>>, 
+    sdl_event_pump: &mut EventPump, 
+    framerate: &u64, ldeadzone: &f64, 
+    rdeadzone: &f64, bitmask: &mut u16, 
+    axis_values: &mut [i32; 8], 
+    key_associations: &HashMap<Button, u16>) {
+        
+    handle_events(sdl_event_pump, bitmask, axis_values, key_associations);
+    apply_ldeadzones(ldeadzone, axis_values);
+    apply_rdeadzones(rdeadzone, axis_values);
 
     let timestamp = get_formatted_time();
-    let conf: Configuration = bincode::config::standard();
-    let packet: InputPacket = InputPacket::new(bitmask, axis_values, timestamp);
+    let packet: InputPacket = InputPacket::new(*bitmask, *axis_values, timestamp);
 
-    let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
-    let _ = socket.send(bytes.as_slice());
+    let mut outgoing_packets_locked = outgoing_packets.try_lock().expect("Unable to lock outgoing packet buffer.\n");
+    outgoing_packets_locked.push_back(packet);
 
     // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
     sleep(Duration::from_millis(1000 / framerate)).await;
 }
+
+async fn input_sender(socket: Arc<UdpSocket>, outgoing_packets: Arc<Mutex<VecDeque<InputPacket>>>) {
+    loop {
+        let mut outgoing_packets_locked = outgoing_packets.try_lock().expect("Unable to lock outgoing packet buffer.\n");
+
+        while outgoing_packets_locked.len() > 0 {
+            let packet = match outgoing_packets_locked.pop_front() {
+                Some(v) => v,
+                None => continue
+            };
+
+            let conf: Configuration = bincode::config::standard();
+            let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
+            let _ = socket.send(bytes.as_slice()).await;
+        }
+    }
+}
+
 async fn get_udp_socket(ip: String, port: u16) -> Result<UdpSocket, &'static str> {
     // The binding isn't really necessary I'm pretty sure but whatever
-    let socket = match UdpSocket::bind("0.0.0.0:0") {
+    let socket = match UdpSocket::bind("0.0.0.0:0").await {
         Ok(v) => v,
         Err(_e) => return Err("Could not create a UDP Socket."),
     };
@@ -92,7 +112,7 @@ async fn get_udp_socket(ip: String, port: u16) -> Result<UdpSocket, &'static str
     debug!("Client socket connected to {}.", &address);
 
     // Broadcast to all devices on the given port.
-    return match socket.connect(address) {
+    return match socket.connect(address).await {
         Ok(v) => Ok(socket),
         Err(_e) => Err("Could not connect to the local network."),
     };
@@ -199,7 +219,7 @@ fn axis_motion(axis: Axis, value: i16, axis_values: &mut [i32; 8]) {
         Axis::TriggerRight => 5,
     };
 
-    axis_values[i] = value.try_into().unwrap();
+    axis_values[i] = value.try_into().unwrap();return
 }
 
 fn apply_ldeadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
@@ -231,9 +251,10 @@ fn apply_rdeadzones(deadzone: &f64, axis_values: &mut [i32; 8]) {
 }
 
 pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdeadzone: f64) {
-    let socket = get_udp_socket(ip, port).await.unwrap();
+    let socket = Arc::new(get_udp_socket(ip, port).await.unwrap());
 
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
+
     let controller_subsystem = sdl_context
         .game_controller()
         .expect("Unable to initialize SDL Controller Subsystem.\n");
@@ -241,10 +262,43 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
         Ok(v) => v,
         Err(e) => panic!("{}", e)
     };
-    
+
+    let haptic_subsystem = sdl_context
+        .haptic()
+        .expect("Unable to initialize SDL Haptic Subsystem.\n");
+    let mut haptic = haptic_subsystem
+        .open_from_joystick_id(controller.instance_id())
+        .unwrap();
+
+    let mut sdl_event_pump = sdl_context
+        .event_pump()
+        .expect("Unable to generate event pump.");
+    let mut bitmask: u16 = 0;
+    let mut axis_values: [i32; 8] = [0; 8];
+    let key_associations: &HashMap<Button, u16> = get_key_associations();
+    let mut incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
+    let mut outgoing_packets: Arc<Mutex<VecDeque<InputPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
+
+    tokio::spawn(haptic_reader(socket.clone(), incoming_packets.clone()));
+    tokio::spawn(input_sender(socket.clone(), outgoing_packets.clone()));
+
     loop {
-        input(&socket, &sdl_context, &framerate, &ldeadzone, &rdeadzone);
-        output(&socket, &sdl_context, &controller);
+        input(
+            &mut outgoing_packets,
+            &mut sdl_event_pump, 
+            &framerate, 
+            &ldeadzone, 
+            &rdeadzone, 
+            &mut bitmask, 
+            &mut axis_values, 
+            &key_associations).await;
+        
+        let mut incoming_packets_locked = incoming_packets.try_lock().expect("Unable to lock incoming packet buffer.\n");
+
+        output(match incoming_packets_locked.pop_front() {
+            Some(v) => v,
+            None => continue
+        }, &mut haptic);
     }
 }
 
