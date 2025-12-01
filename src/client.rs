@@ -47,15 +47,13 @@ async fn output(socket: &UdpSocket, sdl_context: &Sdl, controller: &GameControll
     let mut haptic = haptic_subsystem
         .open_from_joystick_id(controller.instance_id())
         .unwrap();
-    while true {
-        let packet = match get_haptic_packet(&socket).await {
-            Some(v) => v,
-            None => continue,
-        };
+    let packet = match get_haptic_packet(&socket).await {
+        Some(v) => v,
+        None => continue,
+    };
 
-        haptic.rumble_stop();
-        haptic.rumble_play(packet.strength, 1000);
-    }
+    haptic.rumble_stop();
+    haptic.rumble_play(packet.strength, 1000);
 }
 
 async fn input(socket: &UdpSocket, sdl_context: &Sdl, framerate: &u64, ldeadzone: &f64, rdeadzone: &f64) {
@@ -66,21 +64,19 @@ async fn input(socket: &UdpSocket, sdl_context: &Sdl, framerate: &u64, ldeadzone
     let mut axis_values: [i32; 8] = [0; 8];
     let key_associations: &HashMap<Button, u16> = get_key_associations();
 
-    loop {
-        handle_events(&mut sdl_event_pump, &mut bitmask, &mut axis_values, &key_associations);
-        apply_ldeadzones(&ldeadzone, &mut axis_values);
-        apply_rdeadzones(&rdeadzone, &mut axis_values);
+    handle_events(&mut sdl_event_pump, &mut bitmask, &mut axis_values, &key_associations);
+    apply_ldeadzones(&ldeadzone, &mut axis_values);
+    apply_rdeadzones(&rdeadzone, &mut axis_values);
 
-        let timestamp = get_formatted_time();
-        let conf: Configuration = bincode::config::standard();
-        let packet: InputPacket = InputPacket::new(bitmask, axis_values, timestamp);
+    let timestamp = get_formatted_time();
+    let conf: Configuration = bincode::config::standard();
+    let packet: InputPacket = InputPacket::new(bitmask, axis_values, timestamp);
 
-        let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
-        let _ = socket.send(bytes.as_slice());
+    let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
+    let _ = socket.send(bytes.as_slice());
 
-        // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
-        sleep(Duration::from_millis(1000 / framerate)).await;
-    }
+    // Synchronize input polling with the framerate of the program so as to not flood the socket with packets
+    sleep(Duration::from_millis(1000 / framerate)).await;
 }
 async fn get_udp_socket(ip: String, port: u16) -> Result<UdpSocket, &'static str> {
     // The binding isn't really necessary I'm pretty sure but whatever
@@ -245,7 +241,8 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
         Ok(v) => v,
         Err(e) => panic!("{}", e)
     };
-    while true {
+    
+    loop {
         input(&socket, &sdl_context, &framerate, &ldeadzone, &rdeadzone);
         output(&socket, &sdl_context, &controller);
     }
