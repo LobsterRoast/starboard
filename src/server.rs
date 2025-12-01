@@ -48,9 +48,8 @@ fn parse_timestamp(date: &str) -> Option<DateTime<FixedOffset>> {
 
 // This is the function that will receive input data from the Steam Deck and emit an event to the Virtual Device
 async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>) {
-    let mut states: States = States::new();
+    let mut key_states: u16 = 0;
     let mut buf: [u8; 512] = [0; 512];
-    let mut iteration: u64 = 0;
     loop {
         let packet: InputPacket = match get_packet(&socket, &mut buf).await {
             Some(v) => v,
@@ -63,7 +62,7 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
         let mut events: Vec<InputEvent> = Vec::new();
         
         if *DEBUG_MODE.get().unwrap() {
-            let timestamp = match parse_timestamp(&packet.timestamp) {
+            match parse_timestamp(&packet.timestamp) {
                 Some(packet_time) => {
                     let current_time = Local::now();
                     let time_delta = current_time.signed_duration_since(packet_time)
@@ -79,7 +78,7 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
             let key_bit = BIN_KEYS[i];
             let key_evdev = EVDEV_KEYS[i];
             let key_pressed: u16 = packet.key_states & key_bit;
-            let key_pressed_cached: u16 = states.key_states & key_bit;
+            let key_pressed_cached: u16 = key_states & key_bit;
             if key_pressed != key_pressed_cached {
                 let event_value = (key_pressed != 0) as i32;
                 let event = InputEvent::new(EventType::KEY.0, key_evdev.0, event_value);
@@ -87,7 +86,7 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
             }
         }
         
-        states.key_states = packet.key_states;
+        key_states = packet.key_states;
         
         for i in 0..8 {
             let abs_state = packet.abs_states[i];
@@ -100,7 +99,6 @@ async fn udp_handling(device: Arc<Mutex<VirtualDevice>>, socket: Arc<UdpSocket>)
 
         let mut device_locked = device.lock().await;
         let _ = device_locked.emit(events.as_slice());
-        iteration += 1;
     }
 }
 

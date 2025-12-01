@@ -1,4 +1,4 @@
-use sdl2::controller::{Button, Axis};
+use sdl2::controller::Button;
 
 use evdev::{KeyCode, AbsoluteAxisCode};
 
@@ -80,15 +80,6 @@ pub const BIN_KEYS: [u16; 14] = [
 
 // Iterable constant array of all the analog values that will be used. Absolute is code for Analog in this case.
 // For some reason, the D-Pad is an analog value. ABS_HAT0(X/Y) refers to the D-Pad values.
-pub const SDL_AXES: [Axis; 6] = [
-    Axis::LeftX,
-    Axis::LeftY,
-    Axis::TriggerLeft,
-    Axis::RightX,
-    Axis::RightY,
-    Axis::TriggerRight
-];
-
 pub const EVDEV_AXES: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_X,
     AbsoluteAxisCode::ABS_Y,
@@ -113,30 +104,12 @@ pub struct HapticPacket {
     pub timestamp: String
 }
 
-pub struct States {
-    pub key_states: u16,
-    pub abs_states: HashMap<AbsoluteAxisCode, i32>
-}
-
 impl InputPacket {
     pub fn new(key_states: u16, abs_states: [i32; 8], timestamp: String) -> Self {
         Self {
                 key_states: key_states,
                 abs_states: abs_states,
                 timestamp: timestamp
-        }
-    }
-}
-
-impl States {
-    pub fn new() -> States {
-        let mut abs_states_buf: HashMap<AbsoluteAxisCode, i32> = HashMap::new();
-        for abs in EVDEV_AXES {
-            abs_states_buf.insert(abs, 0);
-        }
-        Self {
-            key_states: 0,
-            abs_states: abs_states_buf
         }
     }
 }

@@ -47,10 +47,9 @@ async fn main() {
             assert_eq!(quartets.clone().count(), 4, "ip must be in 4 quartets (i.e. 255.255.255.255).");
             
             for quartet in quartets {
-                let quartet_byte = quartet
-                                    .parse::<u8>()
-                                    .expect("Unable to parse ip quarter into unsigned 8-bit integer.\n");
-                assert!(quartet_byte <= 255, "Invalid ip address.");
+                quartet
+                    .parse::<u8>()
+                    .expect("Unable to parse ip quarter into unsigned 8-bit integer.\n");
             }
             ip = ip_buf;
             continue;

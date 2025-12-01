@@ -281,7 +281,7 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
     let mut axis_values: [i32; 8] = [0; 8];
     let key_associations: &HashMap<Button, u16> = get_key_associations();
 
-    let mut incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
+    let incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
     let mut outgoing_packets: Arc<Mutex<VecDeque<InputPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
 
     tokio::spawn(haptic_reader(socket.clone(), incoming_packets.clone()));
