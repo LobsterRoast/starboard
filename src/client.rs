@@ -21,8 +21,6 @@ use sdl2::{
     haptic::Haptic,
 };
 
-use chrono::{DateTime, Local};
-
 use crate::debug;
 use crate::util::*;
 
@@ -85,19 +83,18 @@ async fn input(
 
 async fn input_sender(socket: Arc<UdpSocket>, outgoing_packets: Arc<Mutex<VecDeque<InputPacket>>>) {
     loop {
-        if let Ok(mut buf) = outgoing_packets.try_lock() {
-            while buf.len() > 0 {
-                let packet = match buf.pop_front() {
-                    Some(v) => v,
-                    None => continue
-                };
-    
-                let conf: Configuration = bincode::config::standard();
-                let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
-                let _ = socket.send(bytes.as_slice()).await;
-            }
-        }
+        let mut buf = outgoing_packets.lock().await;
 
+        while buf.len() > 0 {
+            let packet = match buf.pop_front() {
+                Some(v) => v,
+                None => continue
+            };
+
+            let conf: Configuration = bincode::config::standard();
+            let bytes: Vec<u8> = encode_to_vec(packet, conf).expect("Unable to serialize packet.");
+            let _ = socket.send(bytes.as_slice()).await;
+        }
     }
 }
 
@@ -148,11 +145,6 @@ fn get_controller(controller_subsystem: GameControllerSubsystem) -> Result<GameC
     }
 
     Err("No valid controllers found to connect to.")
-}
-
-fn get_formatted_time() -> String {
-    let dt: DateTime<Local> = Local::now();
-    format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
 }
 
 fn handle_events(sdl_event_pump: &mut EventPump, pressed_keys: &mut u16, axis_values: &mut [i32; 8], key_associations: &HashMap<Button, u16>,) {
@@ -284,9 +276,9 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
     let incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
     let mut outgoing_packets: Arc<Mutex<VecDeque<InputPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
 
+    
     tokio::spawn(haptic_reader(socket.clone(), incoming_packets.clone()));
     tokio::spawn(input_sender(socket.clone(), outgoing_packets.clone()));
-
     loop {
         input(
             &mut outgoing_packets,
@@ -298,13 +290,12 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
             &mut axis_values, 
             &key_associations).await;
         
-        if let Ok(mut buf) = incoming_packets.try_lock() {
-            output(match buf.pop_front() {
-                Some(v) => v,
-                None => continue
-            }, &mut haptic).await;
-        }
-
+        let mut buf = incoming_packets.lock().await;
+        
+        output(match buf.pop_front() {
+            Some(v) => v,
+            None => continue
+        }, &mut haptic).await;
     }
 }
 

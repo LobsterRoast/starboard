@@ -2,6 +2,8 @@ use sdl2::controller::Button;
 
 use evdev::{KeyCode, AbsoluteAxisCode};
 
+use chrono::{DateTime, Local};
+
 use std::sync::OnceLock;
 use std::collections::HashMap;
 
@@ -113,7 +115,14 @@ impl InputPacket {
         }
     }
 }
-
+impl HapticPacket {
+    pub fn new(strength: f32, timestamp: String) -> Self {
+        Self {
+                strength: strength,
+                timestamp: timestamp
+        }
+    }
+}
 pub fn get_ip(default: String, ip: String) -> String {
     if ip == "".to_string(){
         return default;
@@ -131,4 +140,9 @@ pub fn get_key_associations() -> &'static HashMap<Button, u16> {
         }
         map
     })
+}
+
+pub fn get_formatted_time() -> String {
+    let dt: DateTime<Local> = Local::now();
+    format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
 }

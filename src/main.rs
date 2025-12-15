@@ -1,16 +1,18 @@
 mod client;
 mod server;
+mod ui;
 mod util;
 
 use std::env;
 
-use crate::util::*;
-use crate::server::server;
 use crate::client::client;
+use crate::server::server;
+use crate::ui::*;
+use crate::util::*;
 
 #[tokio::main]
 async fn main() {
-    let mut framerate: u64 = 60;  // Default framerate to 60
+    let mut framerate: u64 = 60; // Default framerate to 60
     let mut ip: String = "".to_string();
     let mut port: u16 = 8080;
     let mut ldeadzone = 3000.0;
@@ -18,7 +20,8 @@ async fn main() {
     let mut is_client = false;
     let mut is_server = false;
     let mut is_debug = false;
-    
+    let mut gtk = true;
+
     // ARGS:
     // --client             --- Opens starboard in client (controller) mode
     // --server             --- Opens starboard in server (PC) mode
@@ -35,17 +38,25 @@ async fn main() {
         }
 
         if arg.starts_with("--fps=") {
-            framerate = arg.strip_prefix("--fps=").unwrap().parse::<u64>().expect("Could not parse fps into a u16.\n");
+            framerate = arg
+                .strip_prefix("--fps=")
+                .unwrap()
+                .parse::<u64>()
+                .expect("Could not parse fps into a u16.\n");
             continue;
         }
 
         if arg.starts_with("--ip=") {
             let ip_buf = arg.strip_prefix("--ip=").unwrap().to_string();
             let quartets = ip_buf.split('.');
-            
+
             // ip must be in valid ipv4 format (i.e. 255.255.255.255)
-            assert_eq!(quartets.clone().count(), 4, "ip must be in 4 quartets (i.e. 255.255.255.255).");
-            
+            assert_eq!(
+                quartets.clone().count(),
+                4,
+                "ip must be in 4 quartets (i.e. 255.255.255.255)."
+            );
+
             for quartet in quartets {
                 quartet
                     .parse::<u8>()
@@ -56,36 +67,39 @@ async fn main() {
         }
 
         if arg.starts_with("--port=") {
-            port = arg.strip_prefix("--port=")
-                    .unwrap()
-                    .parse::<u16>()
-                    .expect("Unable to parse ip into unsigned 16-bit integer.\n");
+            port = arg
+                .strip_prefix("--port=")
+                .unwrap()
+                .parse::<u16>()
+                .expect("Unable to parse ip into unsigned 16-bit integer.\n");
             continue;
         }
 
         if arg.starts_with("--ldeadzone=") {
-            ldeadzone = arg.strip_prefix("--deadzone=")
-                            .unwrap()
-                            .parse::<f64>()
-                            .expect("Unable to parse deadzone argument into 64-bit floating-point number..\n");
+            ldeadzone = arg
+                .strip_prefix("--deadzone=")
+                .unwrap()
+                .parse::<f64>()
+                .expect("Unable to parse deadzone argument into 64-bit floating-point number..\n");
             continue;
         }
 
         if arg.starts_with("--rdeadzone=") {
-            rdeadzone = arg.strip_prefix("--rdeadzone=")
-                            .unwrap()
-                            .parse::<f64>()
-                            .expect("Unable to parse deadzone argument into 64-bit floating-point number..\n");
+            rdeadzone = arg
+                .strip_prefix("--rdeadzone=")
+                .unwrap()
+                .parse::<f64>()
+                .expect("Unable to parse deadzone argument into 64-bit floating-point number..\n");
             continue;
         }
 
         match arg {
             "--client" => is_client = !is_server,
             "--server" => is_server = !is_client,
-            "--debug"  => is_debug = true,
-            _          => println!("Didn't recognize argument '{}'", arg)
+            "--debug" => is_debug = true,
+            "--cli" => gtk = false,
+            _ => println!("Didn't recognize argument '{}'", arg),
         }
-
     }
 
     let _ = DEBUG_MODE.set(is_debug);
@@ -95,11 +109,21 @@ async fn main() {
 
     if is_client {
         println!("Starting starboard in client mode.");
-        client(framerate.clone(), ip.clone(), port.clone(), ldeadzone, rdeadzone).await;
-    }
-
-    else if is_server {
+        client(
+            framerate.clone(),
+            ip.clone(),
+            port.clone(),
+            ldeadzone,
+            rdeadzone,
+        )
+        .await;
+    } else if is_server {
         println!("Starting starboard in server mode.");
+        if gtk {
+            if let Err(_) = run_gui() {
+                println!("Failed to open GTK window. Opening in terminal-only mode.");
+            }
+        }
         server(ip.clone(), port.clone()).await;
     }
 }
