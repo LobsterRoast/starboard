@@ -1,12 +1,8 @@
-use tokio::{
-    time::*,
-    sync::Mutex,
-    net::UdpSocket
-};
+use tokio::{net::UdpSocket, sync::Mutex, time::*};
 
 use std::{
     collections::{HashMap, VecDeque},
-    sync::Arc
+    sync::Arc,
 };
 
 use bincode::{
@@ -15,7 +11,7 @@ use bincode::{
 };
 
 use sdl2::{
-    EventPump, GameControllerSubsystem,
+    EventPump, GameControllerSubsystem, VideoSubsystem,
     controller::{Axis, Button, GameController},
     event::Event as SdlEvent,
     haptic::Haptic,
@@ -40,11 +36,14 @@ async fn get_haptic_packet(socket: &UdpSocket) -> Option<HapticPacket> {
     };
 }
 
-async fn haptic_reader(socket: Arc<UdpSocket>, incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>>) {
+async fn haptic_reader(
+    socket: Arc<UdpSocket>,
+    incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>>,
+) {
     loop {
         let packet = match get_haptic_packet(&socket).await {
             Some(v) => v,
-            None => continue
+            None => continue,
         };
 
         if let Ok(mut buf) = incoming_packets.try_lock() {
@@ -59,13 +58,15 @@ async fn output(packet: HapticPacket, haptic: &mut Haptic) {
 }
 
 async fn input(
-    outgoing_packets: &mut Arc<Mutex<VecDeque<InputPacket>>>, 
-    sdl_event_pump: &mut EventPump, 
-    framerate: &u64, ldeadzone: &f64, 
-    rdeadzone: &f64, bitmask: &mut u16, 
-    axis_values: &mut [i32; 8], 
-    key_associations: &HashMap<Button, u16>) {
-
+    outgoing_packets: &mut Arc<Mutex<VecDeque<InputPacket>>>,
+    sdl_event_pump: &mut EventPump,
+    framerate: &u64,
+    ldeadzone: &f64,
+    rdeadzone: &f64,
+    bitmask: &mut u16,
+    axis_values: &mut [i32; 8],
+    key_associations: &HashMap<Button, u16>,
+) {
     handle_events(sdl_event_pump, bitmask, axis_values, key_associations);
     apply_ldeadzones(ldeadzone, axis_values);
     apply_rdeadzones(rdeadzone, axis_values);
@@ -88,7 +89,7 @@ async fn input_sender(socket: Arc<UdpSocket>, outgoing_packets: Arc<Mutex<VecDeq
         while buf.len() > 0 {
             let packet = match buf.pop_front() {
                 Some(v) => v,
-                None => continue
+                None => continue,
             };
 
             let conf: Configuration = bincode::config::standard();
@@ -124,7 +125,9 @@ fn get_controller_message(controller: &GameController) -> String {
     return format!("Controller found:\nName: {}\nMapping: {}\n", name, mapping);
 }
 
-fn get_controller(controller_subsystem: GameControllerSubsystem) -> Result<GameController, &'static str> {
+fn get_controller(
+    controller_subsystem: GameControllerSubsystem,
+) -> Result<GameController, &'static str> {
     let joystick_count = controller_subsystem
         .num_joysticks()
         .expect("Unable to count controllers.\n");
@@ -147,7 +150,12 @@ fn get_controller(controller_subsystem: GameControllerSubsystem) -> Result<GameC
     Err("No valid controllers found to connect to.")
 }
 
-fn handle_events(sdl_event_pump: &mut EventPump, pressed_keys: &mut u16, axis_values: &mut [i32; 8], key_associations: &HashMap<Button, u16>,) {
+fn handle_events(
+    sdl_event_pump: &mut EventPump,
+    pressed_keys: &mut u16,
+    axis_values: &mut [i32; 8],
+    key_associations: &HashMap<Button, u16>,
+) {
     sdl_event_pump.pump_events();
     for event in sdl_event_pump.poll_iter() {
         match event {
@@ -194,7 +202,11 @@ fn button_press(button: Button, bitmask: &mut u16, key_associations: &HashMap<Bu
     0
 }
 
-fn button_release(button: Button, bitmask: &mut u16, key_associations: &HashMap<Button, u16>) -> i8 {
+fn button_release(
+    button: Button,
+    bitmask: &mut u16,
+    key_associations: &HashMap<Button, u16>,
+) -> i8 {
     if let Some(bin) = key_associations.get(&button) {
         *bitmask -= bin;
     } else {
@@ -250,17 +262,30 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
 
     let sdl_context = sdl2::init().expect("Unable to initialize SDL.\n");
 
+    let video_subsystem = sdl_context
+        .video()
+        .expect("Unable to initialize SDL Video Subsystem.\n");
+
+    println!(
+        "{}",
+        video_subsystem
+            .desktop_display_mode(0)
+            .unwrap()
+            .refresh_rate
+    );
+
     let controller_subsystem = sdl_context
         .game_controller()
         .expect("Unable to initialize SDL Controller Subsystem.\n");
     let controller = match get_controller(controller_subsystem) {
         Ok(v) => v,
-        Err(e) => panic!("{}", e)
+        Err(e) => panic!("{}", e),
     };
 
     let haptic_subsystem = sdl_context
         .haptic()
         .expect("Unable to initialize SDL Haptic Subsystem.\n");
+
     let mut haptic = haptic_subsystem
         .open_from_joystick_id(controller.instance_id())
         .unwrap();
@@ -268,34 +293,40 @@ pub async fn client(framerate: u64, ip: String, port: u16, ldeadzone: f64, rdead
     let mut sdl_event_pump = sdl_context
         .event_pump()
         .expect("Unable to generate event pump.");
-    
+
     let mut bitmask: u16 = 0;
     let mut axis_values: [i32; 8] = [0; 8];
     let key_associations: &HashMap<Button, u16> = get_key_associations();
 
-    let incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
-    let mut outgoing_packets: Arc<Mutex<VecDeque<InputPacket>>> = Arc::new(Mutex::new(VecDeque::new()));
+    let incoming_packets: Arc<Mutex<VecDeque<HapticPacket>>> =
+        Arc::new(Mutex::new(VecDeque::new()));
+    let mut outgoing_packets: Arc<Mutex<VecDeque<InputPacket>>> =
+        Arc::new(Mutex::new(VecDeque::new()));
 
-    
     tokio::spawn(haptic_reader(socket.clone(), incoming_packets.clone()));
     tokio::spawn(input_sender(socket.clone(), outgoing_packets.clone()));
     loop {
         input(
             &mut outgoing_packets,
-            &mut sdl_event_pump, 
-            &framerate, 
-            &ldeadzone, 
-            &rdeadzone, 
-            &mut bitmask, 
-            &mut axis_values, 
-            &key_associations).await;
-        
+            &mut sdl_event_pump,
+            &framerate,
+            &ldeadzone,
+            &rdeadzone,
+            &mut bitmask,
+            &mut axis_values,
+            &key_associations,
+        )
+        .await;
+
         let mut buf = incoming_packets.lock().await;
-        
-        output(match buf.pop_front() {
-            Some(v) => v,
-            None => continue
-        }, &mut haptic).await;
+
+        output(
+            match buf.pop_front() {
+                Some(v) => v,
+                None => continue,
+            },
+            &mut haptic,
+        )
+        .await;
     }
 }
-
