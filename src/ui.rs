@@ -1,7 +1,10 @@
-use gtk4::{Application, Builder, Button, IconTheme, gdk, prelude::*};
+use std::sync::OnceLock;
+
+use gtk4::{Application, Box, Builder, Button, IconTheme, Label, Switch, gdk, prelude::*};
 
 use gio::{
-    ffi::{GResource, g_resources_register},
+    SimpleAction, SimpleActionGroup,
+    ffi::{GResource, GSimpleAction, g_resources_register},
     glib::{self, BoolError, ExitCode},
 };
 
@@ -10,6 +13,43 @@ use crate::{DEBUG_MODE, debug};
 #[link(name = "resources")]
 unsafe extern "C" {
     fn gresource_get_resource() -> *mut GResource;
+}
+
+fn activate_css() {
+    let css_provider = gtk4::CssProvider::new();
+    let css_src = include_str!("gtk/style.css");
+    css_provider.load_from_string(css_src);
+    gtk4::style_context_add_provider_for_display(
+        &gdk::Display::default().expect("Couldn't connect to default display."),
+        &css_provider,
+        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+}
+
+fn on_activate(application: &gtk4::Application, builder: &Builder) {
+    let window = builder
+        .object::<gtk4::ApplicationWindow>("window")
+        .expect("Unable to parse GTK root element.");
+
+    let action_group = SimpleActionGroup::new();
+    let activate_starboard_action = SimpleAction::new("activate-starboard", None);
+    activate_starboard_action.connect_activate(glib::clone!(
+        #[strong]
+        builder,
+        move |_, _| activate_starboard_callback(&builder)
+    ));
+    action_group.add_action(&activate_starboard_action);
+    activate_starboard_action.set_enabled(true);
+
+    window.insert_action_group("actions", Some(&action_group));
+    window.set_application(Some(application));
+    window.present();
+}
+
+fn activate_starboard_callback(builder: &Builder) {
+    if let Some(label) = builder.object::<Label>("status-label") {
+        label.set_text("Skibidi");
+    }
 }
 
 pub struct GtkWrapper {
@@ -80,24 +120,4 @@ impl GtkWrapper {
             glib::ControlFlow::Break
         });
     }
-}
-
-fn activate_css() {
-    let css_provider = gtk4::CssProvider::new();
-    let css_src = include_str!("gtk/style.css");
-    css_provider.load_from_string(css_src);
-    gtk4::style_context_add_provider_for_display(
-        &gdk::Display::default().expect("Couldn't connect to default display."),
-        &css_provider,
-        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
-    );
-}
-
-fn on_activate(application: &gtk4::Application, builder: &Builder) {
-    let window = builder
-        .object::<gtk4::ApplicationWindow>("window")
-        .expect("Unable to parse GTK root element.");
-
-    window.set_application(Some(application));
-    window.present();
 }

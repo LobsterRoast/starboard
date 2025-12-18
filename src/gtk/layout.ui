@@ -42,6 +42,7 @@
                     <property name="valign">center</property>
                     <child>
                       <object class="GtkSwitch" id="toggle-switch">
+                        <property name="action-name">actions.activate-starboard</property>
                         <property name="halign">center</property>
                         <property name="height-request">60</property>
                         <property name="valign">start</property>
@@ -51,7 +52,7 @@
                     <child>
                       <object class="GtkCenterBox">
                         <child type="center">
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="status-label">
                             <property name="halign">center</property>
                             <property name="label">Status:</property>
                           </object>
