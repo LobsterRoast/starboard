@@ -1,9 +1,11 @@
-use gtk4::{Application, Builder, IconTheme, gdk, prelude::*};
+use gtk4::{Application, Builder, Button, IconTheme, gdk, prelude::*};
 
 use gio::{
     ffi::{GResource, g_resources_register},
-    glib::{BoolError, ExitCode},
+    glib::{self, BoolError, ExitCode},
 };
+
+use crate::{DEBUG_MODE, debug};
 
 #[link(name = "resources")]
 unsafe extern "C" {
@@ -53,6 +55,30 @@ impl GtkWrapper {
     pub fn run(&self) -> bool {
         let empty: Vec<String> = vec![];
         return self.app.run_with_args(&empty) == ExitCode::SUCCESS;
+    }
+
+    pub fn update_button_state(&self, button_name: String, val: bool) {
+        let builder = self.builder.clone();
+        glib::source::idle_add_local(move || {
+            if let Some(button) = builder.object::<Button>(&button_name) {
+                if let Some(mut label) = button.label() {
+                    label = format!("Current State: {}", val).into();
+                }
+            }
+            glib::ControlFlow::Break
+        });
+    }
+
+    pub fn update_analog_state(&self, analog_name: String, val: f32) {
+        let builder = self.builder.clone();
+        glib::source::idle_add_local(move || {
+            if let Some(button) = builder.object::<Button>(&analog_name) {
+                if let Some(mut label) = button.label() {
+                    label = format!("Current State: {}", val).into();
+                }
+            }
+            glib::ControlFlow::Break
+        });
     }
 }
 
