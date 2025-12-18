@@ -120,9 +120,8 @@ async fn main() {
     } else if is_server {
         println!("Starting starboard in server mode.");
         if gtk {
-            if let Err(_) = run_gui() {
-                println!("Failed to open GTK window. Opening in terminal-only mode.");
-            }
+            let wrapper = GtkWrapper::new().expect("Unable to initialize GTK");
+            wrapper.run();
         }
         server(ip.clone(), port.clone()).await;
     }

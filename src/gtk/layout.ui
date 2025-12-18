@@ -64,29 +64,6 @@
                   <object class="GtkBox">
                     <property name="vexpand">True</property>
                     <child>
-                      <object class="GtkScale">
-                        <property name="adjustment">
-                          <object class="GtkAdjustment">
-                            <property name="lower">15.0</property>
-                            <property name="page-increment">1.0</property>
-                            <property name="page-size">1.0</property>
-                            <property name="step-increment">10.0</property>
-                            <property name="upper">251.0</property>
-                            <property name="value">60.0</property>
-                          </object>
-                        </property>
-                        <property name="digits">0</property>
-                        <property name="draw-value">True</property>
-                        <property name="fill-level">60.0</property>
-                        <property name="halign">start</property>
-                        <property name="inverted">True</property>
-                        <property name="orientation">vertical</property>
-                        <property name="restrict-to-fill-level">False</property>
-                        <property name="vexpand">True</property>
-                        <marks/>
-                      </object>
-                    </child>
-                    <child>
                       <object class="GtkBox">
                         <property name="orientation">vertical</property>
                         <property name="valign">center</property>
@@ -373,8 +350,5 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkIconTheme" id="icon-resources">
-    <property name="resource-path">/github/lobsterroast/starboard/</property>
   </object>
 </interface>
