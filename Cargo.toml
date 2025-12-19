@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 bincode = "2.0.1"
 chrono = "0.4.42"
+daemonize = "0.5.0"
 evdev = { version = "0.13.2", features = ["tokio", "stream-trait"] }
 gio = "0.21.5"
 gtk4 = { version = "0.10.3", features = ["v4_12"] }
