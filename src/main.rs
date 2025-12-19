@@ -11,24 +11,6 @@ use crate::server::server;
 use crate::ui::*;
 use crate::util::*;
 
-const VALID_ARGS: [&str; 15] = [
-    "server",
-    "client",
-    "manager",
-    "help",
-    "--ip",
-    "--port",
-    "--daemonize",
-    "--ldeadzone",
-    "--rdeadzone",
-    "--fps",
-    "--debug",
-    "-ldz",
-    "rdz",
-    "-d",
-    "-D",
-];
-
 fn manager() {
     let gtk_wrapper = GtkWrapper::new().expect("Unable to initialize GTK");
     gtk_wrapper.run();
