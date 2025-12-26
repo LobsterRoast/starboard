@@ -1,13 +1,16 @@
 mod client;
 mod server;
+mod systemd;
 mod ui;
 mod util;
 
 use daemonize::Daemonize;
+use std::fs;
 use std::{env, fs::File};
 
 use crate::client::client;
 use crate::server::server;
+use crate::systemd::gen_systemd_unit_file;
 use crate::ui::*;
 use crate::util::*;
 
@@ -106,10 +109,6 @@ async fn main() {
     let mut port: u16 = 8080;
     let mut ldeadzone = 3000.0;
     let mut rdeadzone = 1500.0;
-    let mut is_client = false;
-    let mut is_server = false;
-    let mut is_debug = false;
-    let mut gtk = true;
 
     let args: Vec<String> = std::env::args()
         .filter(|arg| !arg.ends_with("starboard"))
@@ -147,7 +146,7 @@ async fn main() {
         }
         &"manager" => manager(),
         &"help" => print_help_menu(),
-
+        &"setup" => println!("{}", gen_systemd_unit_file()),
         &&_ => panic!(
             "{} is not a valid command. Run 'starboard help' to see a list of valid commands.",
             cmd
