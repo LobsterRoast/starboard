@@ -10,7 +10,7 @@ use std::{env, fs::File};
 
 use crate::client::client;
 use crate::server::server;
-use crate::systemd::gen_systemd_unit_file;
+use crate::systemd::{create_systemd_unit_file, gen_systemd_unit_file};
 use crate::ui::*;
 use crate::util::*;
 
@@ -135,6 +135,9 @@ async fn main() {
         }
     }
 
+    // At some point in the future, this should be refactored to return
+    // some sort of error that can be propagated from any of the different
+    // commands.
     match cmd {
         &"server" => {
             println!("Starting starboard in server mode.");
@@ -146,7 +149,7 @@ async fn main() {
         }
         &"manager" => manager(),
         &"help" => print_help_menu(),
-        &"setup" => println!("{}", gen_systemd_unit_file()),
+        &"setup" => create_systemd_unit_file().await,
         &&_ => panic!(
             "{} is not a valid command. Run 'starboard help' to see a list of valid commands.",
             cmd
