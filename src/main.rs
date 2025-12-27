@@ -5,12 +5,14 @@ mod ui;
 mod util;
 
 use daemonize::Daemonize;
+use nix::unistd::Uid;
+use std::env::current_exe;
 use std::fs;
 use std::{env, fs::File};
 
 use crate::client::client;
 use crate::server::server;
-use crate::systemd::{create_systemd_unit_file, gen_systemd_unit_file};
+use crate::systemd::create_systemd_unit_file;
 use crate::ui::*;
 use crate::util::*;
 
@@ -38,6 +40,20 @@ ARGS:
 -rdz / --rdeadzone | Sets the deadzone for your right analog stick. (Client only)
 -D / --debug       | Runs starboard in debug mode. Prints extra debug information.
 ")
+}
+
+async fn setup() {
+    if !Uid::effective().is_root() {
+        println!("Error: Setup must be run with sudo/root privileges.");
+        return;
+    }
+
+    if current_exe().unwrap().to_str().unwrap() != "/usr/local/bin/starboard" {
+        println!("Error: Starboard must be installed in /usr/local/bin.");
+        return;
+    }
+
+    create_systemd_unit_file().await;
 }
 
 fn get_fps(iter: &mut std::slice::Iter<&str>) -> u64 {
@@ -70,15 +86,11 @@ fn get_ip(iter: &mut std::slice::Iter<&str>) -> String {
 
 fn get_port(iter: &mut std::slice::Iter<&str>) -> u16 {
     let port = iter.next().expect("Missing port argument");
-    let port = port
+    return port
         .strip_prefix("--port=")
         .unwrap()
         .parse::<u16>()
         .expect("Port must be a valid integer between 1 and 65535\n");
-    if port > 65535 {
-        return 65535;
-    }
-    return port;
 }
 
 fn get_deadzone(iter: &mut std::slice::Iter<&str>) -> f64 {
@@ -111,7 +123,7 @@ async fn main() {
     let mut rdeadzone = 1500.0;
 
     let args: Vec<String> = std::env::args()
-        .filter(|arg| !arg.ends_with("starboard"))
+        .filter(|arg| !(arg.ends_with("starboard") || arg.contains("sudo")))
         .collect();
     let args: Vec<&str> = args.iter().map(|arg| arg.as_str()).collect();
     let mut iter = args.iter();
@@ -135,6 +147,9 @@ async fn main() {
         }
     }
 
+    // This function returns an error if DEBUG_MODE is already set. This can be ignored.
+    let _ = DEBUG_MODE.set(false);
+
     // At some point in the future, this should be refactored to return
     // some sort of error that can be propagated from any of the different
     // commands.
@@ -149,7 +164,7 @@ async fn main() {
         }
         &"manager" => manager(),
         &"help" => print_help_menu(),
-        &"setup" => create_systemd_unit_file().await,
+        &"setup" => setup().await,
         &&_ => panic!(
             "{} is not a valid command. Run 'starboard help' to see a list of valid commands.",
             cmd

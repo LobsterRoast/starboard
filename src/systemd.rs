@@ -1,32 +1,29 @@
 use std::{env, io::Write};
 
 use tokio::{
-    fs::{File, OpenOptions},
+    fs::{DirBuilder, File, OpenOptions},
     io::AsyncWriteExt,
 };
 
-pub fn gen_systemd_unit_file() -> Vec<u8> {
+fn gen_systemd_unit_file() -> Vec<u8> {
     let mut lines = Vec::new();
-    let starboard_path = env::current_exe().unwrap().display().to_string();
 
     // Add [Unit] header to file
-    let unit_args: Vec<&str> = vec![
+    let unit_args = vec![
         "[Unit]",
         "Description=A daemon to receive and process Starboard inputs",
         "",
     ];
 
-    let exec_start = format!("ExecStart={} server", starboard_path);
     // Add [Service] header to file
     let service_args = vec![
         "[Service]",
-        "Type=dbus",
-        "BusName=starboard",
-        &exec_start,
+        "Type=simple",
+        "User=root",
+        "Group=root",
+        "ExecStart=/usr/local/bin/starboard server",
         "",
     ];
-
-    let install_args = vec!["[Install]", "WantedBy=multi-user.target"];
 
     for arg in &unit_args {
         let _ = writeln!(&mut lines, "{}", arg);
@@ -36,23 +33,28 @@ pub fn gen_systemd_unit_file() -> Vec<u8> {
         let _ = writeln!(&mut lines, "{}", arg);
     }
 
-    for arg in &install_args {
-        let _ = writeln!(&mut lines, "{}", arg);
-    }
-
     lines
 }
 
 pub async fn create_systemd_unit_file() {
-    let mut systemd_file = OpenOptions::new()
+    let _ = DirBuilder::new()
+        .recursive(true)
+        .create("/etc/systemd/system")
+        .await;
+
+    let systemd_file = OpenOptions::new()
         .create_new(true)
-        .read(true)
         .write(true)
         .append(true)
-        .open("/usr/lib/systemd/system/starboard.service")
-        .await
-        .expect("Unable to generate systemd unit file");
+        .open("/etc/systemd/system/starboard.service")
+        .await;
 
-    let _ = systemd_file.write(gen_systemd_unit_file().as_slice());
-    println!("Successfully generated starboard.service.");
+    if let Ok(mut systemd_file) = systemd_file {
+        let _ = systemd_file.write(gen_systemd_unit_file().as_slice()).await;
+        let _ = systemd_file.flush().await;
+        println!("Successfully generated starboard.service in /etc/systemd/system");
+        return;
+    }
+
+    println!("starboard.service already exists. Skipping...")
 }

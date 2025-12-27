@@ -1,0 +1,10 @@
+[Unit]
+Description=A daemon to receive and process Starboard inputs
+
+[Service]
+Type=dbus
+BusName=starboard
+ExecStart=/home/lobsterroast/Documents/rust/starboard/target/debug/starboard server
+
+[Install]
+WantedBy=multi-user.target

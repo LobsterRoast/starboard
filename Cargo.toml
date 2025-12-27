@@ -13,6 +13,7 @@ gtk4 = { version = "0.10.3", features = ["v4_12"] }
 ipnet = "2.11.0"
 json = "0.12.4"
 local-ip-addr = "0.1.1"
+nix = { version = "0.30.1", features = ["user"] }
 sdl2 = "0.38.0"
 serde_json = "1.0.145"
 tokio = { version = "1.47.1", features = ["full"] }
