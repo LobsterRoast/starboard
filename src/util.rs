@@ -1,14 +1,15 @@
 use sdl2::controller::Button;
 
-use evdev::{KeyCode, AbsoluteAxisCode};
+use evdev::{AbsoluteAxisCode, KeyCode};
 
 use chrono::{DateTime, Local};
 
-use std::sync::OnceLock;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 // This macro is essentially just a version of println! that will only run if DEBUG_MODE is True.
-#[macro_export] macro_rules! debug {
+#[macro_export]
+macro_rules! debug {
     ($fmt:expr, $($args:tt)*) => {
         if *DEBUG_MODE.get().unwrap() {
             println!(concat!("[DEBUG] ", $fmt), $($args)*);
@@ -16,7 +17,7 @@ use std::collections::HashMap;
     };
     ($fmt:expr) => {
         if *DEBUG_MODE.get().unwrap() {
-            println!(concat!("[DEBUG] ", $fmt));   
+            println!(concat!("[DEBUG] ", $fmt));
         }
     };
 }
@@ -43,7 +44,7 @@ pub const SDL_KEYS: [Button; 14] = [
     Button::Paddle1,
     Button::Paddle2,
     Button::Paddle3,
-    Button::Paddle4
+    Button::Paddle4,
 ];
 
 pub const EVDEV_KEYS: [KeyCode; 14] = [
@@ -60,7 +61,7 @@ pub const EVDEV_KEYS: [KeyCode; 14] = [
     KeyCode::BTN_TRIGGER_HAPPY1,
     KeyCode::BTN_TRIGGER_HAPPY2,
     KeyCode::BTN_TRIGGER_HAPPY3,
-    KeyCode::BTN_TRIGGER_HAPPY4
+    KeyCode::BTN_TRIGGER_HAPPY4,
 ];
 
 pub const BIN_KEYS: [u16; 14] = [
@@ -77,7 +78,7 @@ pub const BIN_KEYS: [u16; 14] = [
     0b0000010000000000,
     0b0000100000000000,
     0b0001000000000000,
-    0b0010000000000000
+    0b0010000000000000,
 ];
 
 // Iterable constant array of all the analog values that will be used. Absolute is code for Analog in this case.
@@ -90,44 +91,52 @@ pub const EVDEV_AXES: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_RY,
     AbsoluteAxisCode::ABS_RZ,
     AbsoluteAxisCode::ABS_HAT0X,
-    AbsoluteAxisCode::ABS_HAT0Y
+    AbsoluteAxisCode::ABS_HAT0Y,
 ];
 
 #[derive(bincode::Encode, bincode::Decode)]
 pub struct InputPacket {
     pub key_states: u16,
     pub abs_states: [i32; 8],
-    pub timestamp: String
+    pub timestamp: String,
 }
 
 #[derive(bincode::Encode, bincode::Decode)]
 pub struct HapticPacket {
     pub strength: f32,
-    pub timestamp: String
+    pub timestamp: String,
 }
 
 impl InputPacket {
     pub fn new(key_states: u16, abs_states: [i32; 8], timestamp: String) -> Self {
         Self {
-                key_states: key_states,
-                abs_states: abs_states,
-                timestamp: timestamp
+            key_states: key_states,
+            abs_states: abs_states,
+            timestamp: timestamp,
         }
     }
+
+    pub fn key_states_as_arr(self) -> Vec<bool> {
+        let mut arr: Vec<bool> = Vec::new();
+        for i in 0..BIN_KEYS.len() {
+            arr.push(self.key_states & BIN_KEYS[i] > 0);
+        }
+        return arr;
+    }
 }
+
 impl HapticPacket {
     pub fn new(strength: f32, timestamp: String) -> Self {
         Self {
-                strength: strength,
-                timestamp: timestamp
+            strength: strength,
+            timestamp: timestamp,
         }
     }
 }
 pub fn get_ip(default: String, ip: String) -> String {
-    if ip == "".to_string(){
+    if ip == "".to_string() {
         return default;
-    }
-    else {
+    } else {
         return ip.to_string();
     }
 }
@@ -146,3 +155,4 @@ pub fn get_formatted_time() -> String {
     let dt: DateTime<Local> = Local::now();
     format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
 }
+

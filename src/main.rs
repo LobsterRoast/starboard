@@ -4,11 +4,8 @@ mod systemd;
 mod ui;
 mod util;
 
-use daemonize::Daemonize;
 use nix::unistd::Uid;
 use std::env::current_exe;
-use std::fs;
-use std::{env, fs::File};
 
 use crate::client::client;
 use crate::server::server;
@@ -16,8 +13,8 @@ use crate::systemd::create_systemd_unit_file;
 use crate::ui::*;
 use crate::util::*;
 
-fn manager() {
-    let gtk_wrapper = GtkWrapper::new().expect("Unable to initialize GTK");
+async fn manager() {
+    let gtk_wrapper = GtkWrapper::new().await.expect("Unable to initialize GTK");
     gtk_wrapper.run();
 }
 
@@ -162,7 +159,7 @@ async fn main() {
             println!("Starting starboard in client mode.");
             client(framerate, ip, port, ldeadzone, rdeadzone).await;
         }
-        &"manager" => manager(),
+        &"manager" => manager().await,
         &"help" => print_help_menu(),
         &"setup" => setup().await,
         &&_ => panic!(

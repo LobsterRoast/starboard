@@ -4,7 +4,10 @@ use evdev::*;
 use bincode::config::Configuration;
 use bincode::{decode_from_slice, encode_to_vec};
 
-use tokio::net::UdpSocket;
+use tokio::{
+    io::AsyncWriteExt,
+    net::{UdpSocket, UnixStream},
+};
 
 use chrono::{DateTime, FixedOffset, Local};
 
@@ -13,17 +16,20 @@ use crate::util::*;
 
 const FF_EFFECTS: [FFEffectCode; 1] = [FFEffectCode::FF_RUMBLE];
 
-async fn get_input_packet(socket: &UdpSocket) -> Option<InputPacket> {
+async fn get_input_packet(udp_socket: &UdpSocket, sock: &mut UnixStream) -> Option<InputPacket> {
     let mut buf: [u8; 512] = [0; 512];
     loop {
-        let size = socket.recv(&mut buf).await.unwrap();
+        let size = udp_socket.recv(&mut buf).await.unwrap();
         if size <= 0 {
             continue;
         }
         let conf: Configuration = bincode::config::standard();
         let packet = decode_from_slice::<InputPacket, Configuration>(&buf, conf);
         return match packet {
-            Ok(v) => Some(v.0),
+            Ok(v) => {
+                let _ = sock.write_all(&buf);
+                Some(v.0)
+            }
             Err(_e) => None,
         };
     }
@@ -172,11 +178,15 @@ fn get_device() -> VirtualDevice {
 }
 
 pub async fn server(ip: String, port: u16) {
+    let mut sock = UnixStream::connect("/tmp/starboard.sock")
+        .await
+        .expect("Unable to connect to /tmp/starboard.sock");
+
     let mut device = get_device();
     // 0.0.0.0 is the default ip if another is not specified.
     let bind_ip = get_ip("0.0.0.0".to_string(), ip);
     let address = format!("{}:{}", bind_ip, port);
-    let socket = UdpSocket::bind(&address)
+    let udp_socket = UdpSocket::bind(&address)
         .await
         .expect("Could not create a UDP Socket.\n");
     let mut key_states: u16 = 0;
@@ -186,14 +196,14 @@ pub async fn server(ip: String, port: u16) {
         // Await both input and haptic packets.
         // When one is received, process it.
         tokio::select! {
-            input_packet = get_input_packet(&socket) => {
+            input_packet = get_input_packet(&udp_socket, &mut sock) => {
                 if let Some(input_packet) = input_packet {
                     input(&mut device, input_packet, &mut key_states);
                 }
             }
             haptic_packet = get_haptic_packet(&mut device) => {
                 if let Some(haptic_packet) = haptic_packet {
-                    output(&socket, haptic_packet).await;
+                    output(&udp_socket, haptic_packet).await;
                 }
             }
         }
