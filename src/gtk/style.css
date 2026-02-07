@@ -1,0 +1,30 @@
+entry {
+  min-width: 200px;
+}
+#toolbar {
+  background-color: #2d2d2d;
+  border: 1px solid #1d1d1d;
+}
+
+#toolbar > button {
+  margin: 10px;
+  border-radius: 5px;
+}
+
+.info-box {
+  background-color: #2d2d2d;
+  border: 1px solid #1d1d1d;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 5px;
+}
+
+flowbox > flowboxchild {
+  background-color: #383838;
+  border: 1px solid #1d1d1d;
+  border-radius: 5px;
+}
+
+scale {
+  margin: 10px;
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+    <gresource prefix="/github/lobsterroast/starboard">
+        <file compressed="true" alias="github-logo.svg">src/img/github-mark-white.svg</file>
+        <file compressed="true" alias="help-icon.png">src/img/question-mark.png</file>
+    </gresource>
+</gresources>
