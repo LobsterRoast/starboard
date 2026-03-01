@@ -111,7 +111,7 @@ async fn get_udp_socket(ip: String, port: u16) -> Result<UdpSocket, &'static str
     };
 
     let _ = socket.set_broadcast(true);
-    let connect_ip = get_ip("255.255.255.255".to_string(), ip);
+    let connect_ip = get_ip("255.255.255.255".to_string(), &ip);
     let address = format!("{}:{}", connect_ip, port);
 
     debug!("Client socket connected to {}.", &address);

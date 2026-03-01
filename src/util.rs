@@ -22,6 +22,8 @@ macro_rules! debug {
     };
 }
 
+pub type StarboardResult<T> = Result<T, Box<dyn std::error::Error>>;
+
 pub static DEBUG_MODE: OnceLock<bool> = OnceLock::new();
 
 pub static SDL_KEY_ASSOCIATIONS: OnceLock<HashMap<Button, u16>> = OnceLock::new();
@@ -133,8 +135,8 @@ impl HapticPacket {
         }
     }
 }
-pub fn get_ip(default: String, ip: String) -> String {
-    if ip == "".to_string() {
+pub fn get_ip(default: String, ip: &String) -> String {
+    if ip == &"".to_string() {
         return default;
     } else {
         return ip.to_string();
@@ -155,4 +157,3 @@ pub fn get_formatted_time() -> String {
     let dt: DateTime<Local> = Local::now();
     format!("{}", dt.format("%Y,%m,%d,%H,%M,%S,%3f,%z"))
 }
-

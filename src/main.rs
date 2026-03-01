@@ -4,12 +4,13 @@ mod server;
 mod systemd;
 mod ui;
 mod util;
+use anyhow::Result;
 
 use nix::unistd::Uid;
 use std::env::current_exe;
 
 use crate::client::client;
-use crate::server::server;
+use crate::server::Server;
 use crate::systemd::create_systemd_unit_file;
 use crate::ui::*;
 use crate::util::*;
@@ -98,7 +99,7 @@ fn enable_debug_mode() {
 fn daemonize_starboard() {}
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let mut framerate: u64 = 60; // Default framerate to 60
     let mut ip: String = "".to_string();
     let mut port: u16 = 8080;
@@ -139,7 +140,8 @@ async fn main() {
     match cmd {
         &"server" => {
             println!("Starting starboard in server mode.");
-            server(ip, port).await;
+            let server = Server::init(ip, port).await;
+            server.run().await?;
         }
         &"client" => {
             println!("Starting starboard in client mode.");
@@ -153,4 +155,6 @@ async fn main() {
             cmd
         ),
     }
+
+    Ok(())
 }
