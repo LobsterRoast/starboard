@@ -1,0 +1,16 @@
+COMMANDS:
+
+server  | Runs on the PC that you run your games on and that your Steam Deck connects to.
+client  | Runs on your Steam Deck and connects to your PC. 
+manager | A GUI to configure server-specific options. Client-specific options are managed by Decky on your Steam Deck.
+help | Shows this help menu.
+
+ARGS:
+
+--fps              | Syncs your input polling up to a given FPS. (Client only)
+--ip               | Connects to a specific IP. If left blank, it will be retrieved from your config file. Connects to your local network by default.
+--port             | Connects to a specific port. If left blank, it will be retrieved from your config file. Connects to port 8080 by default.
+-d / --daemonize   | Runs starboard as a daemon.
+-lfz / --ldeadzone | Sets the deadzone for your left analog stick. (Client only)
+-rdz / --rdeadzone | Sets the deadzone for your right analog stick. (Client only)
+-D / --debug       | Runs starboard in debug mode. Prints extra debug information.
