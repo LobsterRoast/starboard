@@ -1,9 +1,11 @@
 mod client;
+mod error;
 mod ipc;
 mod server;
 mod systemd;
 mod ui;
 mod util;
+
 use anyhow::Result;
 
 use nix::unistd::Uid;

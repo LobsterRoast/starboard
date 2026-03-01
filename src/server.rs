@@ -1,9 +1,12 @@
 use tokio::net::UdpSocket;
 use tokio::net::UnixStream;
+use tokio::task::JoinSet;
 
+use crate::error::StarboardError;
 use crate::ipc::StarboardDatagram;
 
 use anyhow::Result;
+use anyhow::bail;
 
 use crate::util::*;
 
@@ -29,32 +32,22 @@ impl Server {
             .expect("Unable to connect to /tmp/starboard.sock");
 
         Self {
-            address: address,
-            udp_socket: udp_socket,
-            unix_socket: unix_socket,
+            address,
+            udp_socket,
+            unix_socket,
         }
     }
 
     pub async fn run(self) -> Result<()> {
-        /*tokio::spawn(async move {
-            let _: StarboardResult<i8> = async {
-                loop {
-                    let packet = poll_inputs()?;
-                    println!("Test");
-                }
-            }
-            .await?;
-        });
+        let mut join_set = JoinSet::new();
+        let input_poll_thread = join_set.spawn(async move {});
 
-        tokio::spawn(async move {
-            let _: StarboardResult<i8> = async {
-                loop {
-                    let packet = poll_inputs()?;
-                    println!("Test");
-                }
-            }
-            .await?;
-        });*/
+        let output_poll_thread = join_set.spawn(async move {});
+
+        if let Some(res) = join_set.join_next().await {
+        } else {
+            bail!(StarboardError::new("Failed to join server threads", 1),);
+        }
 
         Ok(())
     }
