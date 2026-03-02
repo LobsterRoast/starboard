@@ -3,6 +3,7 @@ mod error;
 mod ipc;
 mod server;
 mod systemd;
+mod test;
 mod ui;
 mod util;
 
@@ -10,6 +11,7 @@ use anyhow::Result;
 
 use nix::unistd::Uid;
 use std::env::current_exe;
+use std::sync::Arc;
 
 use crate::client::client;
 use crate::server::Server;
@@ -142,7 +144,7 @@ async fn main() -> Result<()> {
     match cmd {
         &"server" => {
             println!("Starting starboard in server mode.");
-            let server = Server::init(ip, port).await;
+            let server = Arc::new(Server::init(ip, port).await?);
             server.run().await?;
         }
         &"client" => {

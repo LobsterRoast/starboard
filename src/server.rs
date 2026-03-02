@@ -2,12 +2,13 @@ use tokio::net::UdpSocket;
 use tokio::net::UnixStream;
 use tokio::task::JoinSet;
 
-use crate::error::StarboardError;
-use crate::ipc::StarboardDatagram;
-
 use anyhow::Result;
 use anyhow::bail;
 
+use std::sync::Arc;
+
+use crate::error::StarboardError;
+use crate::ipc::StarboardDatagram;
 use crate::util::*;
 
 pub struct Server {
@@ -18,42 +19,55 @@ pub struct Server {
 }
 
 impl Server {
-    pub async fn init(ip: String, port: u16) -> Self {
+    pub async fn init(ip: String, port: u16) -> Result<Self> {
         // 0.0.0.0 is the default ip if another is not specified.
         let ip = get_ip("0.0.0.0".to_string(), &ip);
         let address = format!("{}:{}", ip, port);
 
-        let udp_socket: UdpSocket = UdpSocket::bind(&address)
-            .await
-            .expect("Could not create a UDP Socket.\n");
+        let udp_socket: UdpSocket = UdpSocket::bind(&address).await?;
 
-        let mut unix_socket: UnixStream = UnixStream::connect("/tmp/starboard.sock")
-            .await
-            .expect("Unable to connect to /tmp/starboard.sock");
+        let mut unix_socket: UnixStream = UnixStream::connect("/tmp/starboard.sock").await?;
 
-        Self {
+        Ok(Self {
             address,
             udp_socket,
             unix_socket,
-        }
+        })
     }
 
-    pub async fn run(self) -> Result<()> {
+    pub async fn run(self: Arc<Self>) -> Result<()> {
         let mut join_set = JoinSet::new();
-        let input_poll_thread = join_set.spawn(async move {});
 
-        let output_poll_thread = join_set.spawn(async move {});
+        let self_clone = self.clone();
+        let input_poll_thread = join_set.spawn(async move { self_clone.input_loop().unwrap() });
+
+        let self_clone = self.clone();
+        let output_poll_thread = join_set.spawn(async move { self_clone.output_loop().unwrap() });
 
         if let Some(res) = join_set.join_next().await {
+            res?
         } else {
-            bail!(StarboardError::new("Failed to join server threads", 1),);
-        }
+            bail!(StarboardError::new("Failed to join server threads", 1));
+        };
 
         Ok(())
     }
-}
 
-fn poll_inputs() -> Result<i8> {
-    println!("Inputs polled");
-    Ok(1)
+    fn input_loop(&self) -> Result<()> {
+        Ok(())
+    }
+
+    fn output_loop(&self) -> Result<()> {
+        Ok(())
+    }
+
+    fn poll_input_packets(&self) -> Result<()> {
+        println!("Inputs polled");
+        Ok(())
+    }
+
+    fn poll_output_packets(&self) -> Result<()> {
+        println!("Inputs polled");
+        Ok(())
+    }
 }
