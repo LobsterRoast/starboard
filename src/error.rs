@@ -15,7 +15,7 @@ impl fmt::Display for StarboardError {
 impl std::error::Error for StarboardError {}
 
 impl StarboardError {
-    pub fn new(info: &'static str, code: u8) -> Self {
+    pub fn new(code: u8, info: &'static str) -> Self {
         Self { info, code }
     }
 

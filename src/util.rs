@@ -48,7 +48,7 @@ pub const SDL_KEYS: [Button; 14] = [
     Button::Paddle3,
     Button::Paddle4,
 ];
-
+/*
 pub const EVDEV_KEYS: [KeyCode; 14] = [
     KeyCode::BTN_NORTH,
     KeyCode::BTN_SOUTH,
@@ -64,7 +64,7 @@ pub const EVDEV_KEYS: [KeyCode; 14] = [
     KeyCode::BTN_TRIGGER_HAPPY2,
     KeyCode::BTN_TRIGGER_HAPPY3,
     KeyCode::BTN_TRIGGER_HAPPY4,
-];
+];*/
 
 pub const BIN_KEYS: [u16; 14] = [
     0b0000000000000001,
@@ -85,6 +85,7 @@ pub const BIN_KEYS: [u16; 14] = [
 
 // Iterable constant array of all the analog values that will be used. Absolute is code for Analog in this case.
 // For some reason, the D-Pad is an analog value. ABS_HAT0(X/Y) refers to the D-Pad values.
+/*
 pub const EVDEV_AXES: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_X,
     AbsoluteAxisCode::ABS_Y,
@@ -94,7 +95,7 @@ pub const EVDEV_AXES: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_RZ,
     AbsoluteAxisCode::ABS_HAT0X,
     AbsoluteAxisCode::ABS_HAT0Y,
-];
+];*/
 
 #[derive(bincode::Encode, bincode::Decode)]
 pub struct InputPacket {
