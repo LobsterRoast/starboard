@@ -1,6 +1,7 @@
 mod client;
 mod error;
 mod ipc;
+mod packets;
 mod server;
 mod systemd;
 mod test;

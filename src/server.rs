@@ -12,7 +12,8 @@ use std::sync::Arc;
 use crate::error::StarboardError;
 use crate::ipc::EventPoll;
 use crate::ipc::StarboardDatagram;
-use crate::util::*;
+use crate::packets::*;
+use crate::util::get_ip;
 
 pub struct Server {
     pub address: String,
@@ -25,16 +26,21 @@ pub struct Server {
     unix_socket: UnixStream,
 }
 
-async fn poll_input_packets_server(src: &dyn EventPoll) -> Result<()> {
+async fn poll_input_packets_server(src: &dyn EventPoll) -> Result<Option<InputPacket>> {
     println!("Inputs polled");
     let raw_event_data = src.poll_input();
-    Ok(())
+    /*
+    Some(serialize::<InputPacket>(raw_event_data)?)
+    */
+    Ok(None)
 }
 
-async fn poll_output_packets_server(src: &dyn StarboardDatagram) -> Result<()> {
+async fn poll_output_packets_server(src: &dyn StarboardDatagram) -> Result<Option<InputPacket>> {
     println!("Outputs polled");
-    if let Some(raw_packet_data) = src.recv()? {}
-    Ok(())
+    if let Some(raw_packet) = src.recv()? {
+        return Ok(Some(deserialize::<InputPacket>(raw_packet)?));
+    }
+    Ok(None)
 }
 
 impl Server {
@@ -114,13 +120,13 @@ impl Server {
 
     async fn input_loop_server(&self) -> Result<()> {
         loop {
-            let packet = poll_input_packets_server(&self.controller).await?;
+            if let Some(packet) = poll_input_packets_server(&self.controller).await? {}
         }
     }
 
     async fn output_loop_server(&self) -> Result<()> {
         loop {
-            let packet = poll_output_packets_server(&self.udp_socket).await?;
+            if let Some(packet) = poll_output_packets_server(&self.udp_socket).await? {}
         }
     }
 }

@@ -29,6 +29,7 @@ impl StarboardDatagram for UnixStream {
         if self.try_read(&mut buf)? > 0 {
             return Ok(Some(Vec::from(buf)));
         }
+
         Ok(None)
     }
 }
