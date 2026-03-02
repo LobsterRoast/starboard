@@ -2,6 +2,8 @@ use bincode::{Decode, Encode, config::Configuration, decode_from_slice, encode_t
 
 use anyhow::Result;
 
+static BINCODE_CONFIG: Configuration = bincode::config::standard();
+
 #[derive(Default, Debug, PartialEq, bincode::Encode, bincode::Decode)]
 pub struct InputPacket {
     pub key_states: u16,
@@ -9,13 +11,13 @@ pub struct InputPacket {
     pub timestamp: String,
 }
 
-static BINCODE_CONFIG: Configuration = bincode::config::standard();
+#[derive(Default, Debug, PartialEq, bincode::Encode, bincode::Decode)]
+pub struct OutputPacket {}
 
 trait Packet {}
 
 impl Packet for InputPacket {}
-
-impl InputPacket {}
+impl Packet for OutputPacket {}
 
 pub fn deserialize<T: Packet + Decode<()>>(packet_raw: Vec<u8>) -> Result<T> {
     Ok(
