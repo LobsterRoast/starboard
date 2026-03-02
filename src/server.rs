@@ -10,6 +10,7 @@ use anyhow::{Result, anyhow, bail};
 use std::sync::Arc;
 
 use crate::error::StarboardError;
+use crate::ipc::EventPoll;
 use crate::ipc::StarboardDatagram;
 use crate::util::*;
 
@@ -24,13 +25,15 @@ pub struct Server {
     unix_socket: UnixStream,
 }
 
-async fn poll_input_packets(src: &dyn StarboardDatagram) -> Result<()> {
+async fn poll_input_packets_server(src: &dyn EventPoll) -> Result<()> {
     println!("Inputs polled");
+    let raw_event_data = src.poll_input();
     Ok(())
 }
 
-async fn poll_output_packets(src: &dyn StarboardDatagram) -> Result<()> {
+async fn poll_output_packets_server(src: &dyn StarboardDatagram) -> Result<()> {
     println!("Outputs polled");
+    if let Some(raw_packet_data) = src.recv()? {}
     Ok(())
 }
 
@@ -66,10 +69,10 @@ impl Server {
         let mut join_set = JoinSet::new();
 
         /*let self_clone = self.clone();
-        let _ = join_set.spawn(async move { self_clone.input_loop().await.unwrap() });
+        let _ = join_set.spawn(async move { self_clone.input_loop_server().await.unwrap() });
 
         let self_clone = self.clone();
-        let _ = join_set.spawn(async move { self_clone.output_loop().await.unwrap() });*/
+        let _ = join_set.spawn(async move { self_clone.output_loop_server().await.unwrap() });*/
 
         if let Some(res) = join_set.join_next().await {
             join_set.abort_all();
@@ -109,15 +112,15 @@ impl Server {
         ));
     }
 
-    async fn input_loop(&self) -> Result<()> {
+    async fn input_loop_server(&self) -> Result<()> {
         loop {
-            let packet = poll_input_packets(&self.udp_socket).await?;
+            let packet = poll_input_packets_server(&self.controller).await?;
         }
     }
 
-    async fn output_loop(&self) -> Result<()> {
+    async fn output_loop_server(&self) -> Result<()> {
         loop {
-            let packet = poll_output_packets(&self.udp_socket).await?;
+            let packet = poll_output_packets_server(&self.udp_socket).await?;
         }
     }
 }
