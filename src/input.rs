@@ -16,3 +16,8 @@ struct StarboardInputPacket {
     buttons: StarboardButtonStates,
     axes: [i32; 6],
 }
+
+pub enum StarboardInput {
+    Axis { id: u32, value: i32, name: String },
+    Button { id: u32, value: bool, name: String },
+}
