@@ -10,6 +10,13 @@ impl StarboardButtonStates {
 
         self.raw ^ other.raw
     }
+
+    pub fn get_state(&self, id: u32) -> StarboardInput {
+        // returns a StarboardInput indicating whether the button at the id-th bit in `raw` is
+        // pressed or not
+        let value = (self.raw & (1 << id)) > 0;
+        StarboardInput::Button { id, value }
+    }
 }
 
 struct StarboardInputPacket {
