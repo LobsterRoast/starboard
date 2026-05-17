@@ -17,6 +17,17 @@ impl StarboardButtonStates {
         let value = (self.raw & (1 << id)) > 0;
         StarboardInput::Button { id, value }
     }
+
+    pub fn get_state_with_mask(&self, mask: u32) -> Vec<StarboardInput> {
+        // runs get_state for each positive bit in `mask`
+        let mut inputs: Vec<StarboardInput> = Vec::new();
+        for id in 0..32 {
+            if (mask & (1 << id)) > 0 {
+                inputs.push(self.get_state(id));
+            }
+        }
+        inputs
+    }
 }
 
 struct StarboardInputPacket {
