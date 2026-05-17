@@ -11,3 +11,8 @@ impl StarboardButtonStates {
         self.raw ^ other.raw
     }
 }
+
+struct StarboardInputPacket {
+    buttons: StarboardButtonStates,
+    axes: [i32; 6],
+}
