@@ -1,3 +1,4 @@
+#[derive(PartialEq, Eq)]
 struct StarboardButtonStates {
     // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
     raw: u32,
@@ -30,11 +31,13 @@ impl StarboardButtonStates {
     }
 }
 
+#[derive(PartialEq, Eq)]
 struct StarboardInputPacket {
     buttons: StarboardButtonStates,
     axes: [i32; 6],
 }
 
+#[derive(PartialEq, Eq)]
 pub enum StarboardInput {
     Axis { id: u32, value: i32 },
     Button { id: u32, value: bool },
