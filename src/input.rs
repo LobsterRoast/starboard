@@ -5,6 +5,10 @@ struct StarboardButtonStates {
 }
 
 impl StarboardButtonStates {
+    pub fn new() -> Self {
+        Self { raw: 0 }
+    }
+
     pub fn delta(&self, other: &StarboardButtonStates) -> u32 {
         // delta() is symmetric.
         // That is, A.delta(&B) == B.delta(&A).
