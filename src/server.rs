@@ -1,3 +1,11 @@
+pub struct StarboardServerBuilder {
+    // A struct to help build a server
+    ip: String,
+    port: u16,
+    enabled_buttons: u32,
+    enabled_axes: u32,
+}
+
 pub struct StarboardServer {
     // The server is what will receive input packets from the controller and simulate a virtual
     // joystick on another PC
