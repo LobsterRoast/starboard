@@ -1,3 +1,5 @@
+use sdl3::gamepad::Button;
+
 #[derive(Default)]
 pub struct StarboardServerBuilder {
     // A struct to help build a server
@@ -19,6 +21,26 @@ impl StarboardServerBuilder {
     fn set_port(self, port: u16) -> Self {
         let mut builder = self;
         builder.port = port;
+        builder
+    }
+
+    // Enable `button` on the server
+    fn enable_button(self, button: Button) -> Self {
+        let mut builder = self;
+        let button_code = button.to_ll().0;
+        builder.enabled_buttons |= 1 << button_code;
+        builder
+    }
+
+    // Enable each button in `buttons` on the server
+    fn enable_buttons<T>(self, buttons: T) -> Self
+    where
+        T: IntoIterator<Item = Button>,
+    {
+        let mut builder = self;
+        for button in buttons {
+            builder = builder.enable_button(button);
+        }
         builder
     }
 }
