@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct StarboardServerBuilder {
     // A struct to help build a server
     ip: String,
