@@ -14,6 +14,13 @@ impl StarboardServerBuilder {
         builder.ip = ip;
         builder
     }
+
+    // Set the target port of the server
+    fn set_port(self, port: u16) -> Self {
+        let mut builder = self;
+        builder.port = port;
+        builder
+    }
 }
 
 pub struct StarboardServer {
