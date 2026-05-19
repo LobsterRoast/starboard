@@ -3,7 +3,7 @@ use sdl3::gamepad::{Axis, Button};
 #[derive(Default)]
 pub struct StarboardServerBuilder {
     // A struct to help build a server
-    ip: String,
+    ip: [u8; 4],
     port: u16,
     enabled_buttons: u32,
     enabled_axes: u32,
@@ -11,7 +11,7 @@ pub struct StarboardServerBuilder {
 
 impl StarboardServerBuilder {
     // Set the target IP of the server
-    fn set_ip(self, ip: String) -> Self {
+    fn set_ip(self, ip: [u8; 4]) -> Self {
         let mut builder = self;
         builder.ip = ip;
         builder
