@@ -1,4 +1,4 @@
-use sdl3::gamepad::Button;
+use sdl3::gamepad::{Axis, Button};
 
 #[derive(Default)]
 pub struct StarboardServerBuilder {
@@ -40,6 +40,26 @@ impl StarboardServerBuilder {
         let mut builder = self;
         for button in buttons {
             builder = builder.enable_button(button);
+        }
+        builder
+    }
+
+    // Enable `axis` on the server
+    fn enable_axis(self, axis: Axis) -> Self {
+        let mut builder = self;
+        let axis_code = axis.to_ll().0;
+        builder.enabled_axes |= 1 << axis_code;
+        builder
+    }
+
+    // Enable each axes in `axes` on the server
+    fn enable_axes<T>(self, axes: T) -> Self
+    where
+        T: IntoIterator<Item = Axis>,
+    {
+        let mut builder = self;
+        for axis in axes {
+            builder = builder.enable_axis(axis);
         }
         builder
     }
