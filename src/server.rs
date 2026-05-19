@@ -7,6 +7,15 @@ pub struct StarboardServerBuilder {
     enabled_axes: u32,
 }
 
+impl StarboardServerBuilder {
+    // Set the target IP of the server
+    fn set_ip(self, ip: String) -> Self {
+        let mut builder = self;
+        builder.ip = ip;
+        builder
+    }
+}
+
 pub struct StarboardServer {
     // The server is what will receive input packets from the controller and simulate a virtual
     // joystick on another PC
