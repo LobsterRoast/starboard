@@ -1,5 +1,5 @@
 use anyhow::Result;
-use bincode::{config::Configuration, decode_from_slice, encode_to_vec};
+use bincode::{Decode, Encode, config::Configuration, decode_from_slice, encode_to_vec};
 
 use crate::input::StarboardInputPacket;
 
@@ -11,17 +11,17 @@ pub fn format_addr(ip: [u8; 4], port: u16) -> String {
 }
 
 // Deserialize binary data into a StarboardInputPacket
-pub fn deserialize(raw: Vec<u8>) -> Result<StarboardInputPacket> {
-    Ok(
-        decode_from_slice::<StarboardInputPacket, Configuration>(raw.as_slice(), BINCODE_CONFIG)
-            .map(|tup| tup.0)?,
-    )
+pub fn deserialize<T>(raw: Vec<u8>) -> Result<T>
+where
+    T: Decode<()>,
+{
+    Ok(decode_from_slice::<T, Configuration>(raw.as_slice(), BINCODE_CONFIG).map(|tup| tup.0)?)
 }
 
 // Serialize a packet into binary data
-pub fn serialize(packet: StarboardInputPacket) -> Result<Vec<u8>> {
-    Ok(encode_to_vec::<StarboardInputPacket, Configuration>(
-        packet,
-        BINCODE_CONFIG,
-    )?)
+pub fn serialize<T>(packet: T) -> Result<Vec<u8>>
+where
+    T: Encode,
+{
+    Ok(encode_to_vec::<T, Configuration>(packet, BINCODE_CONFIG)?)
 }
