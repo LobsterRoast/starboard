@@ -15,7 +15,27 @@ pub struct VirtualJoystick {
     virtual_joystick: Joystick,
 }
 
-impl VirtualJoystick {}
+impl VirtualJoystick {
+    pub fn new<B, A>(buttons: B, axes: A) -> Result<Self>
+    where
+        B: IntoIterator<Item = Button>,
+        A: IntoIterator<Item = Axis>,
+    {
+        let desc = gen_description(buttons, axes);
+        let sdl_context = sdl3::init()?;
+        let joystick_subsystem = sdl_context.joystick()?;
+        let virtual_joystick_connection = joystick_subsystem.attach_virtual_joystick(desc)?;
+        let id = virtual_joystick_connection.id();
+        let virtual_joystick = joystick_subsystem.open(id)?;
+
+        Ok(Self {
+            sdl_context,
+            joystick_subsystem,
+            virtual_joystick_connection,
+            virtual_joystick,
+        })
+    }
+}
 
 // Generates the description that will be used to build a virtual joystick
 fn gen_description<B, A>(buttons: B, axes: A) -> VirtualJoystickDescription
