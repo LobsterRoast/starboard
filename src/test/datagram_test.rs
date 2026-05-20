@@ -27,6 +27,13 @@ fn test_axis_state_deserialization() {
 }
 
 #[test]
+fn test_axis_state_serialization() {
+    let raw: Vec<u8> = vec![0, 202, 125, 224, 1, 250];
+    let raw: Vec<u8> = vec![0, 202, 125, 224, 1, 251, 254, 0];
+    assert_eq!(raw, serialize(TEST_AXIS_STATES).unwrap());
+}
+
+#[test]
 fn test_packet_serialization_symmetry() {
     let packet = StarboardInputPacket {
         buttons: TEST_BUTTON_STATES,
