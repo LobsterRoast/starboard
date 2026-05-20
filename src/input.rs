@@ -40,6 +40,25 @@ struct StarboardAxisStates {
     axes: [i32; 6],
 }
 
+impl StarboardAxisStates {
+    fn get_state(&self, id: u32) -> StarboardInput {
+        // returns a StarboardInput indicating the state of the id-th axis
+        let value = self.axes[id as usize];
+        StarboardInput::Axis { id, value }
+    }
+
+    fn get_state_with_mask(&self, mask: u32) -> Vec<StarboardInput> {
+        // runs get_state for each positive bit in `mask`
+        let mut inputs: Vec<StarboardInput> = Vec::new();
+        for id in 0..32 {
+            if (mask & (1 << id)) > 0 {
+                inputs.push(self.get_state(id));
+            }
+        }
+        inputs
+    }
+}
+
 #[derive(PartialEq, Eq)]
 struct StarboardInputPacket {
     buttons: StarboardButtonStates,
