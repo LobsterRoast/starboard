@@ -1,6 +1,5 @@
 use sdl3::gamepad::{Axis, Button};
 
-#[derive(Default)]
 pub struct StarboardServerBuilder {
     // A struct to help build a server
     ip: [u8; 4],
@@ -10,6 +9,21 @@ pub struct StarboardServerBuilder {
 }
 
 impl StarboardServerBuilder {
+    // Build the server
+    fn build(self) -> StarboardServer {
+        use crate::datagram::format_addr;
+
+        // Defaults to returning 0.0.0.0:0
+        let address = format_addr(self.ip, self.port);
+        let enabled_buttons = self.enabled_buttons;
+        let enabled_axes = self.enabled_axes;
+
+        StarboardServer {
+            address,
+            enabled_buttons,
+            enabled_axes,
+        }
+    }
     // Set the target IP of the server
     fn set_ip(self, ip: [u8; 4]) -> Self {
         let mut builder = self;
@@ -68,8 +82,8 @@ impl StarboardServerBuilder {
 pub struct StarboardServer {
     // The server is what will receive input packets from the controller and simulate a virtual
     // joystick on another PC
-    address: String,     // i.e. {ip}:{port}
-    enabled_inputs: u32, // Bitmask representing all the enabled buttons on the server
-    enabled_axes: u32,   // Bitmask representing all the enabled axes on the
-                         // server
+    address: String,      // i.e. {ip}:{port}
+    enabled_buttons: u32, // Bitmask representing all the enabled buttons on the server
+    enabled_axes: u32,    // Bitmask representing all the enabled axes on the
+                          // server
 }
