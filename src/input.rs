@@ -65,6 +65,18 @@ struct StarboardInputPacket {
     axes: StarboardAxisStates,
 }
 
+impl StarboardInputPacket {
+    // Unpack all inputs in the packet into a vector of StarboardInputs
+    fn unpack(self, button_mask: u32, axis_mask: u32) -> Vec<StarboardInput> {
+        let button_states = self.buttons.get_state_with_mask(button_mask);
+        let axis_states = self.axes.get_state_with_mask(axis_mask);
+
+        let mut inputs = button_states;
+        inputs.extend(axis_states);
+        inputs
+    }
+}
+
 #[derive(PartialEq, Eq)]
 pub enum StarboardInput {
     Axis { id: u32, value: i32 },
