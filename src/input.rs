@@ -1,7 +1,7 @@
 // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
 #[derive(PartialEq, Eq)]
 pub struct StarboardButtonStates {
-    raw: u32,
+    pub raw: u32,
 }
 
 impl StarboardButtonStates {
@@ -36,7 +36,7 @@ impl StarboardButtonStates {
 
 #[derive(PartialEq, Eq)]
 pub struct StarboardAxisStates {
-    axes: [i32; 6],
+    pub axes: [i32; 6],
 }
 
 impl StarboardAxisStates {
@@ -62,8 +62,8 @@ impl StarboardAxisStates {
 
 #[derive(PartialEq, Eq)]
 pub struct StarboardInputPacket {
-    buttons: StarboardButtonStates,
-    axes: StarboardAxisStates,
+    pub buttons: StarboardButtonStates,
+    pub axes: StarboardAxisStates,
 }
 
 impl StarboardInputPacket {
