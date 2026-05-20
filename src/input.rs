@@ -36,7 +36,7 @@ impl StarboardButtonStates {
 
 #[derive(PartialEq, Eq)]
 pub struct StarboardAxisStates {
-    pub axes: [i32; 6],
+    pub axes: [i16; 6],
 }
 
 impl StarboardAxisStates {
@@ -80,6 +80,6 @@ impl StarboardInputPacket {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum StarboardInput {
-    Axis { id: u32, value: i32 },
+    Axis { id: u32, value: i16 },
     Button { id: u32, value: bool },
 }
