@@ -84,7 +84,9 @@ pub enum StarboardInput {
 
 #[cfg(test)]
 mod InputTests {
-    use crate::input::{StarboardAxisStates, StarboardButtonStates, StarboardInput};
+    use crate::input::{
+        StarboardAxisStates, StarboardButtonStates, StarboardInput, StarboardInputPacket,
+    };
 
     const TEST_BUTTON_STATES: StarboardButtonStates = StarboardButtonStates { raw: 13 }; // 0b1101
     const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
@@ -171,5 +173,28 @@ mod InputTests {
         assert_eq!(states[0], StarboardInput::Axis { id: 0, value: 0 });
         assert_eq!(states[1], StarboardInput::Axis { id: 2, value: 223 });
         assert_eq!(states[2], StarboardInput::Axis { id: 5, value: 255 });
+    }
+
+    #[test]
+    fn test_packet_unwrap() {
+        let packet = StarboardInputPacket {
+            buttons: TEST_BUTTON_STATES,
+            axes: TEST_AXIS_STATES,
+        };
+
+        let buttons = TEST_BUTTON_STATES.get_state_with_mask(u32::MAX);
+        let axes = TEST_AXIS_STATES.get_state_with_mask(u32::MAX);
+
+        let mut combined_inputs: Vec<StarboardInput> = Vec::new();
+
+        for button in buttons {
+            combined_inputs.push(button);
+        }
+
+        for axis in axes {
+            combined_inputs.push(axis);
+        }
+
+        assert_eq!(packet.unpack(u32::MAX, u32::MAX), combined_inputs);
     }
 }
