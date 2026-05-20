@@ -131,4 +131,37 @@ mod InputTests {
             ]
         )
     }
+
+    #[test]
+    fn test_axis_get_state() {
+        assert_eq!(
+            TEST_AXIS_STATES.get_state(0),
+            StarboardInput::Axis { id: 0, value: 0 }
+        );
+
+        assert_eq!(
+            TEST_AXIS_STATES.get_state(1),
+            StarboardInput::Axis { id: 1, value: 145 }
+        );
+
+        assert_eq!(
+            TEST_AXIS_STATES.get_state(2),
+            StarboardInput::Axis { id: 2, value: 223 }
+        );
+
+        assert_eq!(
+            TEST_AXIS_STATES.get_state(3),
+            StarboardInput::Axis { id: 3, value: 1125 }
+        );
+
+        assert_eq!(
+            TEST_AXIS_STATES.get_state(4),
+            StarboardInput::Axis { id: 4, value: 102 }
+        );
+
+        assert_eq!(
+            TEST_AXIS_STATES.get_state(5),
+            StarboardInput::Axis { id: 5, value: 255 }
+        );
+    }
 }
