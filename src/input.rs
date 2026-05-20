@@ -164,4 +164,12 @@ mod InputTests {
             StarboardInput::Axis { id: 5, value: 255 }
         );
     }
+
+    #[test]
+    fn test_axis_get_states() {
+        let states = TEST_AXIS_STATES.get_state_with_mask(0b100101);
+        assert_eq!(states[0], StarboardInput::Axis { id: 0, value: 0 });
+        assert_eq!(states[1], StarboardInput::Axis { id: 2, value: 223 });
+        assert_eq!(states[2], StarboardInput::Axis { id: 5, value: 255 });
+    }
 }
