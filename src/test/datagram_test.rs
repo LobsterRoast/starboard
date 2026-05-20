@@ -19,3 +19,14 @@ fn test_button_state_serialization() {
     let raw: Vec<u8> = vec![0b1101];
     assert_eq!(raw, serialize(TEST_BUTTON_STATES).unwrap());
 }
+
+#[test]
+fn test_packet_serialization_symmetry() {
+    let packet = StarboardInputPacket {
+        buttons: TEST_BUTTON_STATES,
+        axes: TEST_AXIS_STATES,
+    };
+
+    let raw = serialize(&packet).unwrap();
+    assert_eq!(packet, deserialize(raw).unwrap());
+}
