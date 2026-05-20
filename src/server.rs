@@ -9,6 +9,15 @@ pub struct StarboardServerBuilder {
 }
 
 impl StarboardServerBuilder {
+    fn new() -> Self {
+        Self {
+            ip: [0; 4],
+            port: 8080,
+            enabled_buttons: 0,
+            enabled_axes: 0,
+        }
+    }
+
     // Build the server
     fn build(self) -> StarboardServer {
         use crate::datagram::format_addr;
