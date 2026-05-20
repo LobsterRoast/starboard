@@ -15,17 +15,17 @@ pub struct VirtualJoystick {
     virtual_joystick: Joystick,
 }
 
-impl VirtualJoystick {
-    // Generates the description that will be used to build a virtual joystick
-    fn gen_description<B, A>(&self, buttons: B, axes: A) -> VirtualJoystickDescription
-    where
-        B: IntoIterator<Item = Button>,
-        A: IntoIterator<Item = Axis>,
-    {
-        let desc = VirtualJoystickDescription::new()
-            .name("Starboard Virtual Gamepad")
-            .with_buttons(buttons)
-            .with_axes(axes);
-        desc
-    }
+impl VirtualJoystick {}
+
+// Generates the description that will be used to build a virtual joystick
+fn gen_description<B, A>(buttons: B, axes: A) -> VirtualJoystickDescription
+where
+    B: IntoIterator<Item = Button>,
+    A: IntoIterator<Item = Axis>,
+{
+    let desc = VirtualJoystickDescription::new()
+        .name("Starboard Virtual Gamepad")
+        .with_buttons(buttons)
+        .with_axes(axes);
+    desc
 }
