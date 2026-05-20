@@ -1,6 +1,6 @@
 // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
 #[derive(PartialEq, Eq)]
-struct StarboardButtonStates {
+pub struct StarboardButtonStates {
     raw: u32,
 }
 
@@ -35,19 +35,19 @@ impl StarboardButtonStates {
 }
 
 #[derive(PartialEq, Eq)]
-struct StarboardAxisStates {
+pub struct StarboardAxisStates {
     axes: [i32; 6],
 }
 
 impl StarboardAxisStates {
     // returns a StarboardInput indicating the state of the id-th axis
-    fn get_state(&self, id: u32) -> StarboardInput {
+    pub fn get_state(&self, id: u32) -> StarboardInput {
         let value = self.axes[id as usize];
         StarboardInput::Axis { id, value }
     }
 
     // runs get_state for each positive bit in `mask`
-    fn get_state_with_mask(&self, mask: u32) -> Vec<StarboardInput> {
+    pub fn get_state_with_mask(&self, mask: u32) -> Vec<StarboardInput> {
         let mut inputs: Vec<StarboardInput> = Vec::new();
         let upper = self.axes.len();
         for id in 0..upper {
@@ -61,14 +61,14 @@ impl StarboardAxisStates {
 }
 
 #[derive(PartialEq, Eq)]
-struct StarboardInputPacket {
+pub struct StarboardInputPacket {
     buttons: StarboardButtonStates,
     axes: StarboardAxisStates,
 }
 
 impl StarboardInputPacket {
     // Unpack all inputs in the packet into a vector of StarboardInputs
-    fn unpack(self, button_mask: u32, axis_mask: u32) -> Vec<StarboardInput> {
+    pub fn unpack(self, button_mask: u32, axis_mask: u32) -> Vec<StarboardInput> {
         let button_states = self.buttons.get_state_with_mask(button_mask);
         let axis_states = self.axes.get_state_with_mask(axis_mask);
 
