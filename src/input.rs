@@ -62,7 +62,7 @@ impl StarboardAxisStates {
 #[derive(PartialEq, Eq)]
 struct StarboardInputPacket {
     buttons: StarboardButtonStates,
-    axes: [i32; 6],
+    axes: StarboardAxisStates,
 }
 
 #[derive(PartialEq, Eq)]
