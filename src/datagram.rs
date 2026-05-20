@@ -1,5 +1,5 @@
 use anyhow::Result;
-use bincode::{config::Configuration, decode_from_slice};
+use bincode::{config::Configuration, decode_from_slice, encode_to_vec};
 
 use crate::input::StarboardInputPacket;
 
@@ -16,4 +16,12 @@ pub fn deserialize(raw: Vec<u8>) -> Result<StarboardInputPacket> {
         decode_from_slice::<StarboardInputPacket, Configuration>(raw.as_slice(), BINCODE_CONFIG)
             .map(|tup| tup.0)?,
     )
+}
+
+// Serialize a packet into binary data
+pub fn serialize(packet: StarboardInputPacket) -> Result<Vec<u8>> {
+    Ok(encode_to_vec::<StarboardInputPacket, Configuration>(
+        packet,
+        BINCODE_CONFIG,
+    )?)
 }
