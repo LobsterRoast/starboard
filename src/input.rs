@@ -36,6 +36,11 @@ impl StarboardButtonStates {
 }
 
 #[derive(PartialEq, Eq)]
+struct StarboardAxisStates {
+    axes: [i32; 6],
+}
+
+#[derive(PartialEq, Eq)]
 struct StarboardInputPacket {
     buttons: StarboardButtonStates,
     axes: [i32; 6],
