@@ -49,7 +49,9 @@ impl StarboardAxisStates {
     // runs get_state for each positive bit in `mask`
     fn get_state_with_mask(&self, mask: u32) -> Vec<StarboardInput> {
         let mut inputs: Vec<StarboardInput> = Vec::new();
-        for id in 0..32 {
+        let upper = self.axes.len();
+        for id in 0..upper {
+            let id = id as u32;
             if (mask & (1 << id)) > 0 {
                 inputs.push(self.get_state(id));
             }
