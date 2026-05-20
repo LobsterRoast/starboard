@@ -76,7 +76,7 @@ impl StarboardInputPacket {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum StarboardInput {
     Axis { id: u32, value: i32 },
     Button { id: u32, value: bool },
@@ -84,7 +84,7 @@ pub enum StarboardInput {
 
 #[cfg(test)]
 mod InputTests {
-    use crate::input::{StarboardAxisStates, StarboardButtonStates};
+    use crate::input::{StarboardAxisStates, StarboardButtonStates, StarboardInput};
 
     const TEST_BUTTON_STATES: StarboardButtonStates = StarboardButtonStates { raw: 13 }; // 0b1101
     const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
