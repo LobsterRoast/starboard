@@ -90,4 +90,30 @@ mod InputTests {
     const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
         axes: [0, 145, 223, 1125, 102, 255],
     };
+
+    #[test]
+    fn test_button_get_state() {
+        assert_eq!(
+            TEST_BUTTON_STATES.get_state(0),
+            StarboardInput::Button { id: 0, value: true }
+        );
+
+        assert_eq!(
+            TEST_BUTTON_STATES.get_state(1),
+            StarboardInput::Button {
+                id: 1,
+                value: false
+            }
+        );
+
+        assert_eq!(
+            TEST_BUTTON_STATES.get_state(2),
+            StarboardInput::Button { id: 2, value: true }
+        );
+
+        assert_eq!(
+            TEST_BUTTON_STATES.get_state(3),
+            StarboardInput::Button { id: 3, value: true }
+        );
+    }
 }
