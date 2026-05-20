@@ -1,5 +1,5 @@
 use crate::{
-    datagram::deserialize,
+    datagram::{deserialize, serialize},
     input::{StarboardAxisStates, StarboardButtonStates, StarboardInput, StarboardInputPacket},
 };
 
@@ -10,6 +10,12 @@ const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
 
 #[test]
 fn test_button_state_deserialization() {
-    let raw: Vec<u8> = vec![0b1101, 0, 0, 0];
+    let raw: Vec<u8> = vec![0b1101];
     assert_eq!(TEST_BUTTON_STATES, deserialize(raw).unwrap());
+}
+
+#[test]
+fn test_button_state_serialization() {
+    let raw: Vec<u8> = vec![0b1101];
+    assert_eq!(raw, serialize(TEST_BUTTON_STATES).unwrap());
 }
