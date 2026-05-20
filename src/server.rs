@@ -1,4 +1,9 @@
-use sdl3::gamepad::{Axis, Button};
+use sdl3::{
+    gamepad::{Axis, Button},
+    joystick::Joystick,
+};
+
+use crate::input::{StarboardInput, StarboardInputPacket};
 
 pub struct StarboardServerBuilder {
     // A struct to help build a server
@@ -95,4 +100,15 @@ pub struct StarboardServer {
     enabled_buttons: u32, // Bitmask representing all the enabled buttons on the server
     enabled_axes: u32,    // Bitmask representing all the enabled axes on the
                           // server
+}
+
+impl StarboardServer {
+    // Takes a StarboardInput and sends it to a virtual joystick
+    // This function acts as the bridge between Starboard and your device's input handling
+    fn send_input(&self, virt_joystick: &Joystick, input: StarboardInput) {
+        match input {
+            StarboardInput::Button { id, value } => virt_joystick.set_virtual_button(id, value),
+            StarboardInput::Axis { id, value } => virt_joystick.set_virtual_axis(id, value),
+        };
+    }
 }
