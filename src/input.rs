@@ -116,4 +116,19 @@ mod InputTests {
             StarboardInput::Button { id: 3, value: true }
         );
     }
+
+    #[test]
+    fn test_button_get_states() {
+        let states = TEST_BUTTON_STATES.get_state_with_mask(0b1010);
+        assert_eq!(
+            states,
+            vec![
+                StarboardInput::Button {
+                    id: 1,
+                    value: false
+                },
+                StarboardInput::Button { id: 3, value: true }
+            ]
+        )
+    }
 }
