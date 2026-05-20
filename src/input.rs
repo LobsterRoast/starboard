@@ -1,7 +1,7 @@
 use bincode::{Decode, Encode};
 
 // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
-#[derive(PartialEq, Eq, Decode, Encode)]
+#[derive(PartialEq, Eq, Debug, Decode, Encode)]
 pub struct StarboardButtonStates {
     pub raw: u32,
 }
@@ -36,7 +36,7 @@ impl StarboardButtonStates {
     }
 }
 
-#[derive(PartialEq, Eq, Decode, Encode)]
+#[derive(PartialEq, Eq, Debug, Decode, Encode)]
 pub struct StarboardAxisStates {
     pub axes: [i16; 6],
 }
@@ -62,7 +62,7 @@ impl StarboardAxisStates {
     }
 }
 
-#[derive(PartialEq, Eq, Decode, Encode)]
+#[derive(PartialEq, Eq, Debug, Decode, Encode)]
 pub struct StarboardInputPacket {
     pub buttons: StarboardButtonStates,
     pub axes: StarboardAxisStates,
