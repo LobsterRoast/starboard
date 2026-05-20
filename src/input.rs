@@ -1,6 +1,6 @@
+// There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
 #[derive(PartialEq, Eq)]
 struct StarboardButtonStates {
-    // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
     raw: u32,
 }
 
@@ -9,22 +9,21 @@ impl StarboardButtonStates {
         Self { raw: 0 }
     }
 
+    // delta() is symmetric.
+    // That is, A.delta(&B) == B.delta(&A).
     pub fn delta(&self, other: &StarboardButtonStates) -> u32 {
-        // delta() is symmetric.
-        // That is, A.delta(&B) == B.delta(&A).
-
         self.raw ^ other.raw
     }
 
+    // returns a StarboardInput indicating whether the button at the id-th bit in `raw` is
+    // pressed or not
     pub fn get_state(&self, id: u32) -> StarboardInput {
-        // returns a StarboardInput indicating whether the button at the id-th bit in `raw` is
-        // pressed or not
         let value = (self.raw & (1 << id)) > 0;
         StarboardInput::Button { id, value }
     }
 
+    // runs get_state for each positive bit in `mask`
     pub fn get_state_with_mask(&self, mask: u32) -> Vec<StarboardInput> {
-        // runs get_state for each positive bit in `mask`
         let mut inputs: Vec<StarboardInput> = Vec::new();
         for id in 0..32 {
             if (mask & (1 << id)) > 0 {
@@ -41,14 +40,14 @@ struct StarboardAxisStates {
 }
 
 impl StarboardAxisStates {
+    // returns a StarboardInput indicating the state of the id-th axis
     fn get_state(&self, id: u32) -> StarboardInput {
-        // returns a StarboardInput indicating the state of the id-th axis
         let value = self.axes[id as usize];
         StarboardInput::Axis { id, value }
     }
 
+    // runs get_state for each positive bit in `mask`
     fn get_state_with_mask(&self, mask: u32) -> Vec<StarboardInput> {
-        // runs get_state for each positive bit in `mask`
         let mut inputs: Vec<StarboardInput> = Vec::new();
         for id in 0..32 {
             if (mask & (1 << id)) > 0 {
