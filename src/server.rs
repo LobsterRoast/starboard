@@ -1,3 +1,5 @@
+use std::net::UdpSocket;
+
 use sdl3::{
     gamepad::{Axis, Button},
     joystick::Joystick,
@@ -108,6 +110,12 @@ pub struct StarboardServer {
 }
 
 impl StarboardServer {
+    // Waits for a packet to be received and writes the data into `buf`
+    async fn get_packet(&self, buf: &mut [u8; 258], sock: UdpSocket) -> Result<()> {
+        while sock.recv(buf)? <= 0 {}
+        Ok(())
+    }
+
     // Unpacks a StarboardInputPacket and sends the inputs to your device's input handling
     fn handle_packet(
         &self,
