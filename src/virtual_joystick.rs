@@ -5,7 +5,7 @@ use sdl3::{
     joystick::{Joystick, VirtualJoystickConnection, VirtualJoystickDescription},
 };
 
-use crate::virtual_joystick;
+use crate::{input::StarboardInput, virtual_joystick};
 
 // Wrapper for virtual joystick interactions
 pub struct VirtualJoystick {
@@ -34,6 +34,18 @@ impl VirtualJoystick {
             virtual_joystick_connection,
             virtual_joystick,
         })
+    }
+
+    // Sends `input` to your system's input handling
+    pub fn send_input(&self, input: StarboardInput) -> Result<()> {
+        let virtual_joystick = &self.virtual_joystick;
+        match input {
+            StarboardInput::Button { id, value } => {
+                virtual_joystick.set_virtual_button(id, value)?
+            }
+            StarboardInput::Axis { id, value } => virtual_joystick.set_virtual_axis(id, value)?,
+        };
+        Ok(())
     }
 }
 
