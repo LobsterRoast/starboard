@@ -6,8 +6,9 @@ use sdl3::{
 };
 
 use crate::{
+    datagram::{deserialize, serialize},
     input::{StarboardInput, StarboardInputPacket},
-    virtual_joystick::VirtualJoystick,
+    virtual_joystick::{self, VirtualJoystick},
 };
 
 use anyhow::Result;
@@ -110,8 +111,25 @@ pub struct StarboardServer {
 }
 
 impl StarboardServer {
+    // This is the main loop for the server that receives packets and sends them to the input
+    // handling
+    async fn server_loop(
+        &self,
+        buf: &mut [u8; 256],
+        virt_joystick: &VirtualJoystick,
+        sock: &UdpSocket,
+    ) -> Result<()> {
+        loop {
+            let _ = self.get_packet(buf, sock).await?;
+            let raw = Vec::from(&mut *buf);
+            let packet: StarboardInputPacket = deserialize(raw)?;
+            self.handle_packet(virt_joystick, packet)?;
+        }
+        Ok(())
+    }
+
     // Waits for a packet to be received and writes the data into `buf`
-    async fn get_packet(&self, buf: &mut [u8; 258], sock: UdpSocket) -> Result<()> {
+    async fn get_packet(&self, buf: &mut [u8; 256], sock: &UdpSocket) -> Result<()> {
         while sock.recv(buf)? <= 0 {}
         Ok(())
     }
