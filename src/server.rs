@@ -3,7 +3,12 @@ use sdl3::{
     joystick::Joystick,
 };
 
-use crate::input::{StarboardInput, StarboardInputPacket};
+use crate::{
+    input::{StarboardInput, StarboardInputPacket},
+    virtual_joystick::VirtualJoystick,
+};
+
+use anyhow::Result;
 
 pub struct StarboardServerBuilder {
     // A struct to help build a server
@@ -104,19 +109,15 @@ pub struct StarboardServer {
 
 impl StarboardServer {
     // Unpacks a StarboardInputPacket and sends the inputs to your device's input handling
-    fn handle_packet(&self, virt_joystick: &Joystick, packet: StarboardInputPacket) {
+    fn handle_packet(
+        &self,
+        virt_joystick: &VirtualJoystick,
+        packet: StarboardInputPacket,
+    ) -> Result<()> {
         let inputs = packet.unpack(self.enabled_buttons, self.enabled_axes);
         for input in inputs {
-            self.send_input(virt_joystick, input);
+            virt_joystick.send_input(input)?;
         }
-    }
-
-    // Takes a StarboardInput and sends it to a virtual joystick
-    // This function acts as the bridge between Starboard and your device's input handling
-    fn send_input(&self, virt_joystick: &Joystick, input: StarboardInput) {
-        match input {
-            StarboardInput::Button { id, value } => virt_joystick.set_virtual_button(id, value),
-            StarboardInput::Axis { id, value } => virt_joystick.set_virtual_axis(id, value),
-        };
+        Ok(())
     }
 }
