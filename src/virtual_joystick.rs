@@ -1,4 +1,5 @@
 use anyhow::Result;
+use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
 use sdl3::{
     JoystickSubsystem, Sdl,
     gamepad::{Axis, Button},
@@ -60,4 +61,9 @@ where
         .with_buttons(buttons)
         .with_axes(axes);
     desc
+}
+
+// Wrapper for Virtual Joysticks using uinput instead of SDL3
+pub struct VirtualJoystickEvdev {
+    raw: VirtualDevice,
 }
