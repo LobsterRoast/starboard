@@ -1,4 +1,6 @@
+use anyhow::Result;
 use bincode::{Decode, Encode};
+use evdev::KeyCode;
 
 // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
@@ -89,4 +91,11 @@ pub enum StarboardInput {
 // Trait to convert a foreign libraries input type into a relevant bitmask
 pub trait IntoByte {
     fn into_byte(self) -> u32;
+}
+
+// Trait to convert a foreign libraries input type into a relevant bitmask
+pub trait FromByte<T> {
+    fn from_byte(self) -> Result<T>
+    where
+        T: Sized;
 }
