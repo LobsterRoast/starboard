@@ -79,4 +79,11 @@ impl VirtualJoystickEvdevBuilder<'_> {
             raw: VirtualDevice::builder()?,
         })
     }
+
+    // Build a VirtualEJoystickEvdev
+    pub fn build(self) -> Result<VirtualJoystickEvdev> {
+        Ok(VirtualJoystickEvdev {
+            raw: { self.raw.build()? },
+        })
+    }
 }
