@@ -88,12 +88,12 @@ pub enum StarboardInput {
     Button { id: u32, value: bool },
 }
 
-// Trait to convert a foreign libraries input type into a relevant bitmask
+// Trait to convert a foreign library's input type into a relevant bitmask
 pub trait IntoByte {
     fn into_byte(self) -> u32;
 }
 
-// Trait to convert a foreign libraries input type into a relevant bitmask
+// Trait to convert a bitmask into a foreign library's input type
 pub trait FromByte<T> {
     fn from_byte(self) -> Result<T>
     where
