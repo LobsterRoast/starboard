@@ -85,3 +85,8 @@ pub enum StarboardInput {
     Axis { id: u32, value: i16 },
     Button { id: u32, value: bool },
 }
+
+// Trait to convert a foreign libraries input type into a relevant bitmask
+pub trait IntoByte {
+    fn into_byte(self) -> u32;
+}
