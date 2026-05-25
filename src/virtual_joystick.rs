@@ -72,3 +72,11 @@ pub struct VirtualJoystickEvdev {
 pub struct VirtualJoystickEvdevBuilder<'a> {
     raw: VirtualDeviceBuilder<'a>,
 }
+
+impl VirtualJoystickEvdevBuilder<'_> {
+    pub fn new() -> Result<Self> {
+        Ok(Self {
+            raw: VirtualDevice::builder()?,
+        })
+    }
+}
