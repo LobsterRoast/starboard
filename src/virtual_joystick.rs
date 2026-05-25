@@ -67,3 +67,8 @@ where
 pub struct VirtualJoystickEvdev {
     raw: VirtualDevice,
 }
+
+// Builder struct for VirtualJoystickEvdev
+pub struct VirtualJoystickEvdevBuilder<'a> {
+    raw: VirtualDeviceBuilder<'a>,
+}
