@@ -1,12 +1,18 @@
 use anyhow::Result;
-use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
+use evdev::{
+    AttributeSet, KeyCode,
+    uinput::{VirtualDevice, VirtualDeviceBuilder},
+};
 use sdl3::{
     JoystickSubsystem, Sdl,
     gamepad::{Axis, Button},
     joystick::{Joystick, VirtualJoystickConnection, VirtualJoystickDescription},
 };
 
-use crate::{input::StarboardInput, virtual_joystick};
+use crate::{
+    input::{FromByte, StarboardInput},
+    virtual_joystick,
+};
 
 // Wrapper for virtual joystick interactions
 pub struct VirtualJoystick {
@@ -85,5 +91,22 @@ impl VirtualJoystickEvdevBuilder<'_> {
         Ok(VirtualJoystickEvdev {
             raw: { self.raw.build()? },
         })
+    }
+
+    // Enable all valid buttons in `buttons`
+    // TODO: Make buttons a u16 for optimization purposes
+    pub fn enable_buttons_bitmask(self, buttons: u32) -> Self {
+        let mut raw = self.raw;
+        let mut attribute_set: AttributeSet<KeyCode> = AttributeSet::new();
+        for i in 0..32 {
+            let pow = 1 << i;
+            if buttons & pow <= 0 {
+                continue;
+            }
+            if let Ok(key_code) = FromByte::<KeyCode>::from_byte(pow) {
+                attribute_set.insert(key_code);
+            }
+        }
+        Self { raw }
     }
 }
