@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
 use evdev::KeyCode;
 
@@ -90,22 +90,22 @@ pub enum StarboardInput {
 
 // Trait to convert a foreign library's input type into a relevant bitmask
 pub trait IntoByte {
-    fn into_byte(self) -> Option<u32>;
+    fn into_byte(self) -> Result<u32>;
 }
 
 // Trait to convert a bitmask into a foreign library's input type
 pub trait FromByte<T> {
-    fn from_byte(self) -> Option<T>
+    fn from_byte(self) -> Result<T>
     where
         T: Sized;
 }
 
 impl FromByte<KeyCode> for u32 {
-    fn from_byte(self) -> Option<KeyCode>
+    fn from_byte(self) -> Result<KeyCode>
     where
         KeyCode: Sized,
     {
-        Some(match self {
+        Ok(match self {
             1 => KeyCode::BTN_NORTH,
             2 => KeyCode::BTN_SOUTH,
             4 => KeyCode::BTN_EAST,
@@ -120,14 +120,14 @@ impl FromByte<KeyCode> for u32 {
             2048 => KeyCode::BTN_TRIGGER_HAPPY2,
             4096 => KeyCode::BTN_TRIGGER_HAPPY3,
             8192 => KeyCode::BTN_TRIGGER_HAPPY4,
-            _ => return None,
+            _ => bail!("Couldn't convert given KeyCode into `u32`"),
         })
     }
 }
 
 impl IntoByte for KeyCode {
-    fn into_byte(self) -> Option<u32> {
-        Some(match self {
+    fn into_byte(self) -> Result<u32> {
+        Ok(match self {
             KeyCode::BTN_NORTH => 1,
             KeyCode::BTN_SOUTH => 2,
             KeyCode::BTN_EAST => 4,
@@ -142,7 +142,7 @@ impl IntoByte for KeyCode {
             KeyCode::BTN_TRIGGER_HAPPY2 => 2048,
             KeyCode::BTN_TRIGGER_HAPPY3 => 4096,
             KeyCode::BTN_TRIGGER_HAPPY4 => 8192,
-            _ => return None,
+            _ => bail!("Couldn't covert given u32 into `KeyCode`"),
         })
     }
 }
