@@ -90,7 +90,7 @@ pub enum StarboardInput {
 
 // Trait to convert a foreign library's input type into a relevant bitmask
 pub trait IntoByte {
-    fn into_byte(self) -> u32;
+    fn into_byte(self) -> Option<u32>;
 }
 
 // Trait to convert a bitmask into a foreign library's input type
@@ -120,6 +120,28 @@ impl FromByte<KeyCode> for u32 {
             2048 => KeyCode::BTN_TRIGGER_HAPPY2,
             4096 => KeyCode::BTN_TRIGGER_HAPPY3,
             8192 => KeyCode::BTN_TRIGGER_HAPPY4,
+            _ => return None,
+        })
+    }
+}
+
+impl IntoByte for KeyCode {
+    fn into_byte(self) -> Option<u32> {
+        Some(match self {
+            KeyCode::BTN_NORTH => 1,
+            KeyCode::BTN_SOUTH => 2,
+            KeyCode::BTN_EAST => 4,
+            KeyCode::BTN_WEST => 8,
+            KeyCode::BTN_THUMBL => 16,
+            KeyCode::BTN_THUMBR => 32,
+            KeyCode::BTN_TL => 64,
+            KeyCode::BTN_TR => 128,
+            KeyCode::BTN_START => 256,
+            KeyCode::BTN_SELECT => 512,
+            KeyCode::BTN_TRIGGER_HAPPY1 => 1024,
+            KeyCode::BTN_TRIGGER_HAPPY2 => 2048,
+            KeyCode::BTN_TRIGGER_HAPPY3 => 4096,
+            KeyCode::BTN_TRIGGER_HAPPY4 => 8192,
             _ => return None,
         })
     }
