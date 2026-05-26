@@ -1,6 +1,7 @@
 use crate::input::{
-    StarboardAxisStates, StarboardButtonStates, StarboardInput, StarboardInputPacket,
+    IntoByte, StarboardAxisStates, StarboardButtonStates, StarboardInput, StarboardInputPacket,
 };
+use evdev::KeyCode;
 
 const TEST_BUTTON_STATES: StarboardButtonStates = StarboardButtonStates { raw: 13 }; // 0b1101
 const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
@@ -110,4 +111,11 @@ fn test_packet_unwrap() {
     }
 
     assert_eq!(packet.unpack(u32::MAX, u32::MAX), combined_inputs);
+}
+
+#[test]
+fn test_into_byte_evdev() {
+    assert_eq!(KeyCode::BTN_NORTH.into_byte().unwrap(), 1);
+    assert_eq!(KeyCode::BTN_TRIGGER_HAPPY1.into_byte().unwrap(), 1024);
+    assert_eq!(KeyCode::KEY_BRIGHTNESS_MIN.into_byte(), None);
 }
