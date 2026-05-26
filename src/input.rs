@@ -1,6 +1,6 @@
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
-use evdev::KeyCode;
+use evdev::{AbsoluteAxisCode, KeyCode};
 
 // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
@@ -143,6 +143,22 @@ impl IntoByte for KeyCode {
             KeyCode::BTN_TRIGGER_HAPPY3 => 4096,
             KeyCode::BTN_TRIGGER_HAPPY4 => 8192,
             _ => bail!("Couldn't covert given u32 into `KeyCode`"),
+        })
+    }
+}
+
+impl FromByte<AbsoluteAxisCode> for u32 {
+    fn from_byte(self) -> Result<AbsoluteAxisCode> {
+        Ok(match self {
+            1 => AbsoluteAxisCode::ABS_X,
+            2 => AbsoluteAxisCode::ABS_Y,
+            4 => AbsoluteAxisCode::ABS_Z,
+            8 => AbsoluteAxisCode::ABS_RX,
+            16 => AbsoluteAxisCode::ABS_RY,
+            32 => AbsoluteAxisCode::ABS_RZ,
+            64 => AbsoluteAxisCode::ABS_HAT0X,
+            128 => AbsoluteAxisCode::ABS_HAT0Y,
+            _ => bail!("Couldn't convert given u32 into `AbsoluteAxisCode`"),
         })
     }
 }
