@@ -1,5 +1,6 @@
 use crate::input::{
-    IntoByte, StarboardAxisStates, StarboardButtonStates, StarboardInput, StarboardInputPacket,
+    FromByte, IntoByte, StarboardAxisStates, StarboardButtonStates, StarboardInput,
+    StarboardInputPacket,
 };
 use evdev::KeyCode;
 
@@ -118,4 +119,11 @@ fn test_into_byte_evdev() {
     assert_eq!(KeyCode::BTN_NORTH.into_byte().unwrap(), 1);
     assert_eq!(KeyCode::BTN_TRIGGER_HAPPY1.into_byte().unwrap(), 1024);
     assert_eq!(KeyCode::KEY_BRIGHTNESS_MIN.into_byte(), None);
+}
+
+#[test]
+fn test_from_byte_evdev() {
+    assert_eq!(1.from_byte().unwrap(), KeyCode::BTN_NORTH);
+    assert_eq!(1024.from_byte().unwrap(), KeyCode::BTN_TRIGGER_HAPPY1);
+    assert_eq!(294.from_byte(), None);
 }
