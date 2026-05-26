@@ -131,3 +131,9 @@ fn test_from_byte_evdev() {
 fn test_into_byte_evdev_panics() {
     KeyCode::KEY_BRIGHTNESS_MAX.into_byte().unwrap();
 }
+
+#[test]
+#[should_panic]
+fn test_from_byte_evdev_panics() {
+    FromByte::<KeyCode>::from_byte(246).unwrap();
+}
