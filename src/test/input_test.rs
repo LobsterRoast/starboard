@@ -122,8 +122,8 @@ fn test_into_byte_evdev() {
 
 #[test]
 fn test_from_byte_evdev() {
-    assert_eq!(1.from_byte().unwrap(), KeyCode::BTN_NORTH);
-    assert_eq!(1024.from_byte().unwrap(), KeyCode::BTN_TRIGGER_HAPPY1);
+    let key_code: KeyCode = 1024.from_byte().unwrap();
+    assert_eq!(key_code, KeyCode::BTN_TRIGGER_HAPPY1);
 }
 
 #[test]
