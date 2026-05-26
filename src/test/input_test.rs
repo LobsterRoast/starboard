@@ -125,3 +125,9 @@ fn test_from_byte_evdev() {
     assert_eq!(1.from_byte().unwrap(), KeyCode::BTN_NORTH);
     assert_eq!(1024.from_byte().unwrap(), KeyCode::BTN_TRIGGER_HAPPY1);
 }
+
+#[test]
+#[should_panic]
+fn test_into_byte_evdev_panics() {
+    KeyCode::KEY_BRIGHTNESS_MAX.into_byte().unwrap();
+}
