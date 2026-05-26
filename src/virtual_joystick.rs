@@ -80,7 +80,7 @@ impl VirtualJoystickEvdevBuilder<'_> {
         })
     }
 
-    // Build a VirtualEJoystickEvdev
+    // Build a VirtualJoystickEvdev
     pub fn build(self) -> Result<VirtualJoystickEvdev> {
         Ok(VirtualJoystickEvdev {
             raw: { self.raw.build()? },
