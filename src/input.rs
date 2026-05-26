@@ -95,7 +95,32 @@ pub trait IntoByte {
 
 // Trait to convert a bitmask into a foreign library's input type
 pub trait FromByte<T> {
-    fn from_byte(self) -> Result<T>
+    fn from_byte(self) -> Option<T>
     where
         T: Sized;
+}
+
+impl FromByte<KeyCode> for u32 {
+    fn from_byte(self) -> Option<KeyCode>
+    where
+        KeyCode: Sized,
+    {
+        Some(match self {
+            1 => KeyCode::BTN_NORTH,
+            2 => KeyCode::BTN_SOUTH,
+            4 => KeyCode::BTN_EAST,
+            8 => KeyCode::BTN_WEST,
+            16 => KeyCode::BTN_THUMBL,
+            32 => KeyCode::BTN_THUMBR,
+            64 => KeyCode::BTN_TL,
+            128 => KeyCode::BTN_TR,
+            256 => KeyCode::BTN_START,
+            512 => KeyCode::BTN_SELECT,
+            1024 => KeyCode::BTN_TRIGGER_HAPPY1,
+            2048 => KeyCode::BTN_TRIGGER_HAPPY2,
+            4096 => KeyCode::BTN_TRIGGER_HAPPY3,
+            8192 => KeyCode::BTN_TRIGGER_HAPPY4,
+            _ => return None,
+        })
+    }
 }
