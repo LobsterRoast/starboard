@@ -162,3 +162,19 @@ impl FromByte<AbsoluteAxisCode> for u32 {
         })
     }
 }
+
+impl IntoByte for AbsoluteAxisCode {
+    fn into_byte(self) -> Result<u32> {
+        Ok(match self {
+            AbsoluteAxisCode::ABS_X => 1,
+            AbsoluteAxisCode::ABS_Y => 2,
+            AbsoluteAxisCode::ABS_Z => 4,
+            AbsoluteAxisCode::ABS_RX => 8,
+            AbsoluteAxisCode::ABS_RY => 16,
+            AbsoluteAxisCode::ABS_RZ => 32,
+            AbsoluteAxisCode::ABS_HAT0X => 64,
+            AbsoluteAxisCode::ABS_HAT0Y => 128,
+            _ => bail!("Couldn't convert given AbsoluteAxisCode into `u32`"),
+        })
+    }
+}
