@@ -20,6 +20,20 @@ impl Bitmask {
         self.raw & (1 << index) != 0
     }
 
+    // Set the index-th bit of raw to value
+    #[inline]
+    pub fn write_bit(&mut self, index: usize, value: bool) {
+        self.check_index(index);
+        let current_state = self.read_bit(index);
+        if current_state == value {
+            return;
+        } else if current_state {
+            self.raw ^= 1 << index;
+        } else {
+            self.raw &= 1 << index;
+        }
+    }
+
     // Checks if the index is valid and panics if not
     #[inline]
     fn check_index(&self, index: usize) {
