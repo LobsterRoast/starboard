@@ -1,5 +1,3 @@
-use core::{ops::Index, slice::SliceIndex, usize};
-
 // This struct will contain the public
 // interface for using a bitmask
 pub struct Bitmask {
