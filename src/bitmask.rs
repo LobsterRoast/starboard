@@ -45,3 +45,25 @@ impl Bitmask {
         }
     }
 }
+
+// Iterator struct for bitmask so
+// that you can iterate through a
+// bitmask's data
+struct BitmaskIterator {
+    mask: u32,
+    bit: usize,
+    size: usize,
+}
+
+impl Iterator for BitmaskIterator {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.bit += 1;
+        if self.bit >= self.size {
+            None
+        } else {
+            Some(self.mask & (1 << self.bit) != 0)
+        }
+    }
+}
