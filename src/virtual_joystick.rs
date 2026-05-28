@@ -10,6 +10,7 @@ use sdl3::{
 };
 
 use crate::{
+    bitmask::Bitmask,
     input::{FromByte, StarboardInput},
     virtual_joystick,
 };
@@ -95,14 +96,13 @@ impl VirtualJoystickEvdevBuilder<'_> {
 
     // Enable all valid buttons in `buttons`
     // TODO: Make buttons a u16 for optimization purposes
-    pub fn enable_buttons_bitmask(self, buttons: u32) -> Result<Self> {
+    pub fn enable_buttons_bitmask(self, buttons: Bitmask) -> Result<Self> {
         let mut attribute_set: AttributeSet<KeyCode> = AttributeSet::new();
-        for i in 0..32 {
-            let pow = 1 << i;
-            if buttons & pow <= 0 {
+        for (bit, state) in buttons.into_iter().enumerate() {
+            if state {
                 continue;
             }
-            if let Ok(key_code) = FromByte::<KeyCode>::from_byte(pow) {
+            if let Ok(key_code) = FromByte::<KeyCode>::from_byte(1 << bit) {
                 attribute_set.insert(key_code);
             }
         }
@@ -111,14 +111,13 @@ impl VirtualJoystickEvdevBuilder<'_> {
     }
 
     // Enable all valid axes in `axes`
-    pub fn enable_axes_bitmask(self, axes: u32) -> Result<Self> {
+    pub fn enable_axes_bitmask(self, axes: Bitmask) -> Result<Self> {
         let mut raw = self.raw;
-        for i in 0..32 {
-            let pow = 1 << i;
-            if axes & pow <= 0 {
+        for (bit, state) in axes.into_iter().enumerate() {
+            if state {
                 continue;
             }
-            raw = raw.with_absolute_axis(&pow.from_byte()?)?;
+            raw = raw.with_absolute_axis(&(1 << bit).from_byte()?)?;
         }
         Ok(Self { raw })
     }
