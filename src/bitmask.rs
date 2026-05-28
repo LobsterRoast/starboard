@@ -30,7 +30,7 @@ impl Bitmask {
         } else if current_state {
             self.raw ^= 1 << index;
         } else {
-            self.raw &= 1 << index;
+            self.raw |= 1 << index;
         }
     }
 
@@ -73,10 +73,10 @@ impl Iterator for BitmaskIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.bit += 1;
-        if self.bit >= self.size {
+        if self.bit - 1 >= self.size {
             None
         } else {
-            Some(self.mask & (1 << self.bit) != 0)
+            Some((self.mask & (1 << (self.bit - 1))) != 0)
         }
     }
 }
