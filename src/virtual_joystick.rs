@@ -109,4 +109,17 @@ impl VirtualJoystickEvdevBuilder<'_> {
         let raw = self.raw.with_keys(&attribute_set)?;
         Ok(Self { raw })
     }
+
+    // Enable all valid axes in `axes`
+    pub fn enable_axes_bitmask(self, axes: u32) -> Result<Self> {
+        let mut raw = self.raw;
+        for i in 0..32 {
+            let pow = 1 << i;
+            if axes & pow <= 0 {
+                continue;
+            }
+            raw = raw.with_absolute_axis(&pow.from_byte()?)?;
+        }
+        Ok(Self { raw })
+    }
 }
