@@ -1,4 +1,4 @@
-use core::usize;
+use core::{ops::Index, slice::SliceIndex, usize};
 
 enum BitmaskRaw {
     EIGHT { raw: u8 },
@@ -28,5 +28,26 @@ impl Bitmask {
             raw = BitmaskRaw::SIXTEEN { raw: 0 };
         }
         Self { raw, size }
+    }
+
+    // Returns the value of the bit an index `index`
+    // The index trait doesn't work here since the
+    // returned value must be owned
+    #[inline]
+    pub fn read_bit(&self, index: usize) -> bool {
+        if &index >= &self.size {
+            panic!(
+                "index out of bounds: the len is {} but the index is {}",
+                self.size, index
+            );
+        }
+
+        match self.raw {
+            BitmaskRaw::EIGHT { raw } => raw & (1 << index) != 0,
+            BitmaskRaw::SIXTEEN { raw } => raw & (1 << index) != 0,
+            BitmaskRaw::THIRTYTWO { raw } => raw & (1 << index) != 0,
+            BitmaskRaw::SIXTYFOUR { raw } => raw & (1 << index) != 0,
+            BitmaskRaw::ONETWENTYEIGHT { raw } => raw & (1 << index) != 0,
+        }
     }
 }
