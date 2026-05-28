@@ -8,6 +8,22 @@ enum BitmaskRaw {
     ONETWENTYEIGHT { raw: u128 },
 }
 
+impl BitmaskRaw {
+    // Returns the value of the bit an index `index`
+    // The index trait doesn't work here since the
+    // returned value must be owned
+    #[inline]
+    fn read_bit(&self, index: usize) -> bool {
+        match self {
+            BitmaskRaw::EIGHT { raw } => raw & (1 << index) != 0,
+            BitmaskRaw::SIXTEEN { raw } => raw & (1 << index) != 0,
+            BitmaskRaw::THIRTYTWO { raw } => raw & (1 << index) != 0,
+            BitmaskRaw::SIXTYFOUR { raw } => raw & (1 << index) != 0,
+            BitmaskRaw::ONETWENTYEIGHT { raw } => raw & (1 << index) != 0,
+        }
+    }
+}
+
 // This struct will contain the public
 // interface for using a bitmask
 pub struct Bitmask {
@@ -30,9 +46,7 @@ impl Bitmask {
         Self { raw, size }
     }
 
-    // Returns the value of the bit an index `index`
-    // The index trait doesn't work here since the
-    // returned value must be owned
+    // Public interface for the read_bit() function of BitmaskRaw
     #[inline]
     pub fn read_bit(&self, index: usize) -> bool {
         if &index >= &self.size {
@@ -41,13 +55,6 @@ impl Bitmask {
                 self.size, index
             );
         }
-
-        match self.raw {
-            BitmaskRaw::EIGHT { raw } => raw & (1 << index) != 0,
-            BitmaskRaw::SIXTEEN { raw } => raw & (1 << index) != 0,
-            BitmaskRaw::THIRTYTWO { raw } => raw & (1 << index) != 0,
-            BitmaskRaw::SIXTYFOUR { raw } => raw & (1 << index) != 0,
-            BitmaskRaw::ONETWENTYEIGHT { raw } => raw & (1 << index) != 0,
-        }
+        self.raw.read_bit(index)
     }
 }
