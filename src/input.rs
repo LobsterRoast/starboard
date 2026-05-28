@@ -1,6 +1,6 @@
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
-use evdev::{AbsoluteAxisCode, KeyCode};
+use evdev::{AbsInfo, AbsoluteAxisCode, KeyCode};
 
 // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
@@ -175,6 +175,29 @@ impl IntoByte for AbsoluteAxisCode {
             AbsoluteAxisCode::ABS_HAT0X => 64,
             AbsoluteAxisCode::ABS_HAT0Y => 128,
             _ => bail!("Couldn't convert given AbsoluteAxisCode into `u32`"),
+        })
+    }
+}
+
+// Some of the traits of axes (i.e. deadzones) should be customizable
+// at runtime rather than at compile time, but evdev requires certain
+// values for these traits. We implement this trait for AbsInfo
+// instead of just AbsoluteAxisCode so we can bake it default neutral values.
+impl FromByte<AbsInfo> for u32 {
+    fn from_byte(self) -> Result<AbsInfo>
+    where
+        AbsInfo: Sized,
+    {
+        Ok(match self {
+            1 => AbsInfo::new(0, -32768, 32767, 16, 128, 0),
+            2 => AbsInfo::new(0, -32768, 32767, 16, 128, 0),
+            4 => AbsInfo::new(0, 0, 255, 0, 0, 0),
+            8 => AbsInfo::new(0, -32768, 32767, 16, 128, 0),
+            16 => AbsInfo::new(0, -32768, 32767, 16, 128, 0),
+            32 => AbsInfo::new(0, 0, 255, 0, 0, 0),
+            64 => AbsInfo::new(0, -1, 1, 0, 0, 2),
+            128 => AbsInfo::new(0, -1, 1, 0, 0, 2),
+            _ => bail!("Couldn't convert given u32 into `AbsInfo`"),
         })
     }
 }
