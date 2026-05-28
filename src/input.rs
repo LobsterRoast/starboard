@@ -1,6 +1,6 @@
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
-use evdev::{AbsInfo, AbsoluteAxisCode, KeyCode};
+use evdev::{AbsInfo, AbsoluteAxisCode, KeyCode, UinputAbsSetup};
 
 // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
@@ -198,6 +198,25 @@ impl FromByte<AbsInfo> for u32 {
             64 => AbsInfo::new(0, -1, 1, 0, 0, 2),
             128 => AbsInfo::new(0, -1, 1, 0, 0, 2),
             _ => bail!("Couldn't convert given u32 into `AbsInfo`"),
+        })
+    }
+}
+
+impl FromByte<UinputAbsSetup> for u32 {
+    fn from_byte(self) -> Result<UinputAbsSetup>
+    where
+        UinputAbsSetup: Sized,
+    {
+        Ok(match self {
+            1 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
+            2 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
+            4 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
+            8 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
+            16 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
+            32 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
+            64 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
+            128 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
+            _ => bail!("Couldn't convert given u32 into `UinputAbsSetup`"),
         })
     }
 }
