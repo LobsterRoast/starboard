@@ -46,10 +46,23 @@ impl Bitmask {
     }
 }
 
+impl IntoIterator for Bitmask {
+    type Item = bool;
+    type IntoIter = BitmaskIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BitmaskIterator {
+            mask: self.raw,
+            bit: 0,
+            size: self.size,
+        }
+    }
+}
+
 // Iterator struct for bitmask so
 // that you can iterate through a
 // bitmask's data
-struct BitmaskIterator {
+pub struct BitmaskIterator {
     mask: u32,
     bit: usize,
     size: usize,
