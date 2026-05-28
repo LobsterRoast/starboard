@@ -16,12 +16,18 @@ impl Bitmask {
     // Check that the index-th bit of raw is set to 1
     #[inline]
     pub fn read_bit(&self, index: usize) -> bool {
+        self.check_index(index);
+        self.raw & (1 << index) != 0
+    }
+
+    // Checks if the index is valid and panics if not
+    #[inline]
+    fn check_index(&self, index: usize) {
         if &index >= &self.size {
             panic!(
                 "index out of bounds: the len is {} but the index is {}",
                 self.size, index
             );
         }
-        self.raw & (1 << index) != 0
     }
 }
