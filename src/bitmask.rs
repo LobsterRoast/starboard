@@ -2,11 +2,11 @@
 // interface for using a bitmask
 pub struct Bitmask {
     raw: u32,
-    size: usize,
+    size: u32,
 }
 
 impl Bitmask {
-    pub fn new(size: usize) -> Self {
+    pub fn new(size: u32) -> Self {
         if size > 32 {
             panic!("Bitask size cannot exceed 32");
         }
@@ -14,7 +14,7 @@ impl Bitmask {
     }
 
     // Build a bitmask from a raw u32
-    pub fn from_ll(raw: u32, size: usize) -> Self {
+    pub fn from_ll(raw: u32, size: u32) -> Self {
         if size > 32 {
             panic!("Bitask size cannot exceed 32");
         }
@@ -23,14 +23,14 @@ impl Bitmask {
 
     // Check that the index-th bit of raw is set to 1
     #[inline]
-    pub fn read_bit(&self, index: usize) -> bool {
+    pub fn read_bit(&self, index: u32) -> bool {
         self.check_index(index);
         self.raw & (1 << index) != 0
     }
 
     // Set the index-th bit of raw to value
     #[inline]
-    pub fn write_bit(&mut self, index: usize, value: bool) {
+    pub fn write_bit(&mut self, index: u32, value: bool) {
         self.check_index(index);
         let current_state = self.read_bit(index);
         if current_state == value {
@@ -44,7 +44,7 @@ impl Bitmask {
 
     // Checks if the index is valid and panics if not
     #[inline]
-    fn check_index(&self, index: usize) {
+    fn check_index(&self, index: u32) {
         if &index >= &self.size {
             panic!(
                 "index out of bounds: the len is {} but the index is {}",
@@ -72,8 +72,8 @@ impl IntoIterator for Bitmask {
 // bitmask's data
 pub struct BitmaskIterator {
     mask: u32,
-    bit: usize,
-    size: usize,
+    bit: u32,
+    size: u32,
 }
 
 impl Iterator for BitmaskIterator {
