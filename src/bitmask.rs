@@ -13,6 +13,14 @@ impl Bitmask {
         Self { raw: 0, size }
     }
 
+    // Build a bitmask from a raw u32
+    pub fn from_ll(raw: u32, size: usize) -> Self {
+        if size > 32 {
+            panic!("Bitask size cannot exceed 32");
+        }
+        Self { raw, size }
+    }
+
     // Check that the index-th bit of raw is set to 1
     #[inline]
     pub fn read_bit(&self, index: usize) -> bool {
