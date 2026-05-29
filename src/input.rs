@@ -13,12 +13,6 @@ impl StarboardButtonStates {
         Self { raw: 0 }
     }
 
-    // delta() is symmetric.
-    // That is, A.delta(&B) == B.delta(&A).
-    pub fn delta(&self, other: &StarboardButtonStates) -> u32 {
-        self.raw ^ other.raw
-    }
-
     // returns a StarboardInput indicating whether the button at the id-th bit in `raw` is
     // pressed or not
     pub fn get_state(&self, id: u32) -> StarboardInput {
