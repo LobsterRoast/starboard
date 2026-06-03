@@ -106,7 +106,6 @@ impl VirtualJoystickEvdevBuilder<'_> {
     }
 
     // Enable all valid buttons in `buttons`
-    // TODO: Make buttons a u16 for optimization purposes
     pub fn enable_buttons_bitmask(self, buttons: Bitmask) -> Result<Self> {
         let mut attribute_set: AttributeSet<KeyCode> = AttributeSet::new();
         for (bit, state) in buttons.into_iter().enumerate() {
