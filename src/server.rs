@@ -6,6 +6,7 @@ use sdl3::{
 };
 
 use crate::{
+    bitmask::Bitmask,
     datagram::{deserialize, serialize},
     input::{StarboardInput, StarboardInputPacket},
     virtual_joystick::{self, VirtualJoystick},
@@ -17,8 +18,8 @@ pub struct StarboardServerBuilder {
     // A struct to help build a server
     ip: [u8; 4],
     port: u16,
-    enabled_buttons: u32,
-    enabled_axes: u32,
+    enabled_buttons: Bitmask,
+    enabled_axes: Bitmask,
 }
 
 impl StarboardServerBuilder {
@@ -26,8 +27,8 @@ impl StarboardServerBuilder {
         Self {
             ip: [0; 4],
             port: 8080,
-            enabled_buttons: 0,
-            enabled_axes: 0,
+            enabled_buttons: Bitmask::new(14),
+            enabled_axes: Bitmask::new(14),
         }
     }
 
@@ -63,8 +64,8 @@ impl StarboardServerBuilder {
     // Enable `button` on the server
     fn enable_button(self, button: Button) -> Self {
         let mut builder = self;
-        let button_code = button.to_ll().0;
-        builder.enabled_buttons |= 1 << button_code;
+        let button_code = button.to_ll().0 as u32;
+        builder.enabled_buttons.write_bit(button_code, true);
         builder
     }
 
@@ -83,8 +84,8 @@ impl StarboardServerBuilder {
     // Enable `axis` on the server
     fn enable_axis(self, axis: Axis) -> Self {
         let mut builder = self;
-        let axis_code = axis.to_ll().0;
-        builder.enabled_axes |= 1 << axis_code;
+        let axis_code = axis.to_ll().0 as u32;
+        builder.enabled_axes.write_bit(axis_code, true);
         builder
     }
 
@@ -104,10 +105,10 @@ impl StarboardServerBuilder {
 pub struct StarboardServer {
     // The server is what will receive input packets from the controller and simulate a virtual
     // joystick on another PC
-    address: String,      // i.e. {ip}:{port}
-    enabled_buttons: u32, // Bitmask representing all the enabled buttons on the server
-    enabled_axes: u32,    // Bitmask representing all the enabled axes on the
-                          // server
+    address: String,          // i.e. {ip}:{port}
+    enabled_buttons: Bitmask, // Bitmask representing all the enabled buttons on the server
+    enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the
+                              // server
 }
 
 impl StarboardServer {

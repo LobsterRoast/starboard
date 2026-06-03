@@ -1,3 +1,4 @@
+use crate::bitmask::Bitmask;
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
 use evdev::{AbsInfo, AbsoluteAxisCode, EventType, InputEvent, KeyCode, UinputAbsSetup};
@@ -21,13 +22,12 @@ impl StarboardButtonStates {
     }
 
     // runs get_state for each positive bit in `mask`
-    pub fn get_state_with_mask(&self, mask: u32) -> Vec<StarboardInput> {
+    pub fn get_state_with_mask(&self, mask: Bitmask) -> Vec<StarboardInput> {
         let mut inputs: Vec<StarboardInput> = Vec::new();
-        for id in 0..32 {
-            if (mask & (1 << id)) > 0 {
-                inputs.push(self.get_state(id));
-            }
-        }
+        mask.into_iter()
+            .enumerate()
+            .filter(|(_, value)| *value)
+            .for_each(|(id, _)| inputs.push(self.get_state(id as u32)));
         inputs
     }
 }
@@ -45,15 +45,12 @@ impl StarboardAxisStates {
     }
 
     // runs get_state for each positive bit in `mask`
-    pub fn get_state_with_mask(&self, mask: u32) -> Vec<StarboardInput> {
+    pub fn get_state_with_mask(&self, mask: Bitmask) -> Vec<StarboardInput> {
         let mut inputs: Vec<StarboardInput> = Vec::new();
-        let upper = self.axes.len();
-        for id in 0..upper {
-            let id = id as u32;
-            if (mask & (1 << id)) > 0 {
-                inputs.push(self.get_state(id));
-            }
-        }
+        mask.into_iter()
+            .enumerate()
+            .filter(|(_, value)| *value)
+            .for_each(|(id, _)| inputs.push(self.get_state(id as u32)));
         inputs
     }
 }
@@ -66,7 +63,7 @@ pub struct StarboardInputPacket {
 
 impl StarboardInputPacket {
     // Unpack all inputs in the packet into a vector of StarboardInputs
-    pub fn unpack(self, button_mask: u32, axis_mask: u32) -> Vec<StarboardInput> {
+    pub fn unpack(self, button_mask: Bitmask, axis_mask: Bitmask) -> Vec<StarboardInput> {
         let button_states = self.buttons.get_state_with_mask(button_mask);
         let axis_states = self.axes.get_state_with_mask(axis_mask);
 
