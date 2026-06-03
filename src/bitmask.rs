@@ -9,6 +9,11 @@ pub struct Bitmask {
 }
 
 impl Bitmask {
+    pub const MAX: Self = Self {
+        raw: u32::MAX,
+        size: 32,
+    };
+
     pub fn new(size: u32) -> Self {
         if size > 32 {
             panic!("Bitask size cannot exceed 32");
