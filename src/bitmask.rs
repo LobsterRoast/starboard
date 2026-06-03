@@ -2,7 +2,7 @@ use bincode::{Decode, Encode};
 
 // This struct will contain the public
 // interface for using a bitmask
-#[derive(Debug, Decode, Encode)]
+#[derive(Debug, Decode, Encode, Copy, Clone)]
 pub struct Bitmask {
     raw: u32,
     size: u32,
