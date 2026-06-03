@@ -1,6 +1,8 @@
+use core::convert::TryInto;
+
 use anyhow::Result;
 use evdev::{
-    AttributeSet, KeyCode,
+    AttributeSet, InputEvent, KeyCode,
     uinput::{VirtualDevice, VirtualDeviceBuilder},
 };
 use sdl3::{
@@ -73,6 +75,15 @@ where
 // Wrapper for Virtual Joysticks using uinput instead of SDL3
 pub struct VirtualJoystickEvdev {
     raw: VirtualDevice,
+}
+
+impl VirtualJoystickEvdev {
+    // Sends `input` to your system's input handling
+    pub fn send_input(&mut self, input: StarboardInput) -> Result<()> {
+        let event: InputEvent = input.try_into()?;
+        self.raw.emit(&[event])?;
+        Ok(())
+    }
 }
 
 // Builder struct for VirtualJoystickEvdev
