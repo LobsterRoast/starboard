@@ -1,6 +1,6 @@
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
-use evdev::{AbsInfo, AbsoluteAxisCode, KeyCode, UinputAbsSetup};
+use evdev::{AbsInfo, AbsoluteAxisCode, EventType, InputEvent, KeyCode, UinputAbsSetup};
 
 // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
@@ -80,6 +80,25 @@ impl StarboardInputPacket {
 pub enum StarboardInput {
     Axis { id: u32, value: i16 },
     Button { id: u32, value: bool },
+}
+
+impl TryInto<InputEvent> for StarboardInput {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<InputEvent> {
+        Ok(match self {
+            StarboardInput::Axis { id, value } => {
+                let event_type = EventType::ABSOLUTE.0;
+                let event_code = FromByte::<AbsoluteAxisCode>::from_byte(1 << id)?;
+                InputEvent::new(event_type, event_code.0, value.into())
+            }
+            StarboardInput::Button { id, value } => {
+                let event_type = EventType::KEY.0;
+                let event_code = FromByte::<KeyCode>::from_byte(1 << id)?;
+                InputEvent::new(event_type, event_code.0, value.into())
+            }
+        })
+    }
 }
 
 // Trait to convert a foreign library's input type into a relevant bitmask
