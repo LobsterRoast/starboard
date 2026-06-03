@@ -16,6 +16,11 @@ impl Bitmask {
         Self { raw: 0, size }
     }
 
+    // Generate from a predefined u32
+    pub fn new_from_u32(size: u32, raw: u32) -> Self {
+        Self { raw, size }
+    }
+
     // Build a bitmask from a raw u32
     pub fn from_ll(raw: u32, size: u32) -> Self {
         if size > 32 {
