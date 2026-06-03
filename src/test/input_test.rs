@@ -1,8 +1,10 @@
+use core::{assert_eq, convert::TryInto};
+
 use crate::input::{
     FromByte, IntoByte, StarboardAxisStates, StarboardButtonStates, StarboardInput,
     StarboardInputPacket,
 };
-use evdev::KeyCode;
+use evdev::{AbsoluteAxisCode, EventType, InputEvent, KeyCode};
 
 const TEST_BUTTON_STATES: StarboardButtonStates = StarboardButtonStates { raw: 13 }; // 0b1101
 const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
@@ -136,4 +138,21 @@ fn test_into_byte_evdev_panics() {
 #[should_panic]
 fn test_from_byte_evdev_panics() {
     FromByte::<KeyCode>::from_byte(246).unwrap();
+}
+
+#[test]
+fn test_starboard_input_into_evdev_input() {
+    let starboard_input = StarboardInput::Axis { id: 0, value: 50 };
+    let evdev_input: InputEvent = starboard_input.try_into().unwrap();
+
+    assert_eq!(evdev_input.event_type(), EventType::ABSOLUTE);
+    assert_eq!(evdev_input.code(), AbsoluteAxisCode::ABS_X.0);
+    assert_eq!(evdev_input.value(), 50);
+
+    let starboard_input = StarboardInput::Button { id: 0, value: true };
+    let evdev_input: InputEvent = starboard_input.try_into().unwrap();
+
+    assert_eq!(evdev_input.event_type(), EventType::KEY);
+    assert_eq!(evdev_input.code(), KeyCode::BTN_NORTH.0);
+    assert_eq!(evdev_input.value(), 1);
 }
