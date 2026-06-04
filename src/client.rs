@@ -1,7 +1,12 @@
 use anyhow::Result;
+use bincode::{Decode, Encode};
 use tokio::net::UdpSocket;
 use tokio::time::{Duration, sleep};
 
+// Since all the info needed for the server to see a client is contained
+// in the client struct itself, we can just directly encode and decode
+// the client instead of making a separate packet struct
+#[derive(Encode, Decode)]
 pub struct StarboardClient {
     id: u64,
     port: u16,
