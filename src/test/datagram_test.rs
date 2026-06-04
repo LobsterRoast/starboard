@@ -38,6 +38,7 @@ fn test_packet_serialization_symmetry() {
     let packet = StarboardInputPacket {
         buttons: TEST_BUTTON_STATES,
         axes: TEST_AXIS_STATES,
+        id: 0,
     };
 
     let raw = serialize(&packet).unwrap();

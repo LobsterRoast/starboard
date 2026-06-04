@@ -60,6 +60,7 @@ impl StarboardAxisStates {
 pub struct StarboardInputPacket {
     pub buttons: StarboardButtonStates,
     pub axes: StarboardAxisStates,
+    pub id: u64,
 }
 
 impl StarboardInputPacket {

@@ -103,6 +103,7 @@ fn test_packet_unwrap() {
     let packet = StarboardInputPacket {
         buttons: TEST_BUTTON_STATES,
         axes: TEST_AXIS_STATES,
+        id: 0,
     };
 
     let buttons = TEST_BUTTON_STATES.get_state_with_mask(Bitmask::MAX);
