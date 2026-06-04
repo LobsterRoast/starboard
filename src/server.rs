@@ -1,9 +1,6 @@
 use std::net::UdpSocket;
 
-use sdl3::{
-    gamepad::{Axis, Button},
-    joystick::Joystick,
-};
+use evdev::{AbsoluteAxisCode, KeyCode};
 
 use tokio::time::{Duration, timeout};
 
@@ -68,9 +65,9 @@ impl StarboardServerBuilder {
     }
 
     // Enable `button` on the server
-    fn enable_button(self, button: Button) -> Self {
+    fn enable_button(self, button: KeyCode) -> Self {
         let mut builder = self;
-        let button_code = button.to_ll().0 as u32;
+        let button_code: u32 = button.0.into();
         builder.enabled_buttons.write_bit(button_code, true);
         builder
     }
@@ -78,7 +75,7 @@ impl StarboardServerBuilder {
     // Enable each button in `buttons` on the server
     fn enable_buttons<T>(self, buttons: T) -> Self
     where
-        T: IntoIterator<Item = Button>,
+        T: IntoIterator<Item = KeyCode>,
     {
         let mut builder = self;
         for button in buttons {
@@ -88,9 +85,9 @@ impl StarboardServerBuilder {
     }
 
     // Enable `axis` on the server
-    fn enable_axis(self, axis: Axis) -> Self {
+    fn enable_axis(self, axis: AbsoluteAxisCode) -> Self {
         let mut builder = self;
-        let axis_code = axis.to_ll().0 as u32;
+        let axis_code: u32 = axis.0.into();
         builder.enabled_axes.write_bit(axis_code, true);
         builder
     }
@@ -98,7 +95,7 @@ impl StarboardServerBuilder {
     // Enable each axes in `axes` on the server
     fn enable_axes<T>(self, axes: T) -> Self
     where
-        T: IntoIterator<Item = Axis>,
+        T: IntoIterator<Item = AbsoluteAxisCode>,
     {
         let mut builder = self;
         for axis in axes {
