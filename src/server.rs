@@ -106,6 +106,13 @@ impl StarboardServerBuilder {
         }
         builder
     }
+
+    // Sets the period of time after which the server will timeout if a packet is not received
+    fn set_timeout(self, timeout_ms: u64) -> Self {
+        let mut builder = self;
+        builder.timeout_ms = timeout_ms;
+        builder
+    }
 }
 
 pub struct StarboardServer {
