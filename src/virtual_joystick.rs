@@ -13,11 +13,11 @@ use crate::{
 };
 
 // Wrapper for Virtual Joysticks using uinput instead of SDL3
-pub struct VirtualJoystickEvdev {
+pub struct VirtualJoystick {
     raw: VirtualDevice,
 }
 
-impl VirtualJoystickEvdev {
+impl VirtualJoystick {
     // Sends `input` to your system's input handling
     pub fn send_input(&mut self, input: StarboardInput) -> Result<()> {
         let event: InputEvent = input.try_into()?;
@@ -26,21 +26,21 @@ impl VirtualJoystickEvdev {
     }
 }
 
-// Builder struct for VirtualJoystickEvdev
-pub struct VirtualJoystickEvdevBuilder<'a> {
+// Builder struct for VirtualJoystick
+pub struct VirtualJoystickBuilder<'a> {
     raw: VirtualDeviceBuilder<'a>,
 }
 
-impl VirtualJoystickEvdevBuilder<'_> {
+impl VirtualJoystickBuilder<'_> {
     pub fn new() -> Result<Self> {
         Ok(Self {
             raw: VirtualDevice::builder()?,
         })
     }
 
-    // Build a VirtualJoystickEvdev
-    pub fn build(self) -> Result<VirtualJoystickEvdev> {
-        Ok(VirtualJoystickEvdev {
+    // Build a VirtualJoystick
+    pub fn build(self) -> Result<VirtualJoystick> {
+        Ok(VirtualJoystick {
             raw: { self.raw.build()? },
         })
     }
