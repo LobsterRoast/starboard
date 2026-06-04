@@ -1,3 +1,4 @@
+use crate::datagram::serialize;
 use anyhow::Result;
 use bincode::{Decode, Encode};
 use tokio::net::UdpSocket;
@@ -18,8 +19,7 @@ impl StarboardClient {
         let addr = format!("0.0.0.0:{}", self.port);
         let mut socket = UdpSocket::bind(addr).await?;
         socket.set_broadcast(true);
-        // TODO: Create a method to generate a packet to broadcast
-        let packet: [u8; 1] = [0; 1];
+        let packet = serialize(&self)?;
         loop {
             sleep(Duration::from_secs(15));
             socket.send(&packet).await?;
