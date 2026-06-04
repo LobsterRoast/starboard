@@ -9,7 +9,7 @@ use crate::{
     bitmask::Bitmask,
     datagram::{deserialize, serialize},
     input::{StarboardInput, StarboardInputPacket},
-    virtual_joystick::{self, VirtualJoystick},
+    virtual_joystick::{self, VirtualJoystickEvdev},
 };
 
 use anyhow::Result;
@@ -117,7 +117,7 @@ impl StarboardServer {
     async fn server_loop(
         &self,
         buf: &mut [u8; 256],
-        virt_joystick: &VirtualJoystick,
+        virt_joystick: &mut VirtualJoystickEvdev,
         sock: &UdpSocket,
     ) -> Result<()> {
         loop {
@@ -138,7 +138,7 @@ impl StarboardServer {
     // Unpacks a StarboardInputPacket and sends the inputs to your device's input handling
     fn handle_packet(
         &self,
-        virt_joystick: &VirtualJoystick,
+        virt_joystick: &mut VirtualJoystickEvdev,
         packet: StarboardInputPacket,
     ) -> Result<()> {
         let inputs = packet.unpack(self.enabled_buttons, self.enabled_axes);
