@@ -1,8 +1,11 @@
 use core::{assert_eq, convert::TryInto};
 
-use crate::input::{
-    FromByte, IntoByte, StarboardAxisStates, StarboardButtonStates, StarboardInput,
-    StarboardInputPacket,
+use crate::{
+    bitmask::Bitmask,
+    input::{
+        FromByte, IntoByte, StarboardAxisStates, StarboardButtonStates, StarboardInput,
+        StarboardInputPacket,
+    },
 };
 use evdev::{AbsoluteAxisCode, EventType, InputEvent, KeyCode};
 
@@ -39,7 +42,8 @@ fn test_button_get_state() {
 
 #[test]
 fn test_button_get_states() {
-    let states = TEST_BUTTON_STATES.get_state_with_mask(0b1010);
+    let mask = Bitmask::new_from_u32(4, 0b1010);
+    let states = TEST_BUTTON_STATES.get_state_with_mask(mask);
     assert_eq!(
         states,
         vec![
@@ -87,7 +91,8 @@ fn test_axis_get_state() {
 
 #[test]
 fn test_axis_get_states() {
-    let states = TEST_AXIS_STATES.get_state_with_mask(0b100101);
+    let mask = Bitmask::new_from_u32(6, 0b100101);
+    let states = TEST_AXIS_STATES.get_state_with_mask(mask);
     assert_eq!(states[0], StarboardInput::Axis { id: 0, value: 0 });
     assert_eq!(states[1], StarboardInput::Axis { id: 2, value: 223 });
     assert_eq!(states[2], StarboardInput::Axis { id: 5, value: 255 });
@@ -100,8 +105,8 @@ fn test_packet_unwrap() {
         axes: TEST_AXIS_STATES,
     };
 
-    let buttons = TEST_BUTTON_STATES.get_state_with_mask(u32::MAX);
-    let axes = TEST_AXIS_STATES.get_state_with_mask(u32::MAX);
+    let buttons = TEST_BUTTON_STATES.get_state_with_mask(Bitmask::MAX);
+    let axes = TEST_AXIS_STATES.get_state_with_mask(Bitmask::MAX);
 
     let mut combined_inputs: Vec<StarboardInput> = Vec::new();
 
@@ -113,7 +118,7 @@ fn test_packet_unwrap() {
         combined_inputs.push(axis);
     }
 
-    assert_eq!(packet.unpack(u32::MAX, u32::MAX), combined_inputs);
+    assert_eq!(packet.unpack(Bitmask::MAX, Bitmask::MAX), combined_inputs);
 }
 
 #[test]
