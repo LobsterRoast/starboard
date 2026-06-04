@@ -9,7 +9,6 @@ use evdev::{
 use crate::{
     bitmask::Bitmask,
     input::{FromByte, StarboardInput},
-    virtual_joystick,
 };
 
 // Wrapper for Virtual Joysticks using uinput instead of SDL3

@@ -7,8 +7,8 @@ use tokio::time::{Duration, timeout};
 use crate::{
     bitmask::Bitmask,
     datagram::{deserialize, serialize},
+    evdev_sb::{self, VirtualJoystick},
     input::{StarboardInput, StarboardInputPacket},
-    virtual_joystick::{self, VirtualJoystick},
 };
 
 use anyhow::Result;

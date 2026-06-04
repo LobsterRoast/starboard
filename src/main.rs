@@ -1,10 +1,10 @@
 mod bitmask;
 mod client;
 mod datagram;
+mod evdev_sb;
 mod input;
 mod server;
 mod test;
-mod virtual_joystick;
 
 #[tokio::main]
 async fn main() {
