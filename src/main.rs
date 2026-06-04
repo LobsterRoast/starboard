@@ -1,4 +1,5 @@
 mod bitmask;
+mod client;
 mod datagram;
 mod input;
 mod server;
