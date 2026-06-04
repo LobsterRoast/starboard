@@ -18,10 +18,10 @@ impl StarboardClient {
     async fn broadcast_id(&self) -> Result<()> {
         let addr = format!("0.0.0.0:{}", self.port);
         let mut socket = UdpSocket::bind(addr).await?;
-        socket.set_broadcast(true);
+        let _ = socket.set_broadcast(true);
         let packet = serialize(&self)?;
         loop {
-            sleep(Duration::from_secs(15));
+            let _ = sleep(Duration::from_secs(15)).await;
             socket.send(&packet).await?;
         }
     }
