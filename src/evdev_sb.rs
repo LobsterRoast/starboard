@@ -1,8 +1,8 @@
-use core::convert::TryInto;
+use core::{convert::TryInto, iter::IntoIterator};
 
 use anyhow::Result;
 use evdev::{
-    AttributeSet, InputEvent, KeyCode,
+    AbsoluteAxisCode, AttributeSet, Device, InputEvent, KeyCode, enumerate,
     uinput::{VirtualDevice, VirtualDeviceBuilder},
 };
 
@@ -70,4 +70,47 @@ impl VirtualJoystickBuilder<'_> {
         }
         Ok(Self { raw })
     }
+}
+
+// Takes a device and gives it a score based on how closely it resembles a Steam Deck's layout
+fn get_device_supported_attributes_score(device: &Device) -> u8 {
+    const CHECK_BUTTONS: [KeyCode; 14] = [
+        KeyCode::BTN_NORTH,
+        KeyCode::BTN_SOUTH,
+        KeyCode::BTN_EAST,
+        KeyCode::BTN_WEST,
+        KeyCode::BTN_THUMBL,
+        KeyCode::BTN_THUMBR,
+        KeyCode::BTN_TL,
+        KeyCode::BTN_TR,
+        KeyCode::BTN_START,
+        KeyCode::BTN_SELECT,
+        KeyCode::BTN_TRIGGER_HAPPY1,
+        KeyCode::BTN_TRIGGER_HAPPY2,
+        KeyCode::BTN_TRIGGER_HAPPY3,
+        KeyCode::BTN_TRIGGER_HAPPY4,
+    ];
+    const CHECK_AXES: [AbsoluteAxisCode; 8] = [
+        AbsoluteAxisCode::ABS_X,
+        AbsoluteAxisCode::ABS_Y,
+        AbsoluteAxisCode::ABS_Z,
+        AbsoluteAxisCode::ABS_RX,
+        AbsoluteAxisCode::ABS_RY,
+        AbsoluteAxisCode::ABS_RZ,
+        AbsoluteAxisCode::ABS_HAT0X,
+        AbsoluteAxisCode::ABS_HAT0Y,
+    ];
+    let supported_buttons = device.supported_keys().unwrap();
+    let supported_axes = device.supported_absolute_axes().unwrap();
+
+    let mut score: u8 = 0;
+    CHECK_BUTTONS
+        .into_iter()
+        .filter(|code| supported_buttons.contains(*code))
+        .for_each(|_| score += 1);
+    CHECK_AXES
+        .into_iter()
+        .filter(|code| supported_axes.contains(*code))
+        .for_each(|_| score += 1);
+    score
 }
