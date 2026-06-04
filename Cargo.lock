@@ -199,23 +199,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
-name = "sdl3"
-version = "0.18.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25bd22eb1bbc9137e914022b4994ed35591eea0884e9e3e98e6d9895cad6e1d2"
-dependencies = [
- "bitflags",
- "libc",
- "sdl3-sys",
-]
-
-[[package]]
-name = "sdl3-sys"
-version = "0.6.5+SDL-3.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51ca7a36c908d1d2b6c259d426a5000fbb70e764dcc430f6a373cc151f614f68"
-
-[[package]]
 name = "serde"
 version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -277,7 +260,6 @@ dependencies = [
  "anyhow",
  "bincode",
  "evdev",
- "sdl3",
  "tokio",
 ]
 
