@@ -5,6 +5,7 @@ mod server;
 mod test;
 mod virtual_joystick;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
 }
