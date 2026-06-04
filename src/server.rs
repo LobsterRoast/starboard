@@ -5,6 +5,8 @@ use sdl3::{
     joystick::Joystick,
 };
 
+use tokio::time::{Duration, timeout};
+
 use crate::{
     bitmask::Bitmask,
     datagram::{deserialize, serialize},
@@ -20,6 +22,7 @@ pub struct StarboardServerBuilder {
     port: u16,
     enabled_buttons: Bitmask,
     enabled_axes: Bitmask,
+    timeout_ms: u64,
 }
 
 impl StarboardServerBuilder {
@@ -29,6 +32,7 @@ impl StarboardServerBuilder {
             port: 8080,
             enabled_buttons: Bitmask::new(14),
             enabled_axes: Bitmask::new(14),
+            timeout_ms: 60000,
         }
     }
 
@@ -40,11 +44,13 @@ impl StarboardServerBuilder {
         let address = format_addr(self.ip, self.port);
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
+        let timeout_ms = Duration::from_millis(self.timeout_ms);
 
         StarboardServer {
             address,
             enabled_buttons,
             enabled_axes,
+            timeout_ms,
         }
     }
     // Set the target IP of the server
@@ -107,8 +113,9 @@ pub struct StarboardServer {
     // joystick on another PC
     address: String,          // i.e. {ip}:{port}
     enabled_buttons: Bitmask, // Bitmask representing all the enabled buttons on the server
-    enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the
-                              // server
+    enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
+    timeout_ms: Duration,     // The amount of time after which to panic if a packet is not
+                              // received
 }
 
 impl StarboardServer {
@@ -121,7 +128,7 @@ impl StarboardServer {
         sock: &UdpSocket,
     ) -> Result<()> {
         loop {
-            let _ = self.get_packet(buf, sock).await?;
+            let _ = timeout(self.timeout_ms, self.get_packet(buf, sock)).await?;
             let raw = Vec::from(&mut *buf);
             let packet: StarboardInputPacket = deserialize(raw)?;
             self.handle_packet(virt_joystick, packet)?;
