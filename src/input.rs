@@ -73,6 +73,11 @@ impl StarboardInputPacket {
         inputs.extend(axis_states);
         inputs
     }
+
+    // Returns the ID of the client that sent the packet
+    pub fn client_id(&self) -> &u64 {
+        &self.id
+    }
 }
 
 #[derive(PartialEq, Eq, Debug)]
