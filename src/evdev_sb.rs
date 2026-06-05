@@ -114,3 +114,11 @@ fn get_device_supported_attributes_score(device: &Device) -> u8 {
         .for_each(|_| score += 1);
     score
 }
+
+// Iterates through evdev devices and picks the one that looks most like a Steam Deck
+pub fn find_best_evdev_device() -> Result<Device> {
+    Ok(enumerate()
+        .map(|(_, device)| device)
+        .max_by_key(|device| get_device_supported_attributes_score(&device))
+        .unwrap())
+}
