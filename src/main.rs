@@ -4,6 +4,7 @@ mod datagram;
 mod evdev_sb;
 mod input;
 mod server;
+#[cfg(test)]
 mod test;
 
 #[tokio::main]
