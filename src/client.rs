@@ -1,4 +1,5 @@
 use crate::datagram::serialize;
+use crate::input::StarboardInputPacket;
 use anyhow::Result;
 use bincode::{Decode, Encode};
 use tokio::net::UdpSocket;
@@ -14,6 +15,13 @@ pub struct StarboardClient {
 }
 
 impl StarboardClient {
+    // Broadcast's `packet` to the local network
+    async fn send_packet(&self, packet: StarboardInputPacket, sock: &UdpSocket) -> Result<()> {
+        let raw = serialize(packet)?;
+        sock.send(&raw).await?;
+        Ok(())
+    }
+
     // Broadcast a client's presence to server's on the local network
     async fn broadcast_id(&self) -> Result<()> {
         let addr = format!("0.0.0.0:{}", self.port);
