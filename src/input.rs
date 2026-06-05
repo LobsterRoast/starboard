@@ -38,6 +38,10 @@ pub struct StarboardAxisStates {
 }
 
 impl StarboardAxisStates {
+    pub fn new() -> Self {
+        Self { axes: [0; 6] }
+    }
+
     // returns a StarboardInput indicating the state of the id-th axis
     pub fn get_state(&self, id: u32) -> StarboardInput {
         let value = self.axes[id as usize];
