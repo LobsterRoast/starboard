@@ -68,6 +68,14 @@ pub struct StarboardInputPacket {
 }
 
 impl StarboardInputPacket {
+    pub fn new(id: u64) -> Self {
+        Self {
+            buttons: StarboardButtonStates::new(),
+            axes: StarboardAxisStates::new(),
+            id,
+        }
+    }
+
     // Unpack all inputs in the packet into a vector of StarboardInputs
     pub fn unpack(self, button_mask: Bitmask, axis_mask: Bitmask) -> Vec<StarboardInput> {
         let button_states = self.buttons.get_state_with_mask(button_mask);
