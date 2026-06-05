@@ -21,8 +21,8 @@ impl StarboardClient {
         let _ = socket.set_broadcast(true);
         let packet = serialize(&self)?;
         loop {
-            let _ = sleep(Duration::from_secs(15)).await;
             socket.send(&packet).await?;
+            let _ = sleep(Duration::from_secs(15)).await;
         }
     }
 }
