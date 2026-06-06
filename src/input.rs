@@ -62,6 +62,11 @@ impl StarboardAxisStates {
             .for_each(|(id, _)| inputs.push(self.get_state(id as u32)));
         inputs
     }
+
+    // Registers `axis` as holding value `value`
+    fn pack_axis(&mut self, id: u32, value: i16) {
+        self.axes[id as usize] = value;
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
