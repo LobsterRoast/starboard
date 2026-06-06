@@ -103,6 +103,14 @@ impl StarboardInputPacket {
         inputs
     }
 
+    // Pack `input` into the packet
+    pub fn pack(&mut self, input: StarboardInput) -> Result<()> {
+        Ok(match input {
+            StarboardInput::Button { id, .. } => self.buttons.pack_button(id)?,
+            StarboardInput::Axis { id, value } => self.axes.pack_axis(id, value)?,
+        })
+    }
+
     // Returns the ID of the client that sent the packet
     pub fn client_id(&self) -> &u64 {
         &self.id
