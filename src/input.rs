@@ -1,3 +1,5 @@
+use core::iter::IntoIterator;
+
 use crate::bitmask::Bitmask;
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
@@ -109,6 +111,17 @@ impl StarboardInputPacket {
             StarboardInput::Button { id, .. } => self.buttons.pack_button(id)?,
             StarboardInput::Axis { id, value } => self.axes.pack_axis(id, value)?,
         })
+    }
+
+    // pack all inputs in `inputs` into the packet
+    pub fn pack_iter<T>(&mut self, inputs: T) -> Result<()>
+    where
+        T: IntoIterator<Item = StarboardInput>,
+    {
+        for input in inputs {
+            self.pack(input)?;
+        }
+        Ok(())
     }
 
     // Returns the ID of the client that sent the packet
