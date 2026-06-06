@@ -53,8 +53,7 @@ impl StarboardAxisStates {
         let mut inputs: Vec<StarboardInput> = Vec::new();
         mask.into_iter()
             .enumerate()
-            .filter(|(_, value)| *value)
-            .filter(|(id, _)| *id < self.axes.len())
+            .filter(|(id, value)| *value && *id < self.axes.len())
             .for_each(|(id, _)| inputs.push(self.get_state(id as u32)));
         inputs
     }
