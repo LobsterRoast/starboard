@@ -30,6 +30,14 @@ impl StarboardButtonStates {
             .for_each(|(id, _)| inputs.push(self.get_state(id as u32)));
         inputs
     }
+
+    // Registers `button` as pressed and packs it ino the `self`
+    fn pack_button(&mut self, button: StarboardInput) -> Result<()> {
+        Ok(match button {
+            StarboardInput::Button { id, .. } => self.raw |= 1 << id,
+            _ => bail!("Cannot pack `StarboardInput::Axis` into `StarboardButtonStates`"),
+        })
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
