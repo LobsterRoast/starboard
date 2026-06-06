@@ -32,11 +32,8 @@ impl StarboardButtonStates {
     }
 
     // Registers `button` as pressed and packs it ino the `self`
-    fn pack_button(&mut self, button: StarboardInput) -> Result<()> {
-        Ok(match button {
-            StarboardInput::Button { id, .. } => self.raw |= 1 << id,
-            _ => bail!("Cannot pack `StarboardInput::Axis` into `StarboardButtonStates`"),
-        })
+    fn pack_button(&mut self, id: u32) {
+        self.raw |= 1 << id;
     }
 }
 
