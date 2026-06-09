@@ -124,3 +124,10 @@ pub fn find_best_evdev_device() -> Result<Device> {
         .max_by_key(|device| get_device_supported_attributes_score(&device))
         .unwrap())
 }
+
+// Wrapper for evdev::Device
+pub struct DeviceWrapper {
+    device: Device,
+    supported_buttons: Vec<KeyCode>,
+    supported_axes: Vec<AbsoluteAxisCode>,
+}
