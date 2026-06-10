@@ -131,3 +131,16 @@ pub struct DeviceWrapper {
     supported_buttons: Vec<KeyCode>,
     supported_axes: Vec<AbsoluteAxisCode>,
 }
+
+impl DeviceWrapper {
+    // Returns the state of each supported button on the device
+    pub fn get_button_states(&self) -> Result<Vec<(KeyCode, bool)>> {
+        let attr_set = self.device.get_key_state()?;
+        let mut button_states: Vec<(KeyCode, bool)> = Vec::new();
+        self.supported_buttons
+            .iter()
+            .map(|button| *button)
+            .for_each(|button| button_states.push((button, attr_set.contains(button))));
+        Ok(button_states)
+    }
+}
