@@ -143,4 +143,15 @@ impl DeviceWrapper {
             .for_each(|button| button_states.push((button, attr_set.contains(button))));
         Ok(button_states)
     }
+
+    // Returns the state of each supported axis on the device
+    pub fn get_axis_states(&self) -> Result<Vec<(AbsoluteAxisCode, i32)>> {
+        let states = self.device.get_abs_state()?;
+        let mut axis_states: Vec<(AbsoluteAxisCode, i32)> = Vec::new();
+        self.supported_axes
+            .iter()
+            .map(|axis| *axis)
+            .for_each(|axis| axis_states.push((axis, states[axis.0 as usize].value)));
+        Ok(axis_states)
+    }
 }
