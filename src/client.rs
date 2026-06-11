@@ -18,7 +18,7 @@ pub struct StarboardClient {
 }
 
 impl StarboardClient {
-    // Returns an iteratorable collection of all pressed buttons
+    // Returns an iterable collection of all pressed buttons
     fn get_button_inputs<T>(&self, device: DeviceWrapper) -> Result<T>
     where
         T: FromIterator<u32>,
