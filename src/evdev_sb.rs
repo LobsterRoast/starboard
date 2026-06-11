@@ -170,4 +170,22 @@ impl DeviceWrapper {
             .for_each(|axis| axis_states.push((axis, states[axis.0 as usize].value)));
         Ok(axis_states)
     }
+
+    // Returns a vector of StarboardInputs representing the state of every supported axis
+    pub fn get_axis_inputs(&self) -> Result<Vec<StarboardInput>> {
+        let states = self.device.get_abs_state()?;
+        let mut inputs: Vec<StarboardInput> = Vec::new();
+        self.supported_axes
+            .iter()
+            .map(|axis| *axis)
+            .for_each(|axis| {
+                inputs.push(StarboardInput::Axis {
+                    id: axis.0 as u32,
+                    // SAFETY: Since the maximums and minimums of each axis can fit within an i16,
+                    // there should be no data loss by using `as i16`
+                    value: states[axis.0 as usize].value as i16,
+                })
+            });
+        Ok(inputs)
+    }
 }
