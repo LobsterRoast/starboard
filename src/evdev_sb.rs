@@ -144,6 +144,22 @@ impl DeviceWrapper {
         Ok(button_states)
     }
 
+    // Returns a vector of StarboardInputs representing the state of every supported button
+    pub fn get_button_inputs<T>(&self) -> Result<Vec<StarboardInput>> {
+        let attr_set = self.device.get_key_state()?;
+        let mut inputs: Vec<StarboardInput> = Vec::new();
+        self.supported_buttons
+            .iter()
+            .map(|button| *button)
+            .for_each(|button| {
+                inputs.push(StarboardInput::Button {
+                    id: button.0.into(),
+                    value: attr_set.contains(button),
+                })
+            });
+        Ok(inputs)
+    }
+
     // Returns the state of each supported axis on the device
     pub fn get_axis_states(&self) -> Result<Vec<(AbsoluteAxisCode, i32)>> {
         let states = self.device.get_abs_state()?;
