@@ -1,5 +1,8 @@
+use core::iter::FromIterator;
+
 use crate::datagram::serialize;
-use crate::input::StarboardInputPacket;
+use crate::evdev_sb::DeviceWrapper;
+use crate::input::{IntoByte, StarboardInputPacket};
 use anyhow::Result;
 use bincode::{Decode, Encode};
 use tokio::net::UdpSocket;
@@ -15,6 +18,18 @@ pub struct StarboardClient {
 }
 
 impl StarboardClient {
+    // Returns an iteratorable collection of all pressed buttons
+    fn get_button_inputs<T>(&self, device: DeviceWrapper) -> Result<T>
+    where
+        T: FromIterator<u32>,
+    {
+        device
+            .get_button_states()?
+            .iter()
+            .map(|(button, _)| button.into_byte())
+            .collect()
+    }
+
     // Broadcast's `packet` to the local network
     async fn send_packet(&self, packet: StarboardInputPacket, sock: &UdpSocket) -> Result<()> {
         let raw = serialize(packet)?;
