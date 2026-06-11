@@ -145,7 +145,7 @@ impl DeviceWrapper {
     }
 
     // Returns a vector of StarboardInputs representing the state of every supported button
-    pub fn get_button_inputs<T>(&self) -> Result<Vec<StarboardInput>> {
+    pub fn get_button_inputs(&self) -> Result<Vec<StarboardInput>> {
         let attr_set = self.device.get_key_state()?;
         let mut inputs: Vec<StarboardInput> = Vec::new();
         self.supported_buttons
