@@ -18,6 +18,11 @@ pub struct StarboardClient {
 }
 
 impl StarboardClient {
+    pub fn new(port: u16) -> Self {
+        // TODO: Create a system for randomly generating an ID
+        Self { id: 0, port }
+    }
+
     // Run the client loop
     pub async fn run(&self) -> Result<()> {
         let device = DeviceWrapper::get_steam_deck()?;
