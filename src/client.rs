@@ -18,6 +18,18 @@ pub struct StarboardClient {
 }
 
 impl StarboardClient {
+    // Run the client loop
+    pub async fn run(&self) -> Result<()> {
+        let device = DeviceWrapper::get_steam_deck()?;
+        let addr = format!("0.0.0.0:{}", self.port);
+        let mut sock = UdpSocket::bind(addr).await?;
+        loop {
+            let packet = self.create_packet(&device)?;
+            let _ = self.send_packet(packet, &sock).await?;
+        }
+        Ok(())
+    }
+
     // Returns an iterable collection of all pressed buttons
     fn get_button_inputs<T>(&self, device: DeviceWrapper) -> Result<T>
     where
