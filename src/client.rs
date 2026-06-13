@@ -31,7 +31,7 @@ impl StarboardClient {
     }
 
     // Creates a `StarboardInputPacket` from the state of a device
-    fn create_packet(&self, device: DeviceWrapper) -> Result<StarboardInputPacket> {
+    fn create_packet(&self, device: &DeviceWrapper) -> Result<StarboardInputPacket> {
         let mut packet = StarboardInputPacket::new(self.id);
         packet.pack_iter(device.get_button_inputs()?)?;
         packet.pack_iter(device.get_axis_inputs()?)?;
