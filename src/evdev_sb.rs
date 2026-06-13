@@ -1,6 +1,6 @@
 use core::{convert::TryInto, iter::IntoIterator};
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use evdev::{
     AbsoluteAxisCode, AttributeSet, Device, InputEvent, KeyCode, enumerate,
     uinput::{VirtualDevice, VirtualDeviceBuilder},
@@ -133,6 +133,20 @@ pub struct DeviceWrapper {
 }
 
 impl DeviceWrapper {
+    // Initialized a `DeviceWrapper` using `find_best_evdev_device()` to find the best device
+    fn get_steam_deck() -> Result<Self> {
+        let device = find_best_evdev_device()?;
+        let supported_buttons: Vec<KeyCode> = device.supported_keys().unwrap().iter().collect();
+        let supported_axes: Vec<AbsoluteAxisCode> =
+            device.supported_absolute_axes().unwrap().iter().collect();
+
+        Ok(Self {
+            device,
+            supported_buttons,
+            supported_axes,
+        })
+    }
+
     // Returns the state of each supported button on the device
     pub fn get_button_states(&self) -> Result<Vec<(KeyCode, bool)>> {
         let attr_set = self.device.get_key_state()?;
