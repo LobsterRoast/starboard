@@ -134,7 +134,7 @@ pub struct DeviceWrapper {
 
 impl DeviceWrapper {
     // Initialized a `DeviceWrapper` using `find_best_evdev_device()` to find the best device
-    fn get_steam_deck() -> Result<Self> {
+    pub fn get_steam_deck() -> Result<Self> {
         let device = find_best_evdev_device()?;
         let supported_buttons: Vec<KeyCode> = device.supported_keys().unwrap().iter().collect();
         let supported_axes: Vec<AbsoluteAxisCode> =
