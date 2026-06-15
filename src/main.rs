@@ -1,6 +1,7 @@
 mod bitmask;
 mod client;
 mod datagram;
+mod debug;
 mod evdev_sb;
 mod input;
 mod server;
