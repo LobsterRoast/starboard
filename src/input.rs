@@ -36,7 +36,7 @@ impl StarboardButtonStates {
     // Registers `button` as pressed and packs it ino the `self`
     fn pack_button(&mut self, id: u32) -> Result<()> {
         if id >= 15 {
-            bail!("`id` is out of bounds");
+            bail!("Could not pack button with id {}; id is out of bounds", id);
         }
         self.raw |= 1 << id;
         Ok(())
@@ -72,7 +72,7 @@ impl StarboardAxisStates {
     // Registers `axis` as holding value `value`
     fn pack_axis(&mut self, id: u32, value: i16) -> Result<()> {
         if id >= self.axes.len() as u32 {
-            bail!("`id` is out of bounds");
+            bail!("Could not pack axis with id {}; id is out of bounds", id);
         }
         self.axes[id as usize] = value;
         Ok(())
