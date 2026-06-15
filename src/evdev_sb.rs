@@ -102,8 +102,14 @@ impl VirtualJoystickBuilder<'_> {
 
 // Takes a device and gives it a score based on how closely it resembles a Steam Deck's layout
 fn get_device_supported_attributes_score(device: &Device) -> u8 {
-    let supported_buttons = device.supported_keys().unwrap();
-    let supported_axes = device.supported_absolute_axes().unwrap();
+    let supported_buttons = match device.supported_keys() {
+        Some(supported_buttons) => supported_buttons,
+        None => return 0,
+    };
+    let supported_axes = match device.supported_absolute_axes() {
+        Some(supported_axes) => supported_axes,
+        None => return 0,
+    };
 
     let mut score: u8 = 0;
     SUPPORTED_BUTTONS
