@@ -35,18 +35,6 @@ impl StarboardClient {
         Ok(())
     }
 
-    // Returns an iterable collection of all pressed buttons
-    fn get_button_inputs<T>(&self, device: DeviceWrapper) -> Result<T>
-    where
-        T: FromIterator<u32>,
-    {
-        device
-            .get_button_states()?
-            .iter()
-            .map(|(button, _)| button.into_byte())
-            .collect()
-    }
-
     // Creates a `StarboardInputPacket` from the state of a device
     fn create_packet(&self, device: &DeviceWrapper) -> Result<StarboardInputPacket> {
         let mut packet = StarboardInputPacket::new(self.id);
