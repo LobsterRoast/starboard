@@ -8,7 +8,13 @@ mod server;
 #[cfg(test)]
 mod test;
 
+use anyhow::Result;
+
+use crate::client::StarboardClient;
+
 #[tokio::main]
-async fn main() {
-    println!("Hello, world!");
+async fn main() -> Result<()> {
+    let client = StarboardClient::new(0);
+    let _ = client.run().await?;
+    Ok(())
 }
