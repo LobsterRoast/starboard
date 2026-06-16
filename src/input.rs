@@ -324,3 +324,31 @@ impl IntoID for KeyCode {
         })
     }
 }
+
+impl FromID<KeyCode> for u32 {
+    fn from_id(self) -> Result<KeyCode>
+    where
+        KeyCode: Sized,
+    {
+        Ok(match self {
+            1 => KeyCode::BTN_NORTH,
+            2 => KeyCode::BTN_SOUTH,
+            3 => KeyCode::BTN_EAST,
+            4 => KeyCode::BTN_WEST,
+            5 => KeyCode::BTN_THUMBL,
+            6 => KeyCode::BTN_THUMBR,
+            7 => KeyCode::BTN_TL,
+            8 => KeyCode::BTN_TR,
+            9 => KeyCode::BTN_START,
+            10 => KeyCode::BTN_SELECT,
+            11 => KeyCode::BTN_TRIGGER_HAPPY1,
+            12 => KeyCode::BTN_TRIGGER_HAPPY2,
+            13 => KeyCode::BTN_TRIGGER_HAPPY3,
+            14 => KeyCode::BTN_TRIGGER_HAPPY4,
+            _ => bail!(
+                "Couldn't convert given Starboard ID {} into `KeyCode`.",
+                self
+            ),
+        })
+    }
+}
