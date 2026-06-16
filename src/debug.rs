@@ -8,6 +8,10 @@ macro_rules! printdbg {
         #[cfg(feature = "debug")]
         println!($base, $($args), *);
     };
+    ($base:expr, $($args:expr), *) => {
+        #[cfg(feature = "debug")]
+        println!($base, $($args), *);
+    };
     ($base:expr) => {
         #[cfg(feature = "debug")]
         println!($base);
