@@ -45,12 +45,12 @@ impl StarboardButtonStates {
 
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
 pub struct StarboardAxisStates {
-    pub axes: [i16; 6],
+    pub axes: [i16; 8],
 }
 
 impl StarboardAxisStates {
     pub fn new() -> Self {
-        Self { axes: [0; 6] }
+        Self { axes: [0; 8] }
     }
 
     // returns a StarboardInput indicating the state of the id-th axis
