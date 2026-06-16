@@ -199,7 +199,7 @@ impl FromByte<KeyCode> for u32 {
             2048 => KeyCode::BTN_TRIGGER_HAPPY2,
             4096 => KeyCode::BTN_TRIGGER_HAPPY3,
             8192 => KeyCode::BTN_TRIGGER_HAPPY4,
-            _ => bail!("Couldn't covert given u32 into `KeyCode`"),
+            _ => bail!("Couldn't convert given u32 into `KeyCode`"),
         })
     }
 }
@@ -318,7 +318,7 @@ impl IntoID for KeyCode {
             KeyCode::BTN_TRIGGER_HAPPY3 => 13,
             KeyCode::BTN_TRIGGER_HAPPY4 => 14,
             _ => bail!(
-                "Couldn't covert given KeyCode {:?} into a Starboard ID.",
+                "Couldn't convert given KeyCode {:?} into a Starboard ID.",
                 self
             ),
         })
