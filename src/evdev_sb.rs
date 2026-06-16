@@ -8,7 +8,7 @@ use evdev::{
 
 use crate::{
     bitmask::Bitmask,
-    input::{FromByte, StarboardInput},
+    input::{FromByte, IntoID, StarboardInput},
 };
 
 pub const SUPPORTED_BUTTONS: [KeyCode; 14] = [
@@ -171,17 +171,17 @@ impl DeviceWrapper {
     // Returns a vector of StarboardInputs representing the state of every supported button
     pub fn get_button_inputs(&self) -> Result<Vec<StarboardInput>> {
         let attr_set = self.device.get_key_state()?;
-        let mut inputs: Vec<StarboardInput> = Vec::new();
-        self.supported_buttons
+        let inputs = self
+            .supported_buttons
             .iter()
-            .map(|button| *button)
-            .for_each(|button| {
-                inputs.push(StarboardInput::Button {
-                    id: button.0.into(),
-                    value: attr_set.contains(button),
+            .map(|button| {
+                anyhow::Ok(StarboardInput::Button {
+                    id: button.into_id()?,
+                    value: attr_set.contains(*button),
                 })
-            });
-        Ok(inputs)
+            })
+            .collect();
+        inputs
     }
 
     // Returns the state of each supported axis on the device
