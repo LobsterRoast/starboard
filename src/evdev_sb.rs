@@ -9,6 +9,7 @@ use evdev::{
 use crate::{
     bitmask::Bitmask,
     input::{FromByte, IntoID, StarboardInput},
+    printdbg,
 };
 
 pub const SUPPORTED_BUTTONS: [KeyCode; 14] = [
@@ -122,10 +123,12 @@ fn get_device_supported_attributes_score(device: &Device) -> u8 {
 
 // Iterates through evdev devices and picks the one that looks most like a Steam Deck
 pub fn find_best_evdev_device() -> Result<Device> {
-    Ok(enumerate()
+    let device = enumerate()
         .map(|(_, device)| device)
         .max_by_key(|device| get_device_supported_attributes_score(&device))
-        .unwrap())
+        .unwrap();
+    printdbg!("Listening on evdev device: `{}`", device.name().unwrap());
+    Ok(device)
 }
 
 // Wrapper for evdev::Device
