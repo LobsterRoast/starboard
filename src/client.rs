@@ -27,7 +27,8 @@ impl StarboardClient {
     pub async fn run(&self) -> Result<()> {
         let device = DeviceWrapper::get_steam_deck()?;
         let addr = format!("0.0.0.0:{}", self.port);
-        let mut sock = UdpSocket::bind(addr).await?;
+        let mut sock = UdpSocket::bind(&addr).await?;
+        let _ = sock.connect(addr).await?;
         loop {
             let packet = self.create_packet(&device)?;
             let _ = self.send_packet(packet, &sock).await?;
