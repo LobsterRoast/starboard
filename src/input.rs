@@ -167,6 +167,18 @@ pub trait FromByte<T> {
         T: Sized;
 }
 
+// Trait to convert a struct into the ID of a Starboard Input
+pub trait IntoID {
+    fn into_id(self) -> Result<u32>;
+}
+
+// Trait to convert a Starboard Input ID into a different struct
+pub trait FromID<T> {
+    fn from_id(self) -> Result<T>
+    where
+        T: Sized;
+}
+
 impl FromByte<KeyCode> for u32 {
     fn from_byte(self) -> Result<KeyCode>
     where
