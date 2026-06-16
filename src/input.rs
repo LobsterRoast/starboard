@@ -1,4 +1,4 @@
-use core::iter::IntoIterator;
+use core::{convert::TryInto, iter::IntoIterator};
 
 use crate::bitmask::Bitmask;
 use anyhow::{Result, bail};
@@ -70,11 +70,11 @@ impl StarboardAxisStates {
     }
 
     // Registers `axis` as holding value `value`
-    fn pack_axis(&mut self, id: u32, value: i16) -> Result<()> {
-        if id >= self.axes.len() as u32 {
+    fn pack_axis(&mut self, id: usize, value: i16) -> Result<()> {
+        if id >= self.axes.len() {
             bail!("Could not pack axis with id {}; id is out of bounds", id);
         }
-        self.axes[id as usize] = value;
+        self.axes[id] = value;
         Ok(())
     }
 }
@@ -109,7 +109,7 @@ impl StarboardInputPacket {
     pub fn pack(&mut self, input: StarboardInput) -> Result<()> {
         Ok(match input {
             StarboardInput::Button { id, .. } => self.buttons.pack_button(id)?,
-            StarboardInput::Axis { id, value } => self.axes.pack_axis(id, value)?,
+            StarboardInput::Axis { id, value } => self.axes.pack_axis(id.try_into()?, value)?,
         })
     }
 
