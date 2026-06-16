@@ -356,3 +356,41 @@ impl FromID<KeyCode> for u32 {
         })
     }
 }
+
+impl IntoID for AbsoluteAxisCode {
+    fn into_id(self) -> Result<u32> {
+        Ok(match self {
+            AbsoluteAxisCode::ABS_X => 1,
+            AbsoluteAxisCode::ABS_Y => 2,
+            AbsoluteAxisCode::ABS_Z => 3,
+            AbsoluteAxisCode::ABS_RX => 4,
+            AbsoluteAxisCode::ABS_RY => 5,
+            AbsoluteAxisCode::ABS_RZ => 6,
+            AbsoluteAxisCode::ABS_HAT0X => 7,
+            AbsoluteAxisCode::ABS_HAT0Y => 8,
+            _ => bail!(
+                "Couldn't convert given AbsoluteAxisCode {:?} into a Starboard ID.",
+                self
+            ),
+        })
+    }
+}
+
+impl FromID<AbsoluteAxisCode> for u32 {
+    fn from_id(self) -> Result<AbsoluteAxisCode> {
+        Ok(match self {
+            1 => AbsoluteAxisCode::ABS_X,
+            2 => AbsoluteAxisCode::ABS_Y,
+            3 => AbsoluteAxisCode::ABS_Z,
+            4 => AbsoluteAxisCode::ABS_RX,
+            5 => AbsoluteAxisCode::ABS_RY,
+            6 => AbsoluteAxisCode::ABS_RZ,
+            7 => AbsoluteAxisCode::ABS_HAT0X,
+            8 => AbsoluteAxisCode::ABS_HAT0Y,
+            _ => bail!(
+                "Couldn't convert given Starboard ID {} into `AbsoluteAxisCode`.",
+                self
+            ),
+        })
+    }
+}
