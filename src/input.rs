@@ -35,7 +35,7 @@ impl StarboardButtonStates {
 
     // Registers `button` as pressed and packs it ino the `self`
     fn pack_button(&mut self, id: u32) -> Result<()> {
-        if id >= 15 {
+        if id >= 16 {
             bail!("Could not pack button with id {}; id is out of bounds", id);
         }
         self.raw |= 1 << id;
@@ -199,6 +199,7 @@ impl FromByte<KeyCode> for u32 {
             2048 => KeyCode::BTN_TRIGGER_HAPPY2,
             4096 => KeyCode::BTN_TRIGGER_HAPPY3,
             8192 => KeyCode::BTN_TRIGGER_HAPPY4,
+            16384 => KeyCode::BTN_MODE,
             _ => bail!("Couldn't convert given u32 into `KeyCode`"),
         })
     }
@@ -221,6 +222,7 @@ impl IntoByte for KeyCode {
             KeyCode::BTN_TRIGGER_HAPPY2 => 2048,
             KeyCode::BTN_TRIGGER_HAPPY3 => 4096,
             KeyCode::BTN_TRIGGER_HAPPY4 => 8192,
+            KeyCode::BTN_MODE => 16384,
             _ => bail!("Couldn't convert given KeyCode into `u32`"),
         })
     }
@@ -317,6 +319,7 @@ impl IntoID for KeyCode {
             KeyCode::BTN_TRIGGER_HAPPY2 => 12,
             KeyCode::BTN_TRIGGER_HAPPY3 => 13,
             KeyCode::BTN_TRIGGER_HAPPY4 => 14,
+            KeyCode::BTN_MODE => 15,
             _ => bail!(
                 "Couldn't convert given KeyCode {:?} into a Starboard ID.",
                 self
@@ -345,6 +348,7 @@ impl FromID<KeyCode> for u32 {
             12 => KeyCode::BTN_TRIGGER_HAPPY2,
             13 => KeyCode::BTN_TRIGGER_HAPPY3,
             14 => KeyCode::BTN_TRIGGER_HAPPY4,
+            15 => KeyCode::BTN_MODE,
             _ => bail!(
                 "Couldn't convert given Starboard ID {} into `KeyCode`.",
                 self
