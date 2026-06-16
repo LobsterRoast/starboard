@@ -299,3 +299,28 @@ impl FromByte<UinputAbsSetup> for u32 {
         })
     }
 }
+
+impl IntoID for KeyCode {
+    fn into_id(self) -> Result<u32> {
+        Ok(match self {
+            KeyCode::BTN_NORTH => 1,
+            KeyCode::BTN_SOUTH => 2,
+            KeyCode::BTN_EAST => 3,
+            KeyCode::BTN_WEST => 4,
+            KeyCode::BTN_THUMBL => 5,
+            KeyCode::BTN_THUMBR => 6,
+            KeyCode::BTN_TL => 7,
+            KeyCode::BTN_TR => 8,
+            KeyCode::BTN_START => 9,
+            KeyCode::BTN_SELECT => 10,
+            KeyCode::BTN_TRIGGER_HAPPY1 => 11,
+            KeyCode::BTN_TRIGGER_HAPPY2 => 12,
+            KeyCode::BTN_TRIGGER_HAPPY3 => 13,
+            KeyCode::BTN_TRIGGER_HAPPY4 => 14,
+            _ => bail!(
+                "Couldn't covert given KeyCode {:?} into a Starboard ID.",
+                self
+            ),
+        })
+    }
+}
