@@ -5,6 +5,10 @@ use anyhow::Result;
 pub struct StarboardServerUI {}
 
 impl StarboardServerUI {
+    pub fn new() -> Self {
+        Self {}
+    }
+
     pub fn launch_ui(&self) -> Result<()> {
         let mut quit = false;
         ratatui::run(|mut terminal| -> Result<()> {
