@@ -11,10 +11,12 @@ mod test;
 
 use anyhow::Result;
 
-use crate::client::StarboardClient;
+use crate::{client::StarboardClient, server_ui::StarboardServerUI};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let ui = StarboardServerUI::new();
+    let _ = ui.launch_ui()?;
     let client = StarboardClient::new(0);
     let _ = client.run().await?;
     Ok(())
