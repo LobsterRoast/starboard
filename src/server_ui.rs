@@ -6,7 +6,12 @@ pub struct StarboardServerUI {}
 
 impl StarboardServerUI {
     pub fn launch_ui(&self) -> Result<()> {
-        ratatui::run(|mut terminal| {});
+        let mut quit = false;
+        ratatui::run(|mut terminal| -> Result<()> {
+            Ok(loop {
+                let _ = terminal.draw(|frame| frame.render_widget("Foo", frame.area()))?;
+            })
+        });
         Ok(())
     }
 }
