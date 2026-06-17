@@ -12,13 +12,16 @@ impl StarboardServerUI {
     }
 
     pub fn launch_ui(&self) -> Result<()> {
-        ratatui::run(|mut terminal| -> Result<()> {
-            while (!check_sigint()?) {
-                let _ = terminal.draw(|frame| frame.render_widget("Foo", frame.area()))?;
-            }
-            Ok(())
-        })
+        ratatui::run(ui_loop)
     }
+}
+
+// The main loop that the UI will call every frame
+fn ui_loop(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
+    while (!check_sigint()?) {
+        let _ = terminal.draw(|frame| frame.render_widget("Foo", frame.area()))?;
+    }
+    Ok(())
 }
 
 fn check_sigint() -> Result<bool> {
