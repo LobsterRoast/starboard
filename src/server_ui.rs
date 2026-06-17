@@ -24,6 +24,7 @@ fn ui_loop(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
     Ok(())
 }
 
+// Returns whether or not Ctrl+C is pressed
 fn check_sigint() -> Result<bool> {
     if let Event::Key(key) = event::read()? {
         Ok(key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL))
