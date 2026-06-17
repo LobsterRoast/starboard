@@ -1,6 +1,7 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use ratatui::{Terminal, backend::Backend};
+use std::time::Duration;
 
 // The struct to manage the UI that opens when the server application is opened
 // The UI is created through `ratatui` and runs in a terminal
@@ -26,7 +27,9 @@ fn ui_loop(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
 
 // Returns whether or not Ctrl+C is pressed
 fn check_sigint() -> Result<bool> {
-    if let Event::Key(key) = event::read()? {
+    if !event::poll(Duration::from_millis(16))? {
+        Ok(false)
+    } else if let Event::Key(key) = event::read()? {
         Ok(key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL))
     } else {
         Ok(false)
