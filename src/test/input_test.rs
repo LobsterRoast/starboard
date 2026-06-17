@@ -11,7 +11,7 @@ use evdev::{AbsoluteAxisCode, EventType, InputEvent, KeyCode};
 
 const TEST_BUTTON_STATES: StarboardButtonStates = StarboardButtonStates { raw: 13 }; // 0b1101
 const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
-    axes: [0, 145, 223, 1125, 102, 255],
+    axes: [0, 145, 223, 1125, 102, 255, 0, 0],
 };
 
 #[test]
