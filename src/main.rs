@@ -5,6 +5,7 @@ mod debug;
 mod evdev_sb;
 mod input;
 mod server;
+mod server_ui;
 #[cfg(test)]
 mod test;
 
