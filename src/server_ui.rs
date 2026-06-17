@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use ratatui::{Terminal, backend::Backend};
 
 // The struct to manage the UI that opens when the server application is opened
 // The UI is created through `ratatui` and runs in a terminal
@@ -12,14 +13,11 @@ impl StarboardServerUI {
 
     pub fn launch_ui(&self) -> Result<()> {
         ratatui::run(|mut terminal| -> Result<()> {
-            Ok(loop {
-                if check_sigint()? {
-                    break;
-                }
+            while (!check_sigint()?) {
                 let _ = terminal.draw(|frame| frame.render_widget("Foo", frame.area()))?;
-            })
-        })?;
-        Ok(())
+            }
+            Ok(())
+        })
     }
 }
 
