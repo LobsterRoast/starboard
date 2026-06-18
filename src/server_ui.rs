@@ -42,6 +42,16 @@ impl StarboardServerUI {
         });
         frame.render_widget(tabs, frame.area());
     }
+
+    // Polls events and handles them appropriately
+    fn poll_events(&mut self) -> Result<()> {
+        if !event::poll(Duration::from_millis(16))? {
+            Ok(())
+        } else {
+            // TODO: Match events
+            Ok(())
+        }
+    }
 }
 
 // Returns whether or not Ctrl+C is pressed
