@@ -43,13 +43,21 @@ impl StarboardServerUI {
         frame.render_widget(tabs, frame.area());
     }
 
-    // Polls events and handles them appropriately
+    // Checks to see if theres any events and matches them if there is
     fn poll_events(&mut self) -> Result<()> {
         if !event::poll(Duration::from_millis(16))? {
             Ok(())
         } else {
-            // TODO: Match events
-            Ok(())
+            let event = event::read()?;
+            self.match_event(event)
+        }
+    }
+
+    // Polls events and handles them appropriately
+    fn match_event(&mut self, event: Event) -> Result<()> {
+        // TODO: Implement functions for each possible event pattern
+        match event {
+            _ => Ok(()),
         }
     }
 }
