@@ -59,8 +59,10 @@ impl StarboardServerUI {
 
     // Renders all components of the UI
     fn render(&self, frame: &mut Frame) {
-        let layout =
-            Layout::vertical([Constraint::Percentage(3), Constraint::Max(100)]).flex(Flex::Legacy);
+        let layout = Layout::vertical([Constraint::Max(1), Constraint::Max(100)])
+            .flex(Flex::Legacy)
+            .horizontal_margin(15)
+            .vertical_margin(3);
         let [tabs_area, content_area] = layout.areas(frame.area());
         self.render_tabs(frame, tabs_area);
         self.render_content_box(frame, content_area);
@@ -78,7 +80,7 @@ impl StarboardServerUI {
     }
 
     fn render_content_box(&self, frame: &mut Frame, rect: Rect) {
-        let block = Block::new().style(LAVENDER).padding(Padding::right(200));
+        let block = Block::new().style(LAVENDER);
         let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]);
 
         frame.render_widget(block, rect);
