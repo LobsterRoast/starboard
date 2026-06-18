@@ -9,6 +9,22 @@ enum UISelectionState {
     Tabs { index: usize },
 }
 
+impl UISelectionState {
+    // Activated when the left arrow key is pressed
+    pub fn left(self) -> Self {
+        match self {
+            UISelectionState::Tabs { .. } => UISelectionState::Tabs { index: 0 },
+        }
+    }
+
+    // Activated when the right arrow key is pressed
+    pub fn right(self) -> Self {
+        match self {
+            UISelectionState::Tabs { .. } => UISelectionState::Tabs { index: 1 },
+        }
+    }
+}
+
 // The struct to manage the UI that opens when the server application is opened
 // The UI is created through `ratatui` and runs in a terminal
 pub struct StarboardServerUI {
