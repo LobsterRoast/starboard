@@ -1,10 +1,11 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{Frame, Terminal, backend::Backend, widgets::*};
+use ratatui::{Frame, Terminal, backend::Backend, prelude::*, widgets::*};
 use std::time::Duration;
 
 // Keeps track of what the user currently has selected in a UI
 // TODO: Add more enumerable values based on which widgets are used in the UI
+#[derive(Copy, Clone)]
 enum UISelectionState {
     Tabs { index: usize },
 }
@@ -56,12 +57,16 @@ impl StarboardServerUI {
 
     // Render tabs to select either the `Controllers` or `Settings` menus
     fn render_tabs(&self, frame: &mut Frame) {
-        let tabs = Tabs::new(["Controllers", "Settings"]).select(match self.selection_state {
-            UISelectionState::Tabs { index } => Some(index),
-            _ => None,
-        });
+        let tabs = Tabs::new(["Controllers", "Settings"])
+            .select(match self.selection_state {
+                UISelectionState::Tabs { index } => Some(index),
+                _ => None,
+            })
+            .style(Color::Rgb(150, 100, 175));
         frame.render_widget(tabs, frame.area());
     }
+
+    fn render_content_box(&self, frame: &mut Frame) {}
 
     // Checks to see if theres any events and matches them if there is
     fn poll_events(&mut self) -> Result<()> {
@@ -85,6 +90,8 @@ impl StarboardServerUI {
     fn on_key_event(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
             KeyCode::Char('c') => self.running = !key.modifiers.contains(KeyModifiers::CONTROL),
+            KeyCode::Left => self.selection_state = self.selection_state.left(),
+            KeyCode::Right => self.selection_state = self.selection_state.right(),
             _ => {}
         }
         Ok(())
