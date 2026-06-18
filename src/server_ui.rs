@@ -78,8 +78,22 @@ impl StarboardServerUI {
     }
 
     fn render_content_box(&self, frame: &mut Frame, rect: Rect) {
-        let block = Block::bordered().style(LAVENDER);
+        let block = Block::new().style(LAVENDER).padding(Padding::right(200));
+        let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]);
+
         frame.render_widget(block, rect);
+
+        self.render_controller_lists(frame, layout.areas(rect));
+    }
+
+    fn render_controller_lists(&self, frame: &mut Frame, rects: [Rect; 2]) {
+        let active_list = List::new(["Controller 1", "Controller 2"])
+            .block(Block::bordered().title("Active Controllers"));
+        let detected_list = List::new(["Controller 1", "Controller 2", "Controller 3"])
+            .block(Block::bordered().title("Detected Controllers"));
+
+        frame.render_widget(active_list, rects[0]);
+        frame.render_widget(detected_list, rects[1]);
     }
 
     // Checks to see if theres any events and matches them if there is
