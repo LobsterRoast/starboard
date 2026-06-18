@@ -38,6 +38,38 @@ impl UISelectionState {
                 major_index: 1,
                 minor_index,
             },
+            _ => self,
+        }
+    }
+
+    // Activated when the up arrow key is pressed
+    pub fn up(self) -> Self {
+        match self {
+            UISelectionState::DeviceList {
+                major_index,
+                minor_index,
+            } => UISelectionState::DeviceList {
+                major_index,
+                minor_index: minor_index - 1,
+            },
+            _ => self,
+        }
+    }
+
+    // Activated when the up arrow key is pressed
+    pub fn down(self) -> Self {
+        match self {
+            UISelectionState::Tabs { .. } => UISelectionState::DeviceList {
+                major_index: 0,
+                minor_index: 0,
+            },
+            UISelectionState::DeviceList {
+                major_index,
+                minor_index,
+            } => UISelectionState::DeviceList {
+                major_index,
+                minor_index: minor_index + 1,
+            },
         }
     }
 }
