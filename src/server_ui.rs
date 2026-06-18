@@ -67,8 +67,9 @@ impl StarboardServerUI {
 
     // Handled `Key` events
     fn on_key_event(&mut self, key: KeyEvent) -> Result<()> {
-        if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
-            self.running = false;
+        match key.code {
+            KeyCode::Char('c') => self.running = !key.modifiers.contains(KeyModifiers::CONTROL),
+            _ => {}
         }
         Ok(())
     }
