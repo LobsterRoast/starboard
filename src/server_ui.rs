@@ -119,8 +119,23 @@ impl StarboardServerUI {
             .horizontal_margin(15)
             .vertical_margin(3);
         let [tabs_area, content_area] = layout.areas(frame.area());
-        self.render_tabs(frame, tabs_area);
-        self.render_content_box(frame, content_area);
+        self.render_home(frame);
+    }
+
+    // Render the home page
+    fn render_home(&self, frame: &mut Frame) {
+        let major_layout = Layout::horizontal([Constraint::Max(30)])
+            .horizontal_margin(20)
+            .flex(Flex::Center);
+        let minor_layout = Layout::vertical([Constraint::Max(15)])
+            .vertical_margin(10)
+            .flex(Flex::Center);
+        let [rect] = major_layout.areas(frame.area());
+        let [rect] = minor_layout.areas(rect);
+        let list = List::new(["Controllers", "Settings", "Exit"])
+            .block(Block::bordered().title("Starboard"))
+            .style(LAVENDER);
+        frame.render_widget(list, rect);
     }
 
     // Render tabs to select either the `Controllers` or `Settings` menus
