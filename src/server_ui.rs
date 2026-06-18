@@ -45,12 +45,11 @@ impl StarboardServerUI {
 
     // Checks to see if theres any events and matches them if there is
     fn poll_events(&mut self) -> Result<()> {
-        if !event::poll(Duration::from_millis(16))? {
-            Ok(())
-        } else {
+        while event::poll(Duration::from_millis(16))? {
             let event = event::read()?;
-            self.match_event(event)
+            self.match_event(event)?;
         }
+        Ok(())
     }
 
     // Polls events and handles them appropriately
