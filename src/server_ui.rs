@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{Frame, Terminal, backend::Backend, prelude::*, widgets::*};
+use ratatui::{Frame, Terminal, backend::Backend, layout::*, prelude::*, widgets::*};
 use std::time::Duration;
 
 const LAVENDER: Color = Color::Rgb(150, 100, 175);
@@ -59,22 +59,28 @@ impl StarboardServerUI {
 
     // Renders all components of the UI
     fn render(&self, frame: &mut Frame) {
-        self.render_tabs(frame);
-        self.render_content_box(frame);
+        let layout =
+            Layout::vertical([Constraint::Percentage(3), Constraint::Max(100)]).flex(Flex::Legacy);
+        let [tabs_area, content_area] = layout.areas(frame.area());
+        self.render_tabs(frame, tabs_area);
+        self.render_content_box(frame, content_area);
     }
 
     // Render tabs to select either the `Controllers` or `Settings` menus
-    fn render_tabs(&self, frame: &mut Frame) {
+    fn render_tabs(&self, frame: &mut Frame, rect: Rect) {
         let tabs = Tabs::new(["Controllers", "Settings"])
             .select(match self.selection_state {
                 UISelectionState::Tabs { index } => Some(index),
                 _ => None,
             })
             .style(LAVENDER);
-        frame.render_widget(tabs, frame.area());
+        frame.render_widget(tabs, rect);
     }
 
-    fn render_content_box(&self, frame: &mut Frame) {}
+    fn render_content_box(&self, frame: &mut Frame, rect: Rect) {
+        let block = Block::bordered().style(LAVENDER);
+        frame.render_widget(block, rect);
+    }
 
     // Checks to see if theres any events and matches them if there is
     fn poll_events(&mut self) -> Result<()> {
