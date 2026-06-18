@@ -1,4 +1,5 @@
 use core::ops::RangeBounds;
+use std::collections::HashMap;
 use std::net::UdpSocket;
 
 use evdev::{AbsoluteAxisCode, KeyCode};
@@ -44,7 +45,7 @@ impl StarboardServerBuilder {
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
         let timeout_ms = Duration::from_millis(self.timeout_ms);
-        let detected_controllers: Vec<u64> = Vec::new();
+        let detected_controllers: HashMap<u64, ()> = HashMap::new();
         let active_controllers: Vec<u64> = Vec::new();
 
         StarboardServer {
@@ -126,7 +127,7 @@ pub struct StarboardServer {
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
     timeout_ms: Duration,     // The amount of time after which to panic if a packet is not
     // received
-    detected_controllers: Vec<u64>,
+    detected_controllers: HashMap<u64, ()>,
     active_controllers: Vec<u64>,
 }
 
@@ -155,9 +156,7 @@ impl StarboardServer {
         loop {
             sock.recv(&mut raw).await?;
             let id: u64 = deserialize(Vec::from(raw))?;
-            if !self.detected_controllers.contains(&id) {
-                self.detected_controllers.push(id);
-            }
+            let _ = self.detected_controllers.insert(id, ());
         }
     }
 
