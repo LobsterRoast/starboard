@@ -32,6 +32,7 @@ impl StarboardServerUI {
     // The main loop that the UI will call every frame
     fn ui_loop(&mut self, terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
         while self.running {
+            self.poll_events()?;
             let _ = terminal.draw(|frame| self.render_tabs(frame))?;
         }
         Ok(())
