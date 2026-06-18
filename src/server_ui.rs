@@ -1,12 +1,12 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
-use ratatui::{Terminal, backend::Backend};
+use ratatui::{Frame, Terminal, backend::Backend, widgets::*};
 use std::time::Duration;
 
 // Keeps track of what the user currently has selected in a UI
 // TODO: Add more enumerable values based on which widgets are used in the UI
 enum UISelectionState {
-    Tabs { index: u8 },
+    Tabs { index: usize },
 }
 
 // The struct to manage the UI that opens when the server application is opened
@@ -29,9 +29,18 @@ impl StarboardServerUI {
     // The main loop that the UI will call every frame
     fn ui_loop(&self, terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
         while (!check_sigint()?) {
-            let _ = terminal.draw(|frame| frame.render_widget("Foo", frame.area()))?;
+            let _ = terminal.draw(|frame| self.render_tabs(frame))?;
         }
         Ok(())
+    }
+
+    // Render tabs to select either the `Controllers` or `Settings` menus
+    fn render_tabs(&self, frame: &mut Frame) {
+        let tabs = Tabs::new(["Controllers", "Settings"]).select(match self.selection_state {
+            UISelectionState::Tabs { index } => Some(index),
+            _ => None,
+        });
+        frame.render_widget(tabs, frame.area());
     }
 }
 
