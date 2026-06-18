@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{Frame, Terminal, backend::Backend, widgets::*};
 use std::time::Duration;
 
@@ -12,23 +12,26 @@ enum UISelectionState {
 // The struct to manage the UI that opens when the server application is opened
 // The UI is created through `ratatui` and runs in a terminal
 pub struct StarboardServerUI {
+    running: bool,
     selection_state: UISelectionState,
 }
 
 impl StarboardServerUI {
     pub fn new() -> Self {
         Self {
+            running: false,
             selection_state: UISelectionState::Tabs { index: 0 },
         }
     }
 
-    pub fn launch_ui(&self) -> Result<()> {
+    pub fn launch_ui(&mut self) -> Result<()> {
+        self.running = true;
         ratatui::run(|term| self.ui_loop(term))
     }
 
     // The main loop that the UI will call every frame
-    fn ui_loop(&self, terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
-        while (!check_sigint()?) {
+    fn ui_loop(&mut self, terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
+        while self.running {
             let _ = terminal.draw(|frame| self.render_tabs(frame))?;
         }
         Ok(())
@@ -56,8 +59,17 @@ impl StarboardServerUI {
     fn match_event(&mut self, event: Event) -> Result<()> {
         // TODO: Implement functions for each possible event pattern
         match event {
+            Event::Key(key) => self.on_key_event(key),
             _ => Ok(()),
         }
+    }
+
+    // Handled `Key` events
+    fn on_key_event(&mut self, key: KeyEvent) -> Result<()> {
+        if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
+            self.running = false;
+        }
+        Ok(())
     }
 }
 
