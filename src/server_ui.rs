@@ -18,6 +18,13 @@ enum UISelectionState {
     },
 }
 
+// Keeps track of what page the UI is currently on
+enum UIPage {
+    Home,
+    Controllers,
+    Settings,
+}
+
 impl UISelectionState {
     // Activated when the left arrow key is pressed
     pub fn left(self) -> Self {
@@ -78,6 +85,7 @@ impl UISelectionState {
 // The UI is created through `ratatui` and runs in a terminal
 pub struct StarboardServerUI {
     running: bool,
+    page: UIPage,
     selection_state: UISelectionState,
 }
 
@@ -85,6 +93,7 @@ impl StarboardServerUI {
     pub fn new() -> Self {
         Self {
             running: false,
+            page: UIPage::Home,
             selection_state: UISelectionState::Tabs { index: 0 },
         }
     }
