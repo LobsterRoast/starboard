@@ -134,8 +134,9 @@ impl StarboardServerUI {
         let [rect] = minor_layout.areas(rect);
         let list = List::new(["Controllers", "Settings", "Exit"])
             .block(Block::bordered().title("Starboard"))
-            .style(LAVENDER);
-        frame.render_widget(list, rect);
+            .style(LAVENDER)
+            .highlight_style(Style::default().bg(LAVENDER).fg(Color::Black));
+        frame.render_stateful_widget(list, rect, &mut ListState::default().with_selected(Some(0)));
     }
 
     // Render tabs to select either the `Controllers` or `Settings` menus
