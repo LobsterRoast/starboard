@@ -1,3 +1,4 @@
+use core::ops::RangeBounds;
 use std::net::UdpSocket;
 
 use evdev::{AbsoluteAxisCode, KeyCode};
@@ -145,6 +146,19 @@ impl StarboardServer {
             self.handle_packet(virt_joystick, packet)?;
         }
         Ok(())
+    }
+
+    // Detect controllers and add them to the detected_controllers list
+    async fn detect_controllers(&mut self) -> Result<()> {
+        let sock = tokio::net::UdpSocket::bind("0.0.0.0:64646").await?;
+        let mut raw: [u8; 4] = [0; 4];
+        loop {
+            sock.recv(&mut raw).await?;
+            let id: u64 = deserialize(Vec::from(raw))?;
+            if !self.detected_controllers.contains(&id) {
+                self.detected_controllers.push(id);
+            }
+        }
     }
 
     // Waits for a packet to be received and writes the data into `buf`
