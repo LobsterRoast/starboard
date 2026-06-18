@@ -23,16 +23,16 @@ impl StarboardServerUI {
     }
 
     pub fn launch_ui(&self) -> Result<()> {
-        ratatui::run(ui_loop)
+        ratatui::run(|term| self.ui_loop(term))
     }
-}
 
-// The main loop that the UI will call every frame
-fn ui_loop(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
-    while (!check_sigint()?) {
-        let _ = terminal.draw(|frame| frame.render_widget("Foo", frame.area()))?;
+    // The main loop that the UI will call every frame
+    fn ui_loop(&self, terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
+        while (!check_sigint()?) {
+            let _ = terminal.draw(|frame| frame.render_widget("Foo", frame.area()))?;
+        }
+        Ok(())
     }
-    Ok(())
 }
 
 // Returns whether or not Ctrl+C is pressed
