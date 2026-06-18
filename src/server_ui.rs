@@ -73,14 +73,3 @@ impl StarboardServerUI {
         Ok(())
     }
 }
-
-// Returns whether or not Ctrl+C is pressed
-fn check_sigint() -> Result<bool> {
-    if !event::poll(Duration::from_millis(16))? {
-        Ok(false)
-    } else if let Event::Key(key) = event::read()? {
-        Ok(key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL))
-    } else {
-        Ok(false)
-    }
-}
