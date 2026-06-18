@@ -3,13 +3,23 @@ use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use ratatui::{Terminal, backend::Backend};
 use std::time::Duration;
 
+// Keeps track of what the user currently has selected in a UI
+// TODO: Add more enumerable values based on which widgets are used in the UI
+enum UISelectionState {
+    Tabs { index: u8 },
+}
+
 // The struct to manage the UI that opens when the server application is opened
 // The UI is created through `ratatui` and runs in a terminal
-pub struct StarboardServerUI {}
+pub struct StarboardServerUI {
+    selection_state: UISelectionState,
+}
 
 impl StarboardServerUI {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            selection_state: UISelectionState::Tabs { index: 0 },
+        }
     }
 
     pub fn launch_ui(&self) -> Result<()> {
