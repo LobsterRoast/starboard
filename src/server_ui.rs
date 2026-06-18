@@ -9,7 +9,13 @@ const LAVENDER: Color = Color::Rgb(150, 100, 175);
 // TODO: Add more enumerable values based on which widgets are used in the UI
 #[derive(Copy, Clone)]
 enum UISelectionState {
-    Tabs { index: usize },
+    Tabs {
+        index: usize,
+    },
+    DeviceList {
+        major_index: usize,
+        minor_index: usize,
+    },
 }
 
 impl UISelectionState {
@@ -17,6 +23,10 @@ impl UISelectionState {
     pub fn left(self) -> Self {
         match self {
             UISelectionState::Tabs { .. } => UISelectionState::Tabs { index: 0 },
+            UISelectionState::DeviceList { minor_index, .. } => UISelectionState::DeviceList {
+                major_index: 0,
+                minor_index,
+            },
         }
     }
 
@@ -24,6 +34,10 @@ impl UISelectionState {
     pub fn right(self) -> Self {
         match self {
             UISelectionState::Tabs { .. } => UISelectionState::Tabs { index: 1 },
+            UISelectionState::DeviceList { minor_index, .. } => UISelectionState::DeviceList {
+                major_index: 1,
+                minor_index,
+            },
         }
     }
 }
