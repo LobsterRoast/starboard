@@ -52,9 +52,15 @@ impl StarboardServerUI {
     fn ui_loop(&mut self, terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
         while self.running {
             self.poll_events()?;
-            let _ = terminal.draw(|frame| self.render_tabs(frame))?;
+            let _ = terminal.draw(|frame| self.render(frame))?;
         }
         Ok(())
+    }
+
+    // Renders all components of the UI
+    fn render(&self, frame: &mut Frame) {
+        self.render_tabs(frame);
+        self.render_content_box(frame);
     }
 
     // Render tabs to select either the `Controllers` or `Settings` menus
