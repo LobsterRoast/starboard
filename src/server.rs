@@ -6,9 +6,11 @@ use evdev::{AbsoluteAxisCode, KeyCode};
 
 use tokio::time::{Duration, timeout};
 
+use chrono::Local;
+
 // Records the current state of a detected controller
 enum ControllerState {
-    Online,
+    Online(i64),
     NotResponding,
     Active,
 }
@@ -165,7 +167,7 @@ impl StarboardServer {
             let id: u64 = deserialize(Vec::from(raw))?;
             let _ = self
                 .detected_controllers
-                .insert(id, ControllerState::Online);
+                .insert(id, ControllerState::Online(Local::now().timestamp()));
         }
     }
 
