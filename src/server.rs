@@ -6,6 +6,13 @@ use evdev::{AbsoluteAxisCode, KeyCode};
 
 use tokio::time::{Duration, timeout};
 
+// Records the current state of a detected controller
+enum ControllerState {
+    Online,
+    NotResponding,
+    Active,
+}
+
 use crate::{
     bitmask::Bitmask,
     client::StarboardClient,
@@ -45,7 +52,7 @@ impl StarboardServerBuilder {
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
         let timeout_ms = Duration::from_millis(self.timeout_ms);
-        let detected_controllers: HashMap<u64, ()> = HashMap::new();
+        let detected_controllers: HashMap<u64, ControllerState> = HashMap::new();
         let active_controllers: Vec<u64> = Vec::new();
 
         StarboardServer {
@@ -127,7 +134,7 @@ pub struct StarboardServer {
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
     timeout_ms: Duration,     // The amount of time after which to panic if a packet is not
     // received
-    detected_controllers: HashMap<u64, ()>,
+    detected_controllers: HashMap<u64, ControllerState>,
     active_controllers: Vec<u64>,
 }
 
@@ -156,7 +163,9 @@ impl StarboardServer {
         loop {
             sock.recv(&mut raw).await?;
             let id: u64 = deserialize(Vec::from(raw))?;
-            let _ = self.detected_controllers.insert(id, ());
+            let _ = self
+                .detected_controllers
+                .insert(id, ControllerState::Online);
         }
     }
 
