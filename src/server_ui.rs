@@ -168,6 +168,8 @@ impl StarboardServerUI {
             KeyCode::Char('c') => self.running = !key.modifiers.contains(KeyModifiers::CONTROL),
             KeyCode::Left => self.selection_state = self.selection_state.left(),
             KeyCode::Right => self.selection_state = self.selection_state.right(),
+            KeyCode::Up => self.selection_state = self.selection_state.up(),
+            KeyCode::Down => self.selection_state = self.selection_state.down(),
             _ => {}
         }
         Ok(())
