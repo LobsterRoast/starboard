@@ -6,6 +6,7 @@ use tokio::time::{Duration, timeout};
 
 use crate::{
     bitmask::Bitmask,
+    client::StarboardClient,
     datagram::{deserialize, serialize},
     evdev_sb::{self, VirtualJoystick},
     input::{StarboardInput, StarboardInputPacket},
@@ -42,12 +43,16 @@ impl StarboardServerBuilder {
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
         let timeout_ms = Duration::from_millis(self.timeout_ms);
+        let detected_controllers: Vec<u64> = Vec::new();
+        let active_controllers: Vec<u64> = Vec::new();
 
         StarboardServer {
             address,
             enabled_buttons,
             enabled_axes,
             timeout_ms,
+            detected_controllers,
+            active_controllers,
         }
     }
     // Set the target IP of the server
@@ -119,7 +124,9 @@ pub struct StarboardServer {
     enabled_buttons: Bitmask, // Bitmask representing all the enabled buttons on the server
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
     timeout_ms: Duration,     // The amount of time after which to panic if a packet is not
-                              // received
+    // received
+    detected_controllers: Vec<u64>,
+    active_controllers: Vec<u64>,
 }
 
 impl StarboardServer {
