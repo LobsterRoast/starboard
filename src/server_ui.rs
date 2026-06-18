@@ -3,6 +3,8 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{Frame, Terminal, backend::Backend, prelude::*, widgets::*};
 use std::time::Duration;
 
+const LAVENDER: Color = Color::Rgb(150, 100, 175);
+
 // Keeps track of what the user currently has selected in a UI
 // TODO: Add more enumerable values based on which widgets are used in the UI
 #[derive(Copy, Clone)]
@@ -62,7 +64,7 @@ impl StarboardServerUI {
                 UISelectionState::Tabs { index } => Some(index),
                 _ => None,
             })
-            .style(Color::Rgb(150, 100, 175));
+            .style(LAVENDER);
         frame.render_widget(tabs, frame.area());
     }
 
