@@ -19,6 +19,7 @@ enum UISelectionState {
 }
 
 // Keeps track of what page the UI is currently on
+#[derive(PartialEq)]
 enum UIPage {
     Home,
     Controllers,
@@ -87,6 +88,7 @@ pub struct StarboardServerUI {
     running: bool,
     page: UIPage,
     selection_state: UISelectionState,
+    selected: ListState,
 }
 
 impl StarboardServerUI {
@@ -95,6 +97,7 @@ impl StarboardServerUI {
             running: false,
             page: UIPage::Home,
             selection_state: UISelectionState::Tabs { index: 0 },
+            selected: ListState::default().with_selected(Some(0)),
         }
     }
 
@@ -113,7 +116,7 @@ impl StarboardServerUI {
     }
 
     // Renders all components of the UI
-    fn render(&self, frame: &mut Frame) {
+    fn render(&mut self, frame: &mut Frame) {
         let layout = Layout::vertical([Constraint::Max(1), Constraint::Max(100)])
             .flex(Flex::Legacy)
             .horizontal_margin(15)
@@ -123,7 +126,7 @@ impl StarboardServerUI {
     }
 
     // Render the home page
-    fn render_home(&self, frame: &mut Frame) {
+    fn render_home(&mut self, frame: &mut Frame) {
         let major_layout = Layout::horizontal([Constraint::Max(30)])
             .horizontal_margin(20)
             .flex(Flex::Center);
@@ -136,7 +139,7 @@ impl StarboardServerUI {
             .block(Block::bordered().title("Starboard"))
             .style(LAVENDER)
             .highlight_style(Style::default().bg(LAVENDER).fg(Color::Black));
-        frame.render_stateful_widget(list, rect, &mut ListState::default().with_selected(Some(0)));
+        frame.render_stateful_widget(list, rect, &mut self.selected);
     }
 
     // Render tabs to select either the `Controllers` or `Settings` menus
@@ -193,10 +196,19 @@ impl StarboardServerUI {
             KeyCode::Char('c') => self.running = !key.modifiers.contains(KeyModifiers::CONTROL),
             KeyCode::Left => self.selection_state = self.selection_state.left(),
             KeyCode::Right => self.selection_state = self.selection_state.right(),
-            KeyCode::Up => self.selection_state = self.selection_state.up(),
-            KeyCode::Down => self.selection_state = self.selection_state.down(),
+            KeyCode::Up => self.selected.scroll_up_by(1),
+            KeyCode::Down => self.selected.scroll_down_by(1),
+            KeyCode::Enter => self.on_enter(),
             _ => {}
         }
         Ok(())
+    }
+
+    fn on_enter(&mut self) {
+        if self.page == UIPage::Home
+            && let Some(2) = self.selected.selected()
+        {
+            self.running = false
+        }
     }
 }
