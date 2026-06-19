@@ -158,17 +158,27 @@ impl StarboardServer {
         Ok(())
     }
 
-    // Detect controllers and add them to the detected_controllers list
-    async fn detect_controllers(&mut self) -> Result<()> {
+    // Manage controller detection and timeouts
+    async fn manage_controllers(&mut self) -> Result<()> {
         let sock = tokio::net::UdpSocket::bind("0.0.0.0:64646").await?;
         let mut raw: [u8; 4] = [0; 4];
         loop {
-            sock.recv(&mut raw).await?;
-            let id: u64 = deserialize(Vec::from(raw))?;
-            let _ = self
-                .detected_controllers
-                .insert(id, ControllerState::Online(Local::now().timestamp()));
+            self.detect_controllers(&sock, &mut raw).await?;
         }
+    }
+
+    // Detect controllers and add them to the detected_controllers list
+    async fn detect_controllers(
+        &mut self,
+        sock: &tokio::net::UdpSocket,
+        raw: &mut [u8],
+    ) -> Result<()> {
+        sock.recv(raw).await?;
+        let id: u64 = deserialize(Vec::from(raw))?;
+        let _ = self
+            .detected_controllers
+            .insert(id, ControllerState::Online(Local::now().timestamp()));
+        Ok(())
     }
 
     // Waits for a packet to be received and writes the data into `buf`
