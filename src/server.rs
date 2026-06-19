@@ -9,6 +9,7 @@ use tokio::time::{Duration, timeout};
 use chrono::Local;
 
 // Records the current state of a detected controller
+#[derive(Copy, Clone)]
 enum ControllerState {
     Online(i64),
     NotResponding,
@@ -163,7 +164,16 @@ impl StarboardServer {
         let sock = tokio::net::UdpSocket::bind("0.0.0.0:64646").await?;
         let mut raw: [u8; 4] = [0; 4];
         loop {
+            self.manage_controller_timeouts();
             self.detect_controllers(&sock, &mut raw).await?;
+        }
+    }
+
+    // For each controller, ensures that it is not timed out
+    fn manage_controller_timeouts(&mut self) {
+        let time = Local::now().timestamp();
+        for state in self.detected_controllers.values_mut() {
+            replace_if_timed_out(state);
         }
     }
 
@@ -198,5 +208,22 @@ impl StarboardServer {
             virt_joystick.send_input(input)?;
         }
         Ok(())
+    }
+}
+
+// Takes a mutable reference to a controller state, and sets it to `NotResponding` if it has timed
+// out
+fn replace_if_timed_out(state: &mut ControllerState) {
+    if check_controller_timed_out(*state) {
+        *state = ControllerState::NotResponding;
+    }
+}
+
+// Checks if a controller has sent a ping in less than 15 seconds, and returns true if so
+fn check_controller_timed_out(state: ControllerState) -> bool {
+    if let ControllerState::Online(last_ping) = state {
+        Local::now().timestamp() - last_ping < 15
+    } else {
+        false
     }
 }
