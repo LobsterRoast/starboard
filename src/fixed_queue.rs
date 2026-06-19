@@ -7,3 +7,12 @@ pub struct FixedQueue<T> {
     inner: VecDeque<T>,
     capacity: usize,
 }
+
+impl<T> FixedQueue<T> {
+    pub fn new(capacity: usize) -> Self {
+        Self {
+            inner: VecDeque::new(),
+            capacity,
+        }
+    }
+}
