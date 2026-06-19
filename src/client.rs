@@ -25,6 +25,7 @@ impl StarboardClient {
 
     // Run the client loop
     pub async fn run(&self) -> Result<()> {
+        tokio::spawn(broadcast_id(self.id, self.port));
         let device = DeviceWrapper::get_steam_deck()?;
         let addr = format!("0.0.0.0:{}", self.port);
         let mut sock = UdpSocket::bind(&addr).await?;
@@ -50,16 +51,16 @@ impl StarboardClient {
         sock.send(&raw).await?;
         Ok(())
     }
+}
 
-    // Broadcast a client's presence to server's on the local network
-    async fn broadcast_id(&self) -> Result<()> {
-        let addr = format!("0.0.0.0:{}", self.port);
-        let mut socket = UdpSocket::bind(addr).await?;
-        let _ = socket.set_broadcast(true);
-        let packet = serialize(&self)?;
-        loop {
-            socket.send(&packet).await?;
-            let _ = sleep(Duration::from_secs(15)).await;
-        }
+// Broadcast a client's presence to server's on the local network
+async fn broadcast_id(id: u64, port: u16) -> Result<()> {
+    let addr = format!("0.0.0.0:{}", port);
+    let mut socket = UdpSocket::bind(addr).await?;
+    let _ = socket.set_broadcast(true);
+    let packet = serialize(id)?;
+    loop {
+        socket.send(&packet).await?;
+        let _ = sleep(Duration::from_secs(15)).await;
     }
 }
