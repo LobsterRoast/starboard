@@ -19,7 +19,7 @@ enum UISelectionState {
 }
 
 // Keeps track of what page the UI is currently on
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 enum UIPage {
     Home,
     Controllers,
@@ -205,10 +205,10 @@ impl StarboardServerUI {
     }
 
     fn on_enter(&mut self) {
-        if self.page == UIPage::Home
-            && let Some(2) = self.selected.selected()
-        {
-            self.running = false
+        let selected = self.selected.selected();
+        match (self.page, selected) {
+            (UIPage::Home, Some(2)) => self.running = false,
+            _ => {}
         }
     }
 }
