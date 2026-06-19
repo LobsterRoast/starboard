@@ -184,7 +184,9 @@ impl StarboardServer {
         sock: &tokio::net::UdpSocket,
         raw: &mut [u8],
     ) -> Result<()> {
-        sock.recv(raw).await?;
+        if let Err(_) = sock.try_recv(raw) {
+            return Ok(());
+        }
         let id: u64 = deserialize(Vec::from(raw))?;
         let _ = self
             .detected_controllers
