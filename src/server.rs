@@ -8,6 +8,10 @@ use tokio::time::timeout;
 
 use chrono::Local;
 
+use std::sync::Arc;
+
+type ControllerMap = HashMap<u64, ControllerState>;
+
 // Records the current state of a detected controller
 #[derive(Copy, Clone)]
 enum ControllerState {
@@ -55,7 +59,7 @@ impl StarboardServerBuilder {
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
         let timeout_ms = Duration::from_millis(self.timeout_ms);
-        let detected_controllers: HashMap<u64, ControllerState> = HashMap::new();
+        let detected_controllers: Arc<ControllerMap> = Arc::new(HashMap::new());
         let active_controllers: Vec<u64> = Vec::new();
 
         StarboardServer {
@@ -137,7 +141,7 @@ pub struct StarboardServer {
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
     timeout_ms: Duration,     // The amount of time after which to panic if a packet is not
     // received
-    detected_controllers: HashMap<u64, ControllerState>,
+    detected_controllers: Arc<ControllerMap>,
     active_controllers: Vec<u64>,
 }
 
@@ -145,11 +149,12 @@ impl StarboardServer {
     // This is the main loop for the server that receives packets and sends them to the input
     // handling
     async fn server_loop(
-        &self,
+        &mut self,
         buf: &mut [u8; 256],
         virt_joystick: &mut VirtualJoystick,
         sock: &UdpSocket,
     ) -> Result<()> {
+        tokio::spawn(manage_controllers(self.detected_controllers.clone()));
         loop {
             let _ = timeout(self.timeout_ms, self.get_packet(buf, sock)).await?;
             let raw = Vec::from(&mut *buf);
@@ -157,48 +162,6 @@ impl StarboardServer {
             self.handle_packet(virt_joystick, packet)?;
         }
         Ok(())
-    }
-
-    // Manage controller detection and timeouts
-    async fn manage_controllers(&mut self) -> Result<()> {
-        let sock = tokio::net::UdpSocket::bind("0.0.0.0:64646").await?;
-        let mut raw: [u8; 4] = [0; 4];
-        loop {
-            self.manage_controller_timeouts();
-            self.detect_controllers(&sock, &mut raw).await?;
-            tokio::time::sleep(Duration::from_secs(5)).await;
-        }
-    }
-
-    // For each controller, ensures that it is not timed out
-    fn manage_controller_timeouts(&mut self) {
-        let time = Local::now().timestamp();
-        for state in self.detected_controllers.values_mut() {
-            replace_if_timed_out(state);
-        }
-    }
-
-    // Detect controllers and add them to the detected_controllers list
-    async fn detect_controllers(
-        &mut self,
-        sock: &tokio::net::UdpSocket,
-        raw: &mut [u8],
-    ) -> Result<()> {
-        if let Ok(_) = sock.try_recv(raw) {
-            let id: u64 = deserialize(Vec::from(raw))?;
-            self.insert_controller(id);
-            Ok(())
-        } else {
-            Ok(())
-        }
-    }
-
-    // Inserts a controller at key `id` if it does not already exist
-    fn insert_controller(&mut self, id: u64) {
-        if !self.detected_controllers.contains_key(&id) {
-            self.detected_controllers
-                .insert(id, ControllerState::Online(Local::now().timestamp()));
-        }
     }
 
     // Waits for a packet to be received and writes the data into `buf`
@@ -218,6 +181,47 @@ impl StarboardServer {
             virt_joystick.send_input(input)?;
         }
         Ok(())
+    }
+}
+
+// Manage controller detection and timeouts
+async fn manage_controllers(mut detected_controllers: Arc<ControllerMap>) -> Result<()> {
+    let sock = tokio::net::UdpSocket::bind("0.0.0.0:64646").await?;
+    let mut raw: [u8; 4] = [0; 4];
+    let detected_controllers = Arc::make_mut(&mut detected_controllers);
+    loop {
+        manage_controller_timeouts(detected_controllers);
+        detect_controllers(detected_controllers, &sock, &mut raw).await?;
+        tokio::time::sleep(Duration::from_secs(5)).await;
+    }
+}
+
+// For each controller, ensures that it is not timed out
+fn manage_controller_timeouts(detected_controllers: &mut ControllerMap) {
+    for state in detected_controllers.values_mut() {
+        replace_if_timed_out(state);
+    }
+}
+
+// Detect controllers and add them to the detected_controllers list
+async fn detect_controllers(
+    detected_controllers: &mut ControllerMap,
+    sock: &tokio::net::UdpSocket,
+    raw: &mut [u8],
+) -> Result<()> {
+    if let Ok(_) = sock.try_recv(raw) {
+        let id: u64 = deserialize(Vec::from(raw))?;
+        insert_controller(detected_controllers, id);
+        Ok(())
+    } else {
+        Ok(())
+    }
+}
+
+// Inserts a controller at key `id` if it does not already exist
+fn insert_controller(detected_controllers: &mut ControllerMap, id: u64) {
+    if !detected_controllers.contains_key(&id) {
+        detected_controllers.insert(id, ControllerState::Online(Local::now().timestamp()));
     }
 }
 
