@@ -122,7 +122,11 @@ impl StarboardServerUI {
             .horizontal_margin(15)
             .vertical_margin(3);
         let [tabs_area, content_area] = layout.areas(frame.area());
-        self.render_home(frame);
+        match self.page {
+            UIPage::Home => self.render_home(frame),
+            UIPage::Controllers => self.render_controllers(frame),
+            _ => {}
+        }
     }
 
     // Render the home page
@@ -142,34 +146,18 @@ impl StarboardServerUI {
         frame.render_stateful_widget(list, rect, &mut self.selected);
     }
 
-    // Render tabs to select either the `Controllers` or `Settings` menus
-    fn render_tabs(&self, frame: &mut Frame, rect: Rect) {
-        let tabs = Tabs::new(["Controllers", "Settings"])
-            .select(match self.selection_state {
-                UISelectionState::Tabs { index } => Some(index),
-                _ => None,
-            })
-            .style(LAVENDER);
-        frame.render_widget(tabs, rect);
-    }
-
-    fn render_content_box(&self, frame: &mut Frame, rect: Rect) {
-        let block = Block::new().style(LAVENDER);
-        let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]);
-
-        frame.render_widget(block, rect);
-
-        self.render_controller_lists(frame, layout.areas(rect));
-    }
-
-    fn render_controller_lists(&self, frame: &mut Frame, rects: [Rect; 2]) {
+    fn render_controllers(&self, frame: &mut Frame) {
+        let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]).horizontal_margin(5);
         let active_list = List::new(["Controller 1", "Controller 2"])
-            .block(Block::bordered().title("Active Controllers"));
+            .block(Block::bordered().title("Active Controllers"))
+            .style(LAVENDER);
         let detected_list = List::new(["Controller 1", "Controller 2", "Controller 3"])
-            .block(Block::bordered().title("Detected Controllers"));
+            .block(Block::bordered().title("Detected Controllers"))
+            .style(LAVENDER);
 
-        frame.render_widget(active_list, rects[0]);
-        frame.render_widget(detected_list, rects[1]);
+        let [active_rect, detected_rect] = layout.areas(frame.area());
+        frame.render_widget(active_list, active_rect);
+        frame.render_widget(detected_list, detected_rect);
     }
 
     // Checks to see if theres any events and matches them if there is
