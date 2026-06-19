@@ -17,7 +17,6 @@ type ControllerMap = HashMap<u64, ControllerState>;
 enum ControllerState {
     Online(i64),
     NotResponding,
-    Active,
 }
 
 use crate::{

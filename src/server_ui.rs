@@ -82,10 +82,11 @@ impl StarboardServerUI {
             .style(LAVENDER);
         let detected_list = List::new(["Controller 1", "Controller 2", "Controller 3"])
             .block(Block::bordered().title("Detected Controllers"))
-            .style(LAVENDER);
+            .style(LAVENDER)
+            .highlight_style(Style::default().bg(LAVENDER).fg(Color::Black));
 
         let [active_rect, detected_rect] = layout.areas(frame.area());
-        frame.render_stateful_widget(active_list, active_rect, &mut self.selected);
+        frame.render_widget(active_list, active_rect);
         frame.render_stateful_widget(detected_list, detected_rect, &mut self.selected);
     }
 
