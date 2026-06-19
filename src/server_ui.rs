@@ -187,6 +187,7 @@ impl StarboardServerUI {
             KeyCode::Up => self.selected.scroll_up_by(1),
             KeyCode::Down => self.selected.scroll_down_by(1),
             KeyCode::Enter => self.on_enter(),
+            KeyCode::Backspace => self.on_backspace(),
             _ => {}
         }
         Ok(())
@@ -199,6 +200,13 @@ impl StarboardServerUI {
             (UIPage::Home, Some(0)) => self.page = UIPage::Controllers,
             (UIPage::Home, Some(1)) => self.page = UIPage::Settings,
             (UIPage::Home, Some(2)) => self.running = false,
+            _ => {}
+        }
+    }
+
+    fn on_backspace(&mut self) {
+        match self.page {
+            UIPage::Controllers | UIPage::Settings => self.page = UIPage::Home,
             _ => {}
         }
     }
