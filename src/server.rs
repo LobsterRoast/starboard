@@ -1,10 +1,10 @@
-use core::ops::RangeBounds;
+use core::{ops::RangeBounds, time::Duration};
 use std::collections::HashMap;
 use std::net::UdpSocket;
 
 use evdev::{AbsoluteAxisCode, KeyCode};
 
-use tokio::time::{Duration, timeout};
+use tokio::time::timeout;
 
 use chrono::Local;
 
@@ -166,6 +166,7 @@ impl StarboardServer {
         loop {
             self.manage_controller_timeouts();
             self.detect_controllers(&sock, &mut raw).await?;
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     }
 
