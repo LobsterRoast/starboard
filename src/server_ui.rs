@@ -204,9 +204,12 @@ impl StarboardServerUI {
         Ok(())
     }
 
+    // Execute behavior based on the currently selected button
     fn on_enter(&mut self) {
         let selected = self.selected.selected();
         match (self.page, selected) {
+            (UIPage::Home, Some(0)) => self.page = UIPage::Controllers,
+            (UIPage::Home, Some(1)) => self.page = UIPage::Settings,
             (UIPage::Home, Some(2)) => self.running = false,
             _ => {}
         }
