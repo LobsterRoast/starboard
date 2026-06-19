@@ -15,4 +15,13 @@ impl<T> FixedQueue<T> {
             capacity,
         }
     }
+
+    // Push an element to the back of the queue, and pop from the front if the maximum capacity is
+    // exceeded
+    pub fn push_back(&mut self, value: T) {
+        self.inner.push_back(value);
+        if self.inner.len() > self.capacity {
+            self.inner.pop_front();
+        }
+    }
 }
