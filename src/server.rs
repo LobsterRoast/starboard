@@ -10,15 +10,6 @@ use chrono::Local;
 
 use std::sync::Arc;
 
-type ControllerMap = HashMap<u64, ControllerState>;
-
-// Records the current state of a detected controller
-#[derive(Copy, Clone)]
-enum ControllerState {
-    Online(i64),
-    NotResponding,
-}
-
 use crate::{
     bitmask::Bitmask,
     client::StarboardClient,
@@ -28,6 +19,15 @@ use crate::{
 };
 
 use anyhow::Result;
+
+type ControllerMap = HashMap<u64, ControllerState>;
+
+// Records the current state of a detected controller
+#[derive(Copy, Clone)]
+enum ControllerState {
+    Online(i64),
+    NotResponding,
+}
 
 pub struct StarboardServerBuilder {
     // A struct to help build a server
