@@ -186,12 +186,18 @@ impl StarboardServer {
     ) -> Result<()> {
         if let Ok(_) = sock.try_recv(raw) {
             let id: u64 = deserialize(Vec::from(raw))?;
-            let _ = self
-                .detected_controllers
-                .insert(id, ControllerState::Online(Local::now().timestamp()));
+            self.insert_controller(id);
             Ok(())
         } else {
             Ok(())
+        }
+    }
+
+    // Inserts a controller at key `id` if it does not already exist
+    fn insert_controller(&mut self, id: u64) {
+        if !self.detected_controllers.contains_key(&id) {
+            self.detected_controllers
+                .insert(id, ControllerState::Online(Local::now().timestamp()));
         }
     }
 
