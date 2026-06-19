@@ -184,14 +184,15 @@ impl StarboardServer {
         sock: &tokio::net::UdpSocket,
         raw: &mut [u8],
     ) -> Result<()> {
-        if let Err(_) = sock.try_recv(raw) {
-            return Ok(());
+        if let Ok(_) = sock.try_recv(raw) {
+            let id: u64 = deserialize(Vec::from(raw))?;
+            let _ = self
+                .detected_controllers
+                .insert(id, ControllerState::Online(Local::now().timestamp()));
+            Ok(())
+        } else {
+            Ok(())
         }
-        let id: u64 = deserialize(Vec::from(raw))?;
-        let _ = self
-            .detected_controllers
-            .insert(id, ControllerState::Online(Local::now().timestamp()));
-        Ok(())
     }
 
     // Waits for a packet to be received and writes the data into `buf`
