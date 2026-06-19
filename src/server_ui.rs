@@ -87,7 +87,6 @@ impl UISelectionState {
 pub struct StarboardServerUI {
     running: bool,
     page: UIPage,
-    selection_state: UISelectionState,
     selected: ListState,
 }
 
@@ -96,7 +95,6 @@ impl StarboardServerUI {
         Self {
             running: false,
             page: UIPage::Home,
-            selection_state: UISelectionState::Tabs { index: 0 },
             selected: ListState::default().with_selected(Some(0)),
         }
     }
@@ -146,7 +144,7 @@ impl StarboardServerUI {
         frame.render_stateful_widget(list, rect, &mut self.selected);
     }
 
-    fn render_controllers(&self, frame: &mut Frame) {
+    fn render_controllers(&mut self, frame: &mut Frame) {
         let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]).horizontal_margin(5);
         let active_list = List::new(["Controller 1", "Controller 2"])
             .block(Block::bordered().title("Active Controllers"))
@@ -156,8 +154,8 @@ impl StarboardServerUI {
             .style(LAVENDER);
 
         let [active_rect, detected_rect] = layout.areas(frame.area());
-        frame.render_widget(active_list, active_rect);
-        frame.render_widget(detected_list, detected_rect);
+        frame.render_stateful_widget(active_list, active_rect, &mut self.selected);
+        frame.render_stateful_widget(detected_list, detected_rect, &mut self.selected);
     }
 
     // Checks to see if theres any events and matches them if there is
@@ -182,8 +180,6 @@ impl StarboardServerUI {
     fn on_key_event(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
             KeyCode::Char('c') => self.running = !key.modifiers.contains(KeyModifiers::CONTROL),
-            KeyCode::Left => self.selection_state = self.selection_state.left(),
-            KeyCode::Right => self.selection_state = self.selection_state.right(),
             KeyCode::Up => self.selected.scroll_up_by(1),
             KeyCode::Down => self.selected.scroll_down_by(1),
             KeyCode::Enter => self.on_enter(),
