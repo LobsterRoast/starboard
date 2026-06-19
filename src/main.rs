@@ -3,6 +3,7 @@ mod client;
 mod datagram;
 mod debug;
 mod evdev_sb;
+mod fixed_queue;
 mod input;
 mod server;
 mod server_ui;
