@@ -5,81 +5,12 @@ use std::time::Duration;
 
 const LAVENDER: Color = Color::Rgb(150, 100, 175);
 
-// Keeps track of what the user currently has selected in a UI
-// TODO: Add more enumerable values based on which widgets are used in the UI
-#[derive(Copy, Clone)]
-enum UISelectionState {
-    Tabs {
-        index: usize,
-    },
-    DeviceList {
-        major_index: usize,
-        minor_index: usize,
-    },
-}
-
 // Keeps track of what page the UI is currently on
 #[derive(PartialEq, Copy, Clone)]
 enum UIPage {
     Home,
     Controllers,
     Settings,
-}
-
-impl UISelectionState {
-    // Activated when the left arrow key is pressed
-    pub fn left(self) -> Self {
-        match self {
-            UISelectionState::Tabs { .. } => UISelectionState::Tabs { index: 0 },
-            UISelectionState::DeviceList { minor_index, .. } => UISelectionState::DeviceList {
-                major_index: 0,
-                minor_index,
-            },
-        }
-    }
-
-    // Activated when the right arrow key is pressed
-    pub fn right(self) -> Self {
-        match self {
-            UISelectionState::Tabs { .. } => UISelectionState::Tabs { index: 1 },
-            UISelectionState::DeviceList { minor_index, .. } => UISelectionState::DeviceList {
-                major_index: 1,
-                minor_index,
-            },
-            _ => self,
-        }
-    }
-
-    // Activated when the up arrow key is pressed
-    pub fn up(self) -> Self {
-        match self {
-            UISelectionState::DeviceList {
-                major_index,
-                minor_index,
-            } => UISelectionState::DeviceList {
-                major_index,
-                minor_index: minor_index - 1,
-            },
-            _ => self,
-        }
-    }
-
-    // Activated when the up arrow key is pressed
-    pub fn down(self) -> Self {
-        match self {
-            UISelectionState::Tabs { .. } => UISelectionState::DeviceList {
-                major_index: 0,
-                minor_index: 0,
-            },
-            UISelectionState::DeviceList {
-                major_index,
-                minor_index,
-            } => UISelectionState::DeviceList {
-                major_index,
-                minor_index: minor_index + 1,
-            },
-        }
-    }
 }
 
 // The struct to manage the UI that opens when the server application is opened
