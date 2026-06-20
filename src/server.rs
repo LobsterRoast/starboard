@@ -37,7 +37,7 @@ struct ControllerDiagnostic {
     name: String,
     origin: [u8; 4],
     pub last_ping: i64,
-    pub latency: FixedQueue<i64>,
+    pub latency: FixedQueue<i64, 10>,
 }
 
 impl ControllerDiagnostic {
@@ -47,7 +47,7 @@ impl ControllerDiagnostic {
             name,
             origin,
             last_ping: Local::now().timestamp(),
-            latency: FixedQueue::new(10),
+            latency: FixedQueue::new(),
         }
     }
 }
