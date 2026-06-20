@@ -27,6 +27,14 @@ impl<T> FixedQueue<T> {
             self.inner.pop_front();
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.capacity
+    }
 }
 
 impl<T> Index<usize> for FixedQueue<T> {
