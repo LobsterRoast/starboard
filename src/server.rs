@@ -15,6 +15,7 @@ use crate::{
     client::StarboardClient,
     datagram::{deserialize, serialize},
     evdev_sb::{self, VirtualJoystick},
+    fixed_queue::FixedQueue,
     input::{StarboardInput, StarboardInputPacket},
 };
 
@@ -23,10 +24,21 @@ use anyhow::Result;
 type ControllerMap = HashMap<u64, ControllerState>;
 
 // Records the current state of a detected controller
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 enum ControllerState {
     Online(i64),
     NotResponding,
+}
+
+// Records various information about a controller
+#[derive(Debug)]
+struct ControllerDiagnostic {
+    id: u64,
+    name: String,
+    origin: [u8; 4],
+    status: ControllerState,
+    last_ping: i64,
+    latency: FixedQueue<i64>,
 }
 
 pub struct StarboardServerBuilder {
