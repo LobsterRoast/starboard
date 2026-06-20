@@ -1,5 +1,5 @@
 use std::{
-    collections::VecDeque,
+    collections::{self, VecDeque},
     ops::{Index, IndexMut},
 };
 
@@ -34,6 +34,15 @@ impl<T> FixedQueue<T> {
 
     pub fn capacity(&self) -> usize {
         self.capacity
+    }
+}
+
+impl<T> IntoIterator for FixedQueue<T> {
+    type Item = T;
+    type IntoIter = collections::vec_deque::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.into_iter()
     }
 }
 
