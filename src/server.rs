@@ -37,7 +37,19 @@ struct ControllerDiagnostic {
     name: String,
     origin: [u8; 4],
     last_ping: i64,
-    latency: FixedQueue<i64>,
+    pub latency: FixedQueue<i64>,
+}
+
+impl ControllerDiagnostic {
+    pub fn new(id: u64, name: String, origin: [u8; 4]) -> Self {
+        Self {
+            id,
+            name,
+            origin,
+            last_ping: Local::now().timestamp(),
+            latency: FixedQueue::new(10),
+        }
+    }
 }
 
 pub struct StarboardServerBuilder {
