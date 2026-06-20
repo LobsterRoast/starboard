@@ -36,7 +36,7 @@ struct ControllerDiagnostic {
     id: u64,
     name: String,
     origin: [u8; 4],
-    last_ping: i64,
+    pub last_ping: i64,
     pub latency: FixedQueue<i64>,
 }
 
