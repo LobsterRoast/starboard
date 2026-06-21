@@ -10,7 +10,12 @@ fn test_fixed_queue_into_iter() {
     for i in raw_arr {
         queue.push_back(i);
     }
-    let queue_arr: [u8; N] = queue.into_iter().collect::<Vec<u8>>().try_into().unwrap();
+    let queue_arr: [u8; N] = queue
+        .into_iter()
+        .map(|option| option.unwrap())
+        .collect::<Vec<u8>>()
+        .try_into()
+        .unwrap();
     assert_eq!(queue_arr, raw_arr);
 }
 
@@ -19,6 +24,7 @@ fn test_fixed_queue_index() {
     let mut queue: FixedQueue<u8, 5> = FixedQueue::new();
     for i in 0..10 {
         queue.push_back(i);
+        println!("{:?}", queue);
     }
-    assert_eq!(5, queue[0]);
+    assert_eq!(5, queue[0].unwrap());
 }

@@ -10,20 +10,20 @@ use std::{
 #[derive(Debug, Copy, Clone)]
 pub struct FixedQueue<T, const N: usize>
 where
-    T: Default + Copy + Clone,
+    T: Copy + Clone,
 {
-    inner: [T; N],
+    inner: [Option<T>; N],
     count: usize,
     capacity: usize,
 }
 
 impl<T, const N: usize> FixedQueue<T, N>
 where
-    T: Default + Copy + Clone,
+    T: Copy + Clone,
 {
     pub fn new() -> Self {
         Self {
-            inner: [T::default(); N],
+            inner: [None; N],
             count: 0,
             capacity: N,
         }
@@ -33,11 +33,11 @@ where
     // exceeded
     pub fn push_back(&mut self, value: T) {
         if self.count < self.capacity {
-            self.inner[self.count] = value;
+            self.inner[self.count] = Some(value);
             self.count += 1;
         } else {
             self.shift();
-            self.inner[self.capacity - 1] = value;
+            self.inner[self.capacity - 1] = Some(value);
         }
     }
 
@@ -61,10 +61,10 @@ where
 
 impl<T, const N: usize> IntoIterator for FixedQueue<T, N>
 where
-    T: Default + Copy + Clone,
+    T: Copy + Clone,
 {
-    type Item = T;
-    type IntoIter = <[T; N] as IntoIterator>::IntoIter;
+    type Item = Option<T>;
+    type IntoIter = <[Option<T>; N] as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.inner.into_iter()
@@ -73,9 +73,9 @@ where
 
 impl<T, const N: usize> Index<usize> for FixedQueue<T, N>
 where
-    T: Default + Copy + Clone,
+    T: Copy + Clone,
 {
-    type Output = T;
+    type Output = Option<T>;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.inner[index]
@@ -84,7 +84,7 @@ where
 
 impl<T, const N: usize> IndexMut<usize> for FixedQueue<T, N>
 where
-    T: Default + Copy + Clone,
+    T: Copy + Clone,
 {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.inner[index]
