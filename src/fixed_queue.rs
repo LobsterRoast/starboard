@@ -1,6 +1,7 @@
 use core::iter::IntoIterator;
 use std::{
     collections::{self, VecDeque},
+    iter::Take,
     ops::{Index, IndexMut},
 };
 
@@ -64,10 +65,10 @@ where
     T: Copy + Clone,
 {
     type Item = Option<T>;
-    type IntoIter = <[Option<T>; N] as IntoIterator>::IntoIter;
+    type IntoIter = Take<<[Option<T>; N] as IntoIterator>::IntoIter>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.inner.into_iter()
+        self.inner.into_iter().take(self.count)
     }
 }
 
