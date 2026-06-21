@@ -53,7 +53,7 @@ where
     // i.e. [1, 2, 3, 4, 5] becomes [2, 3, 4, 5, 5]
     // Note: The last element remains unchanged
     fn shift(&mut self) {
-        for i in 0..(self.capacity - 2) {
+        for i in 0..(self.capacity - 1) {
             self.inner[i] = self.inner[i + 1];
         }
     }
