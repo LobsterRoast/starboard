@@ -7,6 +7,7 @@ mod fixed_queue;
 mod input;
 mod server;
 mod server_ui;
+mod string;
 #[cfg(test)]
 mod test;
 
