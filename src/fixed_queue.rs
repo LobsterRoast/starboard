@@ -31,13 +31,13 @@ where
 
     // Push an element to the back of the queue, and pop from the front if the maximum capacity is
     // exceeded
-    pub fn push_back(&mut self, value: T) {
+    pub fn push_back(&mut self, value: Option<T>) {
         if self.count < self.capacity {
-            self.inner[self.count] = Some(value);
+            self.inner[self.count] = value;
             self.count += 1;
         } else {
             self.shift();
-            self.inner[self.capacity - 1] = Some(value);
+            self.inner[self.capacity - 1] = value;
         }
     }
 

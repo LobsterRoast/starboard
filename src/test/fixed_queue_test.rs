@@ -8,7 +8,7 @@ fn test_fixed_queue_into_iter() {
     let raw_arr: [u8; N] = [1, 4, 2, 6, 8];
     let mut queue: FixedQueue<u8, N> = FixedQueue::new();
     for i in raw_arr {
-        queue.push_back(i);
+        queue.push_back(Some(i));
     }
     let queue_arr: [u8; N] = queue
         .into_iter()
@@ -23,7 +23,7 @@ fn test_fixed_queue_into_iter() {
 fn test_fixed_queue_index() {
     let mut queue: FixedQueue<u8, 5> = FixedQueue::new();
     for i in 0..10 {
-        queue.push_back(i);
+        queue.push_back(Some(i));
         println!("{:?}", queue);
     }
     assert_eq!(5, queue[0].unwrap());
