@@ -32,7 +32,7 @@ enum ControllerState {
 }
 
 // Records various information about a controller
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 struct ControllerDiagnostic {
     id: u64,
     name: StarboardString,
