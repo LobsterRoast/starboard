@@ -17,6 +17,7 @@ use crate::{
     evdev_sb::{self, VirtualJoystick},
     fixed_queue::FixedQueue,
     input::{StarboardInput, StarboardInputPacket},
+    string::StarboardString,
 };
 
 use anyhow::Result;
@@ -34,14 +35,14 @@ enum ControllerState {
 #[derive(Debug)]
 struct ControllerDiagnostic {
     id: u64,
-    name: String,
+    name: StarboardString,
     origin: [u8; 4],
     pub last_ping: i64,
     pub latency: FixedQueue<i64, 10>,
 }
 
 impl ControllerDiagnostic {
-    pub fn new(id: u64, name: String, origin: [u8; 4]) -> Self {
+    pub fn new(id: u64, name: StarboardString, origin: [u8; 4]) -> Self {
         Self {
             id,
             name,
