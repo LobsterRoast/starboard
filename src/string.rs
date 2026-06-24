@@ -1,3 +1,5 @@
+use core::iter::IntoIterator;
+
 use anyhow::{anyhow, bail};
 
 // This represents a string with a maximum capacity that can be stored without a heap allocation
@@ -20,6 +22,12 @@ impl TryFrom<String> for StarboardString {
                 .map_err(|_| anyhow!("`StarboardString` must be 30 characters or less."))?,
             count,
         })
+    }
+}
+
+impl Into<String> for StarboardString {
+    fn into(self) -> String {
+        String::from_iter(self.inner.into_iter().take(self.count))
     }
 }
 
