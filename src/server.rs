@@ -55,6 +55,18 @@ impl ControllerDiagnostic {
             latency: FixedQueue::new(),
         })
     }
+
+    pub fn id(&self) -> &u64 {
+        &self.id
+    }
+
+    pub fn name(&self) -> &StarboardString {
+        &self.name
+    }
+
+    pub fn origin(&self) -> &[u8; 4] {
+        &self.origin
+    }
 }
 
 pub struct StarboardServerBuilder {
