@@ -260,6 +260,10 @@ fn insert_controller(detected_controllers: &mut ControllerMap, packet: Broadcast
             *packet.id(),
             ControllerState::Online(Local::now().timestamp()),
         );
+    } else if let Some(&ControllerState::Online(mut timestamp)) =
+        detected_controllers.get(packet.id())
+    {
+        timestamp = Local::now().timestamp();
     }
 }
 
