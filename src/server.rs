@@ -13,7 +13,7 @@ use std::sync::Arc;
 use crate::{
     bitmask::Bitmask,
     client::StarboardClient,
-    datagram::{deserialize, serialize},
+    datagram::{BroadcastPacket, deserialize, serialize},
     evdev_sb::{self, VirtualJoystick},
     fixed_queue::FixedQueue,
     input::{StarboardInput, StarboardInputPacket},
@@ -249,8 +249,8 @@ async fn detect_controllers(
     raw: &mut [u8],
 ) -> Result<()> {
     if let Ok(_) = sock.try_recv(raw) {
-        let id: u64 = deserialize(Vec::from(raw))?;
-        insert_controller(detected_controllers, id);
+        let packet: BroadcastPacket = deserialize(Vec::from(raw))?;
+        insert_controller(detected_controllers, packet);
         Ok(())
     } else {
         Ok(())
@@ -258,9 +258,12 @@ async fn detect_controllers(
 }
 
 // Inserts a controller at key `id` if it does not already exist
-fn insert_controller(detected_controllers: &mut ControllerMap, id: u64) {
-    if !detected_controllers.contains_key(&id) {
-        detected_controllers.insert(id, ControllerState::Online(Local::now().timestamp()));
+fn insert_controller(detected_controllers: &mut ControllerMap, packet: BroadcastPacket) {
+    if !detected_controllers.contains_key(packet.id()) {
+        detected_controllers.insert(
+            *packet.id(),
+            ControllerState::Online(Local::now().timestamp()),
+        );
     }
 }
 
