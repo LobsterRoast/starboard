@@ -34,3 +34,34 @@ pub struct BroadcastPacket {
     origin: [u8; 4],
     sent_at: i64,
 }
+
+impl BroadcastPacket {
+    pub fn new<T>(id: u64, name: T, origin: [u8; 4]) -> Result<Self>
+    where
+        StarboardString: TryFrom<T>,
+        anyhow::Error: From<<StarboardString as TryFrom<T>>::Error>,
+    {
+        Ok(Self {
+            id,
+            name: StarboardString::try_from(name)?,
+            origin,
+            sent_at: chrono::Local::now().timestamp(),
+        })
+    }
+
+    pub fn id(&self) -> &u64 {
+        &self.id
+    }
+
+    pub fn name(&self) -> &StarboardString {
+        &self.name
+    }
+
+    pub fn origin(&self) -> &[u8; 4] {
+        &self.origin
+    }
+
+    pub fn sent_at(&self) -> &i64 {
+        &self.sent_at
+    }
+}
