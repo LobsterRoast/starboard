@@ -42,14 +42,14 @@ struct ControllerDiagnostic {
 }
 
 impl ControllerDiagnostic {
-    pub fn new(id: u64, name: StarboardString, origin: [u8; 4]) -> Result<Self> {
-        Ok(Self {
+    pub fn new(id: u64, name: StarboardString, origin: [u8; 4]) -> Self {
+        Self {
             id,
             name,
             origin,
             last_ping: Local::now().timestamp(),
             latency: FixedQueue::new(),
-        })
+        }
     }
 
     pub fn id(&self) -> &u64 {
