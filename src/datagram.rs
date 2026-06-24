@@ -1,7 +1,7 @@
 use anyhow::Result;
 use bincode::{Decode, Encode, config::Configuration, decode_from_slice, encode_to_vec};
 
-use crate::input::StarboardInputPacket;
+use crate::{input::StarboardInputPacket, string::StarboardString};
 
 static BINCODE_CONFIG: Configuration = bincode::config::standard();
 
@@ -24,4 +24,12 @@ where
     T: Encode,
 {
     Ok(encode_to_vec::<T, Configuration>(packet, BINCODE_CONFIG)?)
+}
+
+// Packet for a client to broadcast its presence on the network
+pub struct BroadcastPacket {
+    id: u64,
+    name: StarboardString,
+    origin: [u8; 4],
+    sent_at: i64,
 }

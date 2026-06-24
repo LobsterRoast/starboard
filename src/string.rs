@@ -1,9 +1,11 @@
 use core::iter::IntoIterator;
 
+use bincode::{Decode, Encode};
+
 use anyhow::{anyhow, bail};
 
 // This represents a string with a maximum capacity that can be stored without a heap allocation
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Decode, Encode)]
 pub struct StarboardString {
     inner: [char; 30],
     count: usize,
