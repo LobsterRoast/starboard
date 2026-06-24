@@ -27,6 +27,7 @@ where
 }
 
 // Packet for a client to broadcast its presence on the network
+#[derive(Decode, Encode)]
 pub struct BroadcastPacket {
     id: u64,
     name: StarboardString,
