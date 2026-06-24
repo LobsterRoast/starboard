@@ -65,6 +65,12 @@ impl ControllerDiagnostic {
     }
 }
 
+impl From<BroadcastPacket> for ControllerDiagnostic {
+    fn from(value: BroadcastPacket) -> Self {
+        Self::new(*value.id(), *value.name(), *value.origin())
+    }
+}
+
 pub struct StarboardServerBuilder {
     // A struct to help build a server
     ip: [u8; 4],
