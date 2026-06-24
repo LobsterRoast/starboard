@@ -42,14 +42,10 @@ struct ControllerDiagnostic {
 }
 
 impl ControllerDiagnostic {
-    pub fn new<T>(id: u64, name: T, origin: [u8; 4]) -> Result<Self>
-    where
-        StarboardString: TryFrom<T>,
-        anyhow::Error: From<<StarboardString as TryFrom<T>>::Error>,
-    {
+    pub fn new(id: u64, name: StarboardString, origin: [u8; 4]) -> Result<Self> {
         Ok(Self {
             id,
-            name: StarboardString::try_from(name)?,
+            name,
             origin,
             last_ping: Local::now().timestamp(),
             latency: FixedQueue::new(),
