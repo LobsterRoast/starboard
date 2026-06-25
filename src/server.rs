@@ -275,13 +275,13 @@ fn insert_controller(detected_controllers: &mut ControllerMap, packet: Broadcast
 // out
 fn replace_if_timed_out(state: &mut ControllerState) {
     if let ControllerState::Online(diagnostic) = *state
-        && check_controller_timed_out(diagnostic)
+        && check_controller_responding(diagnostic)
     {
         *state = ControllerState::NotResponding
     }
 }
 
 // Checks if a controller has sent a ping in less than 15 seconds, and returns true if so
-fn check_controller_timed_out(diagnostic: ControllerDiagnostic) -> bool {
+fn check_controller_responding(diagnostic: ControllerDiagnostic) -> bool {
     Local::now().timestamp() - diagnostic.last_ping < 15
 }
