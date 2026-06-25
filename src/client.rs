@@ -3,6 +3,7 @@ use core::iter::FromIterator;
 use crate::datagram::serialize;
 use crate::evdev_sb::DeviceWrapper;
 use crate::input::{IntoByte, StarboardInputPacket};
+use crate::string::StarboardString;
 use anyhow::Result;
 use bincode::{Decode, Encode};
 use tokio::net::UdpSocket;
@@ -14,13 +15,18 @@ use tokio::time::{Duration, sleep};
 #[derive(Encode, Decode)]
 pub struct StarboardClient {
     id: u64,
+    name: StarboardString,
     port: u16,
 }
 
 impl StarboardClient {
-    pub fn new(port: u16) -> Self {
+    pub fn new(name: &str, port: u16) -> Result<Self> {
         // TODO: Create a system for randomly generating an ID
-        Self { id: 0, port }
+        Ok(Self {
+            id: 0,
+            name: StarboardString::try_from(name)?,
+            port,
+        })
     }
 
     // Run the client loop

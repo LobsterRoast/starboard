@@ -19,7 +19,7 @@ use crate::{client::StarboardClient, server_ui::StarboardServerUI};
 async fn main() -> Result<()> {
     let mut ui = StarboardServerUI::new();
     let _ = ui.launch_ui()?;
-    let client = StarboardClient::new(0);
+    let client = StarboardClient::new("Test Client", 0)?;
     let _ = client.run().await?;
     Ok(())
 }
