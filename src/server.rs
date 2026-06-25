@@ -36,17 +36,15 @@ enum ControllerState {
 struct ControllerDiagnostic {
     id: u64,
     name: StarboardString,
-    origin: [u8; 4],
     pub last_ping: i64,
     pub latency: FixedQueue<i64, 10>,
 }
 
 impl ControllerDiagnostic {
-    pub fn new(id: u64, name: StarboardString, origin: [u8; 4]) -> Self {
+    pub fn new(id: u64, name: StarboardString) -> Self {
         Self {
             id,
             name,
-            origin,
             last_ping: Local::now().timestamp(),
             latency: FixedQueue::new(),
         }
@@ -59,15 +57,11 @@ impl ControllerDiagnostic {
     pub fn name(&self) -> &StarboardString {
         &self.name
     }
-
-    pub fn origin(&self) -> &[u8; 4] {
-        &self.origin
-    }
 }
 
 impl From<BroadcastPacket> for ControllerDiagnostic {
     fn from(value: BroadcastPacket) -> Self {
-        Self::new(*value.id(), *value.name(), *value.origin())
+        Self::new(*value.id(), *value.name())
     }
 }
 

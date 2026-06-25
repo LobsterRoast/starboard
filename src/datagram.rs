@@ -31,7 +31,6 @@ where
 pub struct BroadcastPacket {
     id: u64,
     name: StarboardString,
-    origin: [u8; 4],
     sent_at: i64,
 }
 
@@ -44,7 +43,6 @@ impl BroadcastPacket {
         Ok(Self {
             id,
             name: StarboardString::try_from(name)?,
-            origin,
             sent_at: chrono::Local::now().timestamp(),
         })
     }
@@ -55,10 +53,6 @@ impl BroadcastPacket {
 
     pub fn name(&self) -> &StarboardString {
         &self.name
-    }
-
-    pub fn origin(&self) -> &[u8; 4] {
-        &self.origin
     }
 
     pub fn sent_at(&self) -> &i64 {
