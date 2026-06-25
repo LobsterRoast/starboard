@@ -35,7 +35,7 @@ pub struct BroadcastPacket {
 }
 
 impl BroadcastPacket {
-    pub fn new<T>(id: u64, name: T, origin: [u8; 4]) -> Result<Self>
+    pub fn new<T>(id: u64, name: T) -> Result<Self>
     where
         StarboardString: TryFrom<T>,
         anyhow::Error: From<<StarboardString as TryFrom<T>>::Error>,
