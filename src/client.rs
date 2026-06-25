@@ -1,6 +1,6 @@
 use core::iter::FromIterator;
 
-use crate::datagram::serialize;
+use crate::datagram::{BroadcastPacket, serialize};
 use crate::evdev_sb::DeviceWrapper;
 use crate::input::{IntoByte, StarboardInputPacket};
 use crate::string::StarboardString;
@@ -31,7 +31,7 @@ impl StarboardClient {
 
     // Run the client loop
     pub async fn run(&self) -> Result<()> {
-        tokio::spawn(broadcast_id(self.id, self.port));
+        tokio::spawn(broadcast_presence(self.id, self.name, self.port));
         let device = DeviceWrapper::get_steam_deck()?;
         let addr = format!("0.0.0.0:{}", self.port);
         let mut sock = UdpSocket::bind(&addr).await?;
@@ -60,11 +60,12 @@ impl StarboardClient {
 }
 
 // Broadcast a client's presence to server's on the local network
-async fn broadcast_id(id: u64, port: u16) -> Result<()> {
+async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result<()> {
     let addr = format!("0.0.0.0:{}", port);
     let mut socket = UdpSocket::bind(addr).await?;
     let _ = socket.set_broadcast(true);
-    let packet = serialize(id)?;
+    let packet = BroadcastPacket::new(id, name)?;
+    let packet = serialize(packet)?;
     loop {
         socket.send(&packet).await?;
         let _ = sleep(Duration::from_secs(15)).await;
