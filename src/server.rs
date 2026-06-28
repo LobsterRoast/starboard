@@ -4,7 +4,10 @@ use std::net::UdpSocket;
 
 use evdev::{AbsoluteAxisCode, KeyCode};
 
-use tokio::time::timeout;
+use tokio::{
+    sync::{Mutex, MutexGuard},
+    time::timeout,
+};
 
 use chrono::Local;
 
@@ -94,7 +97,7 @@ impl StarboardServerBuilder {
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
         let timeout_ms = Duration::from_millis(self.timeout_ms);
-        let detected_controllers: Arc<ControllerMap> = Arc::new(HashMap::new());
+        let detected_controllers: Arc<Mutex<ControllerMap>> = Arc::new(Mutex::new(HashMap::new()));
         let active_controllers: Vec<u64> = Vec::new();
 
         StarboardServer {
@@ -176,7 +179,7 @@ pub struct StarboardServer {
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
     timeout_ms: Duration,     // The amount of time after which to panic if a packet is not
     // received
-    detected_controllers: Arc<ControllerMap>,
+    detected_controllers: Arc<Mutex<ControllerMap>>,
     active_controllers: Vec<u64>,
 }
 
@@ -220,19 +223,21 @@ impl StarboardServer {
 }
 
 // Manage controller detection and timeouts
-async fn manage_controllers(mut detected_controllers: Arc<ControllerMap>) -> Result<()> {
+async fn manage_controllers(mut detected_controllers: Arc<Mutex<ControllerMap>>) -> Result<()> {
     let sock = tokio::net::UdpSocket::bind("0.0.0.0:64646").await?;
     let mut raw: [u8; 4] = [0; 4];
-    let detected_controllers = Arc::make_mut(&mut detected_controllers);
     loop {
-        manage_controller_timeouts(detected_controllers);
-        detect_controllers(detected_controllers, &sock, &mut raw).await?;
+        {
+            let mut detected_controllers = detected_controllers.lock().await;
+            manage_controller_timeouts(&mut detected_controllers);
+            detect_controllers(&mut detected_controllers, &sock, &mut raw).await?;
+        }
         tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }
 
 // For each controller, ensures that it is not timed out
-fn manage_controller_timeouts(detected_controllers: &mut ControllerMap) {
+fn manage_controller_timeouts(detected_controllers: &mut MutexGuard<'_, ControllerMap>) {
     for state in detected_controllers.values_mut() {
         replace_if_timed_out(state);
     }
@@ -240,7 +245,7 @@ fn manage_controller_timeouts(detected_controllers: &mut ControllerMap) {
 
 // Detect controllers and add them to the detected_controllers list
 async fn detect_controllers(
-    detected_controllers: &mut ControllerMap,
+    detected_controllers: &mut MutexGuard<'_, ControllerMap>,
     sock: &tokio::net::UdpSocket,
     raw: &mut [u8],
 ) -> Result<()> {
