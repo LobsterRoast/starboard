@@ -1,7 +1,11 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{Frame, Terminal, backend::Backend, layout::*, prelude::*, widgets::*};
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::{Mutex, MutexGuard};
+
+use crate::server::ControllerMap;
 
 const LAVENDER: Color = Color::Rgb(150, 100, 175);
 
@@ -19,14 +23,16 @@ pub struct StarboardServerUI {
     running: bool,
     page: UIPage,
     selected: ListState,
+    detected_controllers: Arc<Mutex<ControllerMap>>,
 }
 
 impl StarboardServerUI {
-    pub fn new() -> Self {
+    pub fn new(detected_controllers: Arc<Mutex<ControllerMap>>) -> Self {
         Self {
             running: false,
             page: UIPage::Home,
             selected: ListState::default().with_selected(Some(0)),
+            detected_controllers,
         }
     }
 

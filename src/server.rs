@@ -25,18 +25,18 @@ use crate::{
 
 use anyhow::Result;
 
-type ControllerMap = HashMap<u64, ControllerState>;
+pub type ControllerMap = HashMap<u64, ControllerState>;
 
 // Records the current state of a detected controller
 #[derive(Debug, Copy, Clone)]
-enum ControllerState {
+pub enum ControllerState {
     Online(ControllerDiagnostic),
     NotResponding,
 }
 
 // Records various information about a controller
 #[derive(Debug, Copy, Clone)]
-struct ControllerDiagnostic {
+pub struct ControllerDiagnostic {
     id: u64,
     name: StarboardString,
     pub last_ping: i64,
