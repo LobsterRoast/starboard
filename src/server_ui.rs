@@ -82,18 +82,23 @@ impl StarboardServerUI {
     }
 
     fn render_controllers(&mut self, frame: &mut Frame) {
-        let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]).horizontal_margin(5);
-        let active_list = List::new(["Controller 1", "Controller 2"])
-            .block(Block::bordered().title("Active Controllers"))
-            .style(LAVENDER);
-        let detected_list = List::new(["Controller 1", "Controller 2", "Controller 3"])
-            .block(Block::bordered().title("Detected Controllers"))
-            .style(LAVENDER)
-            .highlight_style(Style::default().bg(LAVENDER).fg(Color::Black));
+        if let Ok(detected_controllers) = self.detected_controllers.try_lock() {
+            let detected_controller_names = detected_controllers
+                .values()
+                .map(|diagnostic| -> String { (*diagnostic.name()).into() });
+            let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]).horizontal_margin(5);
+            let active_list = List::new(["Controller 1", "Controller 2"])
+                .block(Block::bordered().title("Active Controllers"))
+                .style(LAVENDER);
+            let detected_list = List::new(detected_controller_names)
+                .block(Block::bordered().title("Detected Controllers"))
+                .style(LAVENDER)
+                .highlight_style(Style::default().bg(LAVENDER).fg(Color::Black));
 
-        let [active_rect, detected_rect] = layout.areas(frame.area());
-        frame.render_widget(active_list, active_rect);
-        frame.render_stateful_widget(detected_list, detected_rect, &mut self.selected);
+            let [active_rect, detected_rect] = layout.areas(frame.area());
+            frame.render_widget(active_list, active_rect);
+            frame.render_stateful_widget(detected_list, detected_rect, &mut self.selected);
+        }
     }
 
     // Checks to see if theres any events and matches them if there is
