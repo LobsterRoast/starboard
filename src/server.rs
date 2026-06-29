@@ -25,12 +25,12 @@ use crate::{
 
 use anyhow::Result;
 
-pub type ControllerMap = HashMap<u64, ControllerState>;
+pub type ControllerMap = HashMap<u64, ControllerDiagnostic>;
 
 // Records the current state of a detected controller
 #[derive(Debug, Copy, Clone)]
 pub enum ControllerState {
-    Online(ControllerDiagnostic),
+    Online,
     NotResponding,
 }
 
@@ -39,15 +39,17 @@ pub enum ControllerState {
 pub struct ControllerDiagnostic {
     id: u64,
     name: StarboardString,
+    status: ControllerState,
     pub last_ping: i64,
     pub latency: FixedQueue<i64, 10>,
 }
 
 impl ControllerDiagnostic {
-    pub fn new(id: u64, name: StarboardString) -> Self {
+    pub fn new(id: u64, name: StarboardString, status: ControllerState) -> Self {
         Self {
             id,
             name,
+            status,
             last_ping: Local::now().timestamp(),
             latency: FixedQueue::new(),
         }
@@ -64,7 +66,7 @@ impl ControllerDiagnostic {
 
 impl From<BroadcastPacket> for ControllerDiagnostic {
     fn from(value: BroadcastPacket) -> Self {
-        Self::new(*value.id(), *value.name())
+        Self::new(*value.id(), *value.name(), ControllerState::Online)
     }
 }
 
@@ -262,25 +264,21 @@ async fn detect_controllers(
 fn insert_controller(detected_controllers: &mut ControllerMap, packet: BroadcastPacket) {
     if !detected_controllers.contains_key(packet.id()) {
         let diagnostic: ControllerDiagnostic = packet.into();
-        detected_controllers.insert(*diagnostic.id(), ControllerState::Online(diagnostic));
-    } else if let Some(&ControllerState::Online(mut diagnostic)) =
-        detected_controllers.get(packet.id())
-    {
+        detected_controllers.insert(*diagnostic.id(), diagnostic);
+    } else if let Some(diagnostic) = detected_controllers.get_mut(packet.id()) {
         diagnostic.last_ping = Local::now().timestamp();
     }
 }
 
 // Takes a mutable reference to a controller state, and sets it to `NotResponding` if it has timed
 // out
-fn replace_if_timed_out(state: &mut ControllerState) {
-    if let ControllerState::Online(diagnostic) = *state
-        && check_controller_responding(diagnostic)
-    {
-        *state = ControllerState::NotResponding
+fn replace_if_timed_out(diagnostic: &mut ControllerDiagnostic) {
+    if !check_controller_responding(diagnostic) {
+        diagnostic.status = ControllerState::NotResponding;
     }
 }
 
 // Checks if a controller has sent a ping in less than 15 seconds, and returns true if so
-fn check_controller_responding(diagnostic: ControllerDiagnostic) -> bool {
+fn check_controller_responding(diagnostic: &ControllerDiagnostic) -> bool {
     Local::now().timestamp() - diagnostic.last_ping < 15
 }
