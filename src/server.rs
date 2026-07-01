@@ -17,7 +17,7 @@ use crate::{
     bitmask::Bitmask,
     client::StarboardClient,
     datagram::{BroadcastPacket, deserialize, serialize},
-    evdev_sb::{self, VirtualJoystick},
+    evdev_sb::{self, VirtualJoystick, VirtualJoystickBuilder},
     fixed_queue::FixedQueue,
     input::{StarboardInput, StarboardInputPacket},
     server_ui::StarboardServerUI,
@@ -188,30 +188,32 @@ pub struct StarboardServer {
 
 impl StarboardServer {
     // Public facing function to run the server
-    pub fn run(&mut self) -> Result<()> {
+    pub fn run(mut self) -> Result<()> {
         let mut ui = StarboardServerUI::new(
             self.detected_controllers.clone(),
             self.active_controllers.clone(),
         );
 
-        // TODO: Launch `server_loop`
-        tokio::spawn(manage_controllers(self.detected_controllers.clone()));
+        let detected_controllers = Arc::clone(&self.detected_controllers);
+        tokio::spawn(async move { self.server_loop() });
+        tokio::spawn(manage_controllers(detected_controllers));
         ui.launch_ui()
     }
 
     // This is the main loop for the server that receives packets and sends them to the input
     // handling
-    async fn server_loop(
-        &mut self,
-        buf: &mut [u8; 256],
-        virt_joystick: &mut VirtualJoystick,
-        sock: &UdpSocket,
-    ) -> Result<()> {
+    async fn server_loop(mut self) -> Result<()> {
+        let mut buf: [u8; 256] = [0; 256];
+        let mut virt_joystick = VirtualJoystickBuilder::new()?
+            .enable_buttons_bitmask(self.enabled_buttons)?
+            .enable_axes_bitmask(self.enabled_axes)?
+            .build()?;
+        let sock = UdpSocket::bind(self.address.clone())?;
         loop {
-            let _ = timeout(self.timeout_ms, self.get_packet(buf, sock)).await?;
-            let raw = Vec::from(&mut *buf);
+            let _ = timeout(self.timeout_ms, self.get_packet(&mut buf, &sock)).await?;
+            let raw = Vec::from(&mut buf);
             let packet: StarboardInputPacket = deserialize(raw)?;
-            self.handle_packet(virt_joystick, packet)?;
+            self.handle_packet(&mut virt_joystick, packet)?;
         }
         Ok(())
     }
