@@ -20,6 +20,7 @@ use crate::{
     evdev_sb::{self, VirtualJoystick},
     fixed_queue::FixedQueue,
     input::{StarboardInput, StarboardInputPacket},
+    server_ui::StarboardServerUI,
     string::StarboardString,
 };
 
@@ -186,6 +187,18 @@ pub struct StarboardServer {
 }
 
 impl StarboardServer {
+    // Public facing function to run the server
+    pub fn run(&mut self) -> Result<()> {
+        let mut ui = StarboardServerUI::new(
+            self.detected_controllers.clone(),
+            self.active_controllers.clone(),
+        );
+
+        // TODO: Launch `server_loop`
+        tokio::spawn(manage_controllers(self.detected_controllers.clone()));
+        ui.launch_ui()
+    }
+
     // This is the main loop for the server that receives packets and sends them to the input
     // handling
     async fn server_loop(
@@ -194,7 +207,6 @@ impl StarboardServer {
         virt_joystick: &mut VirtualJoystick,
         sock: &UdpSocket,
     ) -> Result<()> {
-        tokio::spawn(manage_controllers(self.detected_controllers.clone()));
         loop {
             let _ = timeout(self.timeout_ms, self.get_packet(buf, sock)).await?;
             let raw = Vec::from(&mut *buf);
