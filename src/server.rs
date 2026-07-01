@@ -100,7 +100,7 @@ impl StarboardServerBuilder {
         let enabled_axes = self.enabled_axes;
         let timeout_ms = Duration::from_millis(self.timeout_ms);
         let detected_controllers: Arc<Mutex<ControllerMap>> = Arc::new(Mutex::new(HashMap::new()));
-        let active_controllers: Vec<u64> = Vec::new();
+        let active_controllers: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(Vec::new()));
 
         StarboardServer {
             address,
@@ -182,7 +182,7 @@ pub struct StarboardServer {
     timeout_ms: Duration,     // The amount of time after which to panic if a packet is not
     // received
     detected_controllers: Arc<Mutex<ControllerMap>>,
-    active_controllers: Vec<u64>,
+    active_controllers: Arc<Mutex<Vec<u64>>>,
 }
 
 impl StarboardServer {
