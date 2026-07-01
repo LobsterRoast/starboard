@@ -24,15 +24,20 @@ pub struct StarboardServerUI {
     page: UIPage,
     selected: ListState,
     detected_controllers: Arc<Mutex<ControllerMap>>,
+    active_controllers: Arc<Mutex<Vec<u64>>>,
 }
 
 impl StarboardServerUI {
-    pub fn new(detected_controllers: Arc<Mutex<ControllerMap>>) -> Self {
+    pub fn new(
+        detected_controllers: Arc<Mutex<ControllerMap>>,
+        active_controllers: Arc<Mutex<Vec<u64>>>,
+    ) -> Self {
         Self {
             running: false,
             page: UIPage::Home,
             selected: ListState::default().with_selected(Some(0)),
             detected_controllers,
+            active_controllers,
         }
     }
 
@@ -82,12 +87,26 @@ impl StarboardServerUI {
     }
 
     fn render_controllers(&mut self, frame: &mut Frame) {
-        if let Ok(detected_controllers) = self.detected_controllers.try_lock() {
+        if let Ok(detected_controllers) = self.detected_controllers.try_lock()
+            && let Ok(active_controllers) = self.active_controllers.try_lock()
+        {
             let detected_controller_names = detected_controllers
                 .values()
                 .map(|diagnostic| -> String { (*diagnostic.name()).into() });
+
+            // The `None` values
+            // being filtered out are ID's that
+            // for some reason are present in
+            // `active_controllers` but absent
+            // from `detected_controllers`
+
+            let active_controller_names = active_controllers
+                .iter()
+                .filter_map(|id| detected_controllers.get(id))
+                .map(|diagnostic| -> String { (*diagnostic.name()).into() });
+
             let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]).horizontal_margin(5);
-            let active_list = List::new(["Controller 1", "Controller 2"])
+            let active_list = List::new(active_controller_names)
                 .block(Block::bordered().title("Active Controllers"))
                 .style(LAVENDER);
             let detected_list = List::new(detected_controller_names)
