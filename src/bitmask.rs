@@ -1,5 +1,6 @@
 use core::iter::{FromIterator, IntoIterator};
 
+use crate::input::IntoID;
 use bincode::{Decode, Encode};
 use evdev::{AbsoluteAxisCode, KeyCode};
 
@@ -92,8 +93,7 @@ impl FromIterator<KeyCode> for Bitmask {
         let mut raw: u32 = 0;
         value
             .into_iter()
-            .map(|code| code.0 as u32)
-            .filter(|code| *code < LEN)
+            .filter_map(|code| code.into_id().ok())
             .for_each(|code| raw |= code);
         Bitmask { raw, size: LEN }
     }
@@ -108,8 +108,7 @@ impl FromIterator<AbsoluteAxisCode> for Bitmask {
         let mut raw: u32 = 0;
         value
             .into_iter()
-            .map(|code| code.0 as u32)
-            .filter(|code| *code < LEN)
+            .filter_map(|code| code.into_id().ok())
             .for_each(|code| raw |= code);
         Bitmask { raw, size: LEN }
     }
