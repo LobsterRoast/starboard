@@ -81,7 +81,7 @@ pub struct StarboardServerBuilder {
 }
 
 impl StarboardServerBuilder {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             ip: [0; 4],
             port: 8080,
