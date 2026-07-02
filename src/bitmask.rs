@@ -1,4 +1,7 @@
+use core::iter::{FromIterator, IntoIterator};
+
 use bincode::{Decode, Encode};
+use evdev::{AbsoluteAxisCode, KeyCode};
 
 // This struct will contain the public
 // interface for using a bitmask
@@ -77,6 +80,38 @@ impl IntoIterator for Bitmask {
             bit: 0,
             size: self.size,
         }
+    }
+}
+
+impl FromIterator<KeyCode> for Bitmask {
+    fn from_iter<T>(value: T) -> Bitmask
+    where
+        T: IntoIterator<Item = KeyCode>,
+    {
+        const LEN: u32 = 15;
+        let mut raw: u32 = 0;
+        value
+            .into_iter()
+            .map(|code| code.0 as u32)
+            .filter(|code| *code < LEN)
+            .for_each(|code| raw |= code);
+        Bitmask { raw, size: LEN }
+    }
+}
+
+impl FromIterator<AbsoluteAxisCode> for Bitmask {
+    fn from_iter<T>(value: T) -> Bitmask
+    where
+        T: IntoIterator<Item = AbsoluteAxisCode>,
+    {
+        const LEN: u32 = 8;
+        let mut raw: u32 = 0;
+        value
+            .into_iter()
+            .map(|code| code.0 as u32)
+            .filter(|code| *code < LEN)
+            .for_each(|code| raw |= code);
+        Bitmask { raw, size: LEN }
     }
 }
 
