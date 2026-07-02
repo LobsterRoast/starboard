@@ -23,8 +23,8 @@ use crate::{
 #[tokio::main]
 async fn main() -> Result<()> {
     let server = StarboardServerBuilder::new()
-        .enable_buttons(SUPPORTED_BUTTONS)
-        .enable_axes(SUPPORTED_AXES)
+        .enable_buttons(SUPPORTED_BUTTONS)?
+        .enable_axes(SUPPORTED_AXES)?
         .set_timeout(15000)
         .build()
         .run();
