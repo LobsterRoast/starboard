@@ -19,7 +19,7 @@ use crate::{
     datagram::{BroadcastPacket, deserialize, serialize},
     evdev_sb::{self, VirtualJoystick, VirtualJoystickBuilder},
     fixed_queue::FixedQueue,
-    input::{StarboardInput, StarboardInputPacket},
+    input::{IntoID, StarboardInput, StarboardInputPacket},
     server_ui::StarboardServerUI,
     string::StarboardString,
 };
@@ -85,8 +85,8 @@ impl StarboardServerBuilder {
         Self {
             ip: [0; 4],
             port: 8080,
-            enabled_buttons: Bitmask::new(14),
-            enabled_axes: Bitmask::new(14),
+            enabled_buttons: Bitmask::new(15),
+            enabled_axes: Bitmask::new(15),
             timeout_ms: 60000,
         }
     }
@@ -127,43 +127,43 @@ impl StarboardServerBuilder {
     }
 
     // Enable `button` on the server
-    pub fn enable_button(self, button: KeyCode) -> Self {
+    pub fn enable_button(self, button: KeyCode) -> Result<Self> {
         let mut builder = self;
-        let button_code: u32 = button.0.into();
+        let button_code: u32 = button.into_id()?;
         builder.enabled_buttons.write_bit(button_code, true);
-        builder
+        Ok(builder)
     }
 
     // Enable each button in `buttons` on the server
-    pub fn enable_buttons<T>(self, buttons: T) -> Self
+    pub fn enable_buttons<T>(self, buttons: T) -> Result<Self>
     where
         T: IntoIterator<Item = KeyCode>,
     {
         let mut builder = self;
         for button in buttons {
-            builder = builder.enable_button(button);
+            builder = builder.enable_button(button)?;
         }
-        builder
+        Ok(builder)
     }
 
     // Enable `axis` on the server
-    pub fn enable_axis(self, axis: AbsoluteAxisCode) -> Self {
+    pub fn enable_axis(self, axis: AbsoluteAxisCode) -> Result<Self> {
         let mut builder = self;
-        let axis_code: u32 = axis.0.into();
+        let axis_code: u32 = axis.into_id()?;
         builder.enabled_axes.write_bit(axis_code, true);
-        builder
+        Ok(builder)
     }
 
     // Enable each axes in `axes` on the server
-    pub fn enable_axes<T>(self, axes: T) -> Self
+    pub fn enable_axes<T>(self, axes: T) -> Result<Self>
     where
         T: IntoIterator<Item = AbsoluteAxisCode>,
     {
         let mut builder = self;
         for axis in axes {
-            builder = builder.enable_axis(axis);
+            builder = builder.enable_axis(axis)?;
         }
-        builder
+        Ok(builder)
     }
 
     // Sets the period of time after which the server will timeout if a packet is not received
