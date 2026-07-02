@@ -13,11 +13,20 @@ mod test;
 
 use anyhow::Result;
 
-use crate::client::StarboardClient;
+use crate::{
+    bitmask::Bitmask,
+    client::StarboardClient,
+    evdev_sb::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
+    server::StarboardServerBuilder,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let client = StarboardClient::new("Test Client", 0)?;
-    let _ = client.run().await?;
+    let server = StarboardServerBuilder::new()
+        .enable_buttons(SUPPORTED_BUTTONS)
+        .enable_axes(SUPPORTED_AXES)
+        .set_timeout(15000)
+        .build()
+        .run();
     Ok(())
 }
