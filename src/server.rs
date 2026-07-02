@@ -92,7 +92,7 @@ impl StarboardServerBuilder {
     }
 
     // Build the server
-    fn build(self) -> StarboardServer {
+    pub fn build(self) -> StarboardServer {
         use crate::datagram::format_addr;
 
         // Defaults to returning 0.0.0.0:0
@@ -113,21 +113,21 @@ impl StarboardServerBuilder {
         }
     }
     // Set the target IP of the server
-    fn set_ip(self, ip: [u8; 4]) -> Self {
+    pub fn set_ip(self, ip: [u8; 4]) -> Self {
         let mut builder = self;
         builder.ip = ip;
         builder
     }
 
     // Set the target port of the server
-    fn set_port(self, port: u16) -> Self {
+    pub fn set_port(self, port: u16) -> Self {
         let mut builder = self;
         builder.port = port;
         builder
     }
 
     // Enable `button` on the server
-    fn enable_button(self, button: KeyCode) -> Self {
+    pub fn enable_button(self, button: KeyCode) -> Self {
         let mut builder = self;
         let button_code: u32 = button.0.into();
         builder.enabled_buttons.write_bit(button_code, true);
@@ -135,7 +135,7 @@ impl StarboardServerBuilder {
     }
 
     // Enable each button in `buttons` on the server
-    fn enable_buttons<T>(self, buttons: T) -> Self
+    pub fn enable_buttons<T>(self, buttons: T) -> Self
     where
         T: IntoIterator<Item = KeyCode>,
     {
@@ -147,7 +147,7 @@ impl StarboardServerBuilder {
     }
 
     // Enable `axis` on the server
-    fn enable_axis(self, axis: AbsoluteAxisCode) -> Self {
+    pub fn enable_axis(self, axis: AbsoluteAxisCode) -> Self {
         let mut builder = self;
         let axis_code: u32 = axis.0.into();
         builder.enabled_axes.write_bit(axis_code, true);
@@ -155,7 +155,7 @@ impl StarboardServerBuilder {
     }
 
     // Enable each axes in `axes` on the server
-    fn enable_axes<T>(self, axes: T) -> Self
+    pub fn enable_axes<T>(self, axes: T) -> Self
     where
         T: IntoIterator<Item = AbsoluteAxisCode>,
     {
@@ -167,7 +167,7 @@ impl StarboardServerBuilder {
     }
 
     // Sets the period of time after which the server will timeout if a packet is not received
-    fn set_timeout(self, timeout_ms: u64) -> Self {
+    pub fn set_timeout(self, timeout_ms: u64) -> Self {
         let mut builder = self;
         builder.timeout_ms = timeout_ms;
         builder
