@@ -13,12 +13,30 @@ mod test;
 
 use anyhow::Result;
 
+use clap::{Arg, ArgAction, Command, value_parser};
+
 use crate::{
     bitmask::Bitmask,
     client::StarboardClient,
     evdev_sb::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
     server::StarboardServerBuilder,
 };
+
+// TODO: Implement the args
+// Defines all the arguments that 'server' can take in
+fn server_args() -> Vec<Arg> {
+    vec![]
+}
+
+// Defines a command: 'server'
+fn server() -> Command {
+    Command::new("server").args(server_args())
+}
+
+// Defines all the commands
+fn starboard_commands() -> Vec<Command> {
+    vec![server()]
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
