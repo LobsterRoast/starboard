@@ -49,7 +49,7 @@ fn starboard_commands() -> Vec<Command> {
     vec![client_cmd(), server_cmd()]
 }
 
-fn server(subcommand_name: &str, subcommand_matches: &ArgMatches) -> Result<()> {
+fn server(subcommand_matches: &ArgMatches) -> Result<()> {
     StarboardServerBuilder::new(64646, 46464)
         .enable_buttons(SUPPORTED_BUTTONS)?
         .enable_axes(SUPPORTED_AXES)?
@@ -57,7 +57,7 @@ fn server(subcommand_name: &str, subcommand_matches: &ArgMatches) -> Result<()> 
         .run()
 }
 
-async fn client(subcommand_name: &str, subcommand_matches: &ArgMatches) -> Result<()> {
+async fn client(subcommand_matches: &ArgMatches) -> Result<()> {
     StarboardClient::new("Starboard Gamepad", 7474)?.run().await
 }
 
@@ -71,8 +71,8 @@ async fn main() -> Result<()> {
     let (subcommand_name, subcommand_matches) = matches.subcommand().unwrap();
 
     match subcommand_name {
-        "server" => server(subcommand_name, subcommand_matches)?,
-        "client" => client(subcommand_name, subcommand_matches).await?,
+        "server" => server(subcommand_matches)?,
+        "client" => client(subcommand_matches).await?,
         &_ => {}
     }
     Ok(())
