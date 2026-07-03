@@ -13,7 +13,7 @@ mod test;
 
 use anyhow::Result;
 
-use clap::{Arg, ArgAction, Command, value_parser};
+use clap::{Arg, ArgAction, ArgMatches, Command, value_parser};
 
 use crate::{
     bitmask::Bitmask,
@@ -48,6 +48,15 @@ fn starboard_commands() -> Vec<Command> {
     vec![client_cmd(), server_cmd()]
 }
 
+fn server(subcommand_name: &str, subcommand_matches: &ArgMatches) -> Result<()> {
+    StarboardServerBuilder::new()
+        .enable_buttons(SUPPORTED_BUTTONS)?
+        .enable_axes(SUPPORTED_AXES)?
+        .set_timeout(15000)
+        .build()
+        .run()
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = Command::new("starboard")
@@ -55,11 +64,11 @@ async fn main() -> Result<()> {
         .subcommand_required(true)
         .get_matches();
 
-    let server = StarboardServerBuilder::new()
-        .enable_buttons(SUPPORTED_BUTTONS)?
-        .enable_axes(SUPPORTED_AXES)?
-        .set_timeout(15000)
-        .build()
-        .run();
+    let (subcommand_name, subcommand_matches) = matches.subcommand().unwrap();
+
+    match subcommand_name {
+        "server" => server(subcommand_name, subcommand_matches)?,
+        &_ => {}
+    }
     Ok(())
 }
