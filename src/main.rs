@@ -57,6 +57,10 @@ fn server(subcommand_name: &str, subcommand_matches: &ArgMatches) -> Result<()> 
         .run()
 }
 
+async fn client(subcommand_name: &str, subcommand_matches: &ArgMatches) -> Result<()> {
+    StarboardClient::new("Starboard Gamepad", 7474)?.run().await
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = Command::new("starboard")
@@ -68,6 +72,7 @@ async fn main() -> Result<()> {
 
     match subcommand_name {
         "server" => server(subcommand_name, subcommand_matches)?,
+        "client" => client(subcommand_name, subcommand_matches).await?,
         &_ => {}
     }
     Ok(())
