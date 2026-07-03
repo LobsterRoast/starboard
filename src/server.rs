@@ -4,10 +4,7 @@ use std::net::UdpSocket;
 
 use evdev::{AbsoluteAxisCode, KeyCode};
 
-use tokio::{
-    sync::{Mutex, MutexGuard},
-    time::timeout,
-};
+use tokio::sync::{Mutex, MutexGuard};
 
 use chrono::Local;
 
@@ -77,7 +74,6 @@ pub struct StarboardServerBuilder {
     port: u16,
     enabled_buttons: Bitmask,
     enabled_axes: Bitmask,
-    timeout_ms: u64,
 }
 
 impl StarboardServerBuilder {
@@ -87,7 +83,6 @@ impl StarboardServerBuilder {
             port: 8080,
             enabled_buttons: Bitmask::new(15),
             enabled_axes: Bitmask::new(15),
-            timeout_ms: 60000,
         }
     }
 
@@ -99,7 +94,6 @@ impl StarboardServerBuilder {
         let address = format_addr(self.ip, self.port);
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
-        let timeout_ms = Duration::from_millis(self.timeout_ms);
         let detected_controllers: Arc<Mutex<ControllerMap>> = Arc::new(Mutex::new(HashMap::new()));
         let active_controllers: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(Vec::new()));
 
@@ -107,7 +101,6 @@ impl StarboardServerBuilder {
             address,
             enabled_buttons,
             enabled_axes,
-            timeout_ms,
             detected_controllers,
             active_controllers,
         }
@@ -165,13 +158,6 @@ impl StarboardServerBuilder {
         }
         Ok(builder)
     }
-
-    // Sets the period of time after which the server will timeout if a packet is not received
-    pub fn set_timeout(self, timeout_ms: u64) -> Self {
-        let mut builder = self;
-        builder.timeout_ms = timeout_ms;
-        builder
-    }
 }
 
 pub struct StarboardServer {
@@ -180,8 +166,6 @@ pub struct StarboardServer {
     address: String,          // i.e. {ip}:{port}
     enabled_buttons: Bitmask, // Bitmask representing all the enabled buttons on the server
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
-    timeout_ms: Duration,     // The amount of time after which to panic if a packet is not
-    // received
     detected_controllers: Arc<Mutex<ControllerMap>>,
     active_controllers: Arc<Mutex<Vec<u64>>>,
 }
@@ -210,7 +194,7 @@ impl StarboardServer {
             .build()?;
         let sock = UdpSocket::bind(self.address.clone())?;
         loop {
-            let _ = timeout(self.timeout_ms, self.get_packet(&mut buf, &sock)).await?;
+            let _ = self.get_packet(&mut buf, &sock).await;
             let raw = Vec::from(&mut buf);
             let packet: StarboardInputPacket = deserialize(raw)?;
             self.handle_packet(&mut virt_joystick, packet)?;
