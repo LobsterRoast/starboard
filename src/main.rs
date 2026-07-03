@@ -29,7 +29,7 @@ fn client_args() -> Vec<Arg> {
 }
 
 // Defines a command: 'client'
-fn client() -> Command {
+fn client_cmd() -> Command {
     Command::new("client").args(client_args())
 }
 
@@ -39,13 +39,13 @@ fn server_args() -> Vec<Arg> {
     vec![]
 }
 // Defines a command: 'server'
-fn server() -> Command {
+fn server_cmd() -> Command {
     Command::new("server").args(server_args())
 }
 
 // Defines all the commands
 fn starboard_commands() -> Vec<Command> {
-    vec![client(), server()]
+    vec![client_cmd(), server_cmd()]
 }
 
 #[tokio::main]
