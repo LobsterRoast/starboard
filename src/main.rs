@@ -50,6 +50,11 @@ fn starboard_commands() -> Vec<Command> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let matches = Command::new("starboard")
+        .subcommands(starboard_commands())
+        .subcommand_required(true)
+        .get_matches();
+
     let server = StarboardServerBuilder::new()
         .enable_buttons(SUPPORTED_BUTTONS)?
         .enable_axes(SUPPORTED_AXES)?
