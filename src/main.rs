@@ -35,7 +35,9 @@ fn client_cmd() -> Command {
 
 // TODO: Implement the args
 // Defines all the arguments that 'server' can take in
-fn server_args() -> Vec<Arg> {}
+fn server_args() -> Vec<Arg> {
+    vec![]
+}
 
 // Defines a command: 'server'
 fn server_cmd() -> Command {
@@ -48,7 +50,7 @@ fn starboard_commands() -> Vec<Command> {
 }
 
 fn server(subcommand_name: &str, subcommand_matches: &ArgMatches) -> Result<()> {
-    StarboardServerBuilder::new()
+    StarboardServerBuilder::new(64646, 46464)
         .enable_buttons(SUPPORTED_BUTTONS)?
         .enable_axes(SUPPORTED_AXES)?
         .build()

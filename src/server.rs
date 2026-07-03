@@ -13,7 +13,7 @@ use std::sync::Arc;
 use crate::{
     bitmask::Bitmask,
     client::StarboardClient,
-    datagram::{BroadcastPacket, deserialize, serialize},
+    datagram::{BroadcastPacket, deserialize, format_addr, serialize},
     evdev_sb::{self, VirtualJoystick, VirtualJoystickBuilder},
     fixed_queue::FixedQueue,
     input::{IntoID, StarboardInput, StarboardInputPacket},
@@ -70,17 +70,17 @@ impl From<BroadcastPacket> for ControllerDiagnostic {
 
 pub struct StarboardServerBuilder {
     // A struct to help build a server
-    ip: [u8; 4],
-    port: u16,
+    serial_port: u16,
+    device_search_port: u16,
     enabled_buttons: Bitmask,
     enabled_axes: Bitmask,
 }
 
 impl StarboardServerBuilder {
-    pub fn new() -> Self {
+    pub fn new(serial_port: u16, device_search_port: u16) -> Self {
         Self {
-            ip: [0; 4],
-            port: 8080,
+            serial_port,
+            device_search_port,
             enabled_buttons: Bitmask::new(15),
             enabled_axes: Bitmask::new(15),
         }
@@ -88,35 +88,21 @@ impl StarboardServerBuilder {
 
     // Build the server
     pub fn build(self) -> StarboardServer {
-        use crate::datagram::format_addr;
-
-        // Defaults to returning 0.0.0.0:0
-        let address = format_addr(self.ip, self.port);
+        let serial_port = self.serial_port;
+        let device_search_port = self.device_search_port;
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
         let detected_controllers: Arc<Mutex<ControllerMap>> = Arc::new(Mutex::new(HashMap::new()));
         let active_controllers: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(Vec::new()));
 
         StarboardServer {
-            address,
+            serial_port,
+            device_search_port,
             enabled_buttons,
             enabled_axes,
             detected_controllers,
             active_controllers,
         }
-    }
-    // Set the target IP of the server
-    pub fn set_ip(self, ip: [u8; 4]) -> Self {
-        let mut builder = self;
-        builder.ip = ip;
-        builder
-    }
-
-    // Set the target port of the server
-    pub fn set_port(self, port: u16) -> Self {
-        let mut builder = self;
-        builder.port = port;
-        builder
     }
 
     // Enable `button` on the server
@@ -163,7 +149,8 @@ impl StarboardServerBuilder {
 pub struct StarboardServer {
     // The server is what will receive input packets from the controller and simulate a virtual
     // joystick on another PC
-    address: String,          // i.e. {ip}:{port}
+    serial_port: u16,
+    device_search_port: u16,
     enabled_buttons: Bitmask, // Bitmask representing all the enabled buttons on the server
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
     detected_controllers: Arc<Mutex<ControllerMap>>,
@@ -178,9 +165,10 @@ impl StarboardServer {
             self.active_controllers.clone(),
         );
 
+        let device_search_port = self.device_search_port.clone();
         let detected_controllers = Arc::clone(&self.detected_controllers);
         tokio::spawn(async move { self.server_loop() });
-        tokio::spawn(manage_controllers(detected_controllers));
+        tokio::spawn(manage_controllers(device_search_port, detected_controllers));
         ui.launch_ui()
     }
 
@@ -192,7 +180,7 @@ impl StarboardServer {
             .enable_buttons_bitmask(self.enabled_buttons)?
             .enable_axes_bitmask(self.enabled_axes)?
             .build()?;
-        let sock = UdpSocket::bind(self.address.clone())?;
+        let sock = UdpSocket::bind(format_addr([0, 0, 0, 0], self.serial_port))?;
         loop {
             let _ = self.get_packet(&mut buf, &sock).await;
             let raw = Vec::from(&mut buf);
@@ -223,8 +211,11 @@ impl StarboardServer {
 }
 
 // Manage controller detection and timeouts
-async fn manage_controllers(mut detected_controllers: Arc<Mutex<ControllerMap>>) -> Result<()> {
-    let sock = tokio::net::UdpSocket::bind("0.0.0.0:64646").await?;
+async fn manage_controllers(
+    port: u16,
+    mut detected_controllers: Arc<Mutex<ControllerMap>>,
+) -> Result<()> {
+    let sock = tokio::net::UdpSocket::bind(format_addr([0, 0, 0, 0], port)).await?;
     let mut raw: [u8; 4] = [0; 4];
     loop {
         {
