@@ -23,11 +23,21 @@ use crate::{
 };
 
 // TODO: Implement the args
+// Defines all the arguments that 'client' can take in
+fn client_args() -> Vec<Arg> {
+    vec![]
+}
+
+// Defines a command: 'client'
+fn client() -> Command {
+    Command::new("client").args(client_args())
+}
+
+// TODO: Implement the args
 // Defines all the arguments that 'server' can take in
 fn server_args() -> Vec<Arg> {
     vec![]
 }
-
 // Defines a command: 'server'
 fn server() -> Command {
     Command::new("server").args(server_args())
@@ -35,7 +45,7 @@ fn server() -> Command {
 
 // Defines all the commands
 fn starboard_commands() -> Vec<Command> {
-    vec![server()]
+    vec![client(), server()]
 }
 
 #[tokio::main]
