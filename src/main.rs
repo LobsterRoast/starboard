@@ -36,7 +36,10 @@ fn client_cmd() -> Command {
 // TODO: Implement the args
 // Defines all the arguments that 'server' can take in
 fn server_args() -> Vec<Arg> {
-    vec![]
+    vec![
+        Arg::new("serial_port").value_parser(clap::value_parser!(u16)),
+        Arg::new("device_search_port").value_parser(clap::value_parser!(u16))
+    ]
 }
 
 // Defines a command: 'server'
