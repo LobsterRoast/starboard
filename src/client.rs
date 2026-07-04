@@ -16,24 +16,26 @@ use tokio::time::{Duration, sleep};
 pub struct StarboardClient {
     id: u64,
     name: StarboardString,
-    port: u16,
+    serial_port: u16,
+    device_search_port: u16,
 }
 
 impl StarboardClient {
-    pub fn new(name: &str, port: u16) -> Result<Self> {
+    pub fn new(name: &str, serial_port: u16, device_search_port: u16) -> Result<Self> {
         // TODO: Create a system for randomly generating an ID
         Ok(Self {
             id: 0,
             name: StarboardString::try_from(name)?,
-            port,
+            serial_port,
+            device_search_port
         })
     }
 
     // Run the client loop
     pub async fn run(&self) -> Result<()> {
-        tokio::spawn(broadcast_presence(self.id, self.name, self.port));
+        tokio::spawn(broadcast_presence(self.id, self.name, self.device_search_port));
         let device = DeviceWrapper::get_steam_deck()?;
-        let addr = format!("0.0.0.0:{}", self.port);
+        let addr = format!("255.255.255.255:{}", self.serial_port);
         let mut sock = UdpSocket::bind(&addr).await?;
         let _ = sock.connect(addr).await?;
         loop {
@@ -61,7 +63,7 @@ impl StarboardClient {
 
 // Broadcast a client's presence to server's on the local network
 async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result<()> {
-    let addr = format!("0.0.0.0:{}", port);
+    let addr = format!("255.255.255.255:{}", port);
     let mut socket = UdpSocket::bind(addr).await?;
     let _ = socket.set_broadcast(true);
     let packet = BroadcastPacket::new(id, name)?;
