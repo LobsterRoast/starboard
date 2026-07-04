@@ -37,8 +37,8 @@ fn client_cmd() -> Command {
 // Defines all the arguments that 'server' can take in
 fn server_args() -> Vec<Arg> {
     vec![
-        Arg::new("serial_port").value_parser(clap::value_parser!(u16)),
-        Arg::new("device_search_port").value_parser(clap::value_parser!(u16))
+        Arg::new("serial_port").value_parser(clap::value_parser!(u16)).default_value("54321"),
+        Arg::new("device_search_port").value_parser(clap::value_parser!(u16)).default_value("61000")
     ]
 }
 
@@ -53,7 +53,10 @@ fn starboard_commands() -> Vec<Command> {
 }
 
 fn server(subcommand_matches: &ArgMatches) -> Result<()> {
-    StarboardServerBuilder::new(64646, 46464)
+    // Safety of using `unwrap()`: `serial_port` and `device_search_port` both will default if unset
+    let serial_port = *(subcommand_matches.get_one::<u16>("serial_port").unwrap());
+    let device_search_port = *(subcommand_matches.get_one::<u16>("device_search_port").unwrap());
+    StarboardServerBuilder::new(serial_port, device_search_port)
         .enable_buttons(SUPPORTED_BUTTONS)?
         .enable_axes(SUPPORTED_AXES)?
         .build()
