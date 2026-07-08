@@ -8,6 +8,10 @@ mod input;
 mod server;
 mod server_ui;
 mod string;
+
+#[cfg(feature = "dummy-steam-deck")]
+mod dummy_steam_deck;
+
 #[cfg(test)]
 mod test;
 
