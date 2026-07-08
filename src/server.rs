@@ -179,7 +179,7 @@ impl StarboardServer {
         let mut virt_joystick = VirtualJoystickBuilder::new()?
             .enable_buttons_bitmask(self.enabled_buttons)?
             .enable_axes_bitmask(self.enabled_axes)?
-            .build()?;
+            .build("PLACEHOLDER")?; // TODO: Make name customizable
         let sock = UdpSocket::bind(format_addr([0, 0, 0, 0], self.serial_port))?;
         loop {
             let _ = self.get_packet(&mut buf, &sock).await;

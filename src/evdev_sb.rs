@@ -68,9 +68,11 @@ impl VirtualJoystickBuilder<'_> {
     }
 
     // Build a VirtualJoystick
-    pub fn build(self) -> Result<VirtualJoystick> {
+    // A name is required to build a joystick, so it's passed in here to ensure that it's set
+    pub fn build(self, name: &str) -> Result<VirtualJoystick> {
+        let raw = self.raw.name(name);
         Ok(VirtualJoystick {
-            raw: { self.raw.build()? },
+            raw: { raw.build()? },
         })
     }
 

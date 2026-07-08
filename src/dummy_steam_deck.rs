@@ -16,7 +16,7 @@ impl DummySteamDeck {
                 .unwrap()
                 .enable_axes_bitmask(axes)
                 .unwrap()
-                .build()
+                .build("Dummy Steam Deck")
                 .unwrap(),
         }
     }
