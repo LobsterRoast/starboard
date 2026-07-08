@@ -143,6 +143,8 @@ impl DeviceWrapper {
     // Initialized a `DeviceWrapper` using `find_best_evdev_device()` to find the best device
     pub fn get_steam_deck() -> Result<Self> {
         let device = find_best_evdev_device()?;
+        printdbg!("Selected Device: {}", device.name().unwrap());
+
         let supported_buttons: Vec<KeyCode> = device
             .supported_keys()
             .unwrap_or(&AttributeSet::new())
