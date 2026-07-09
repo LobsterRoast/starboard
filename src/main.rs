@@ -30,12 +30,12 @@ use crate::{
 // Defines all the arguments that 'client' can take in
 fn client_args() -> Vec<Arg> {
     vec![
-        Arg::new("Serial Port")
+        Arg::new("serial-port")
             .value_parser(clap::value_parser!(u16))
             .default_value("54321")
             .long("serial-port")
             .help("The port on which the server will send input packets to servers"),
-        Arg::new("Device Search Port")
+        Arg::new("device-search-port")
             .value_parser(clap::value_parser!(u16))
             .default_value("61000")
             .long("device-search-port")
@@ -52,17 +52,17 @@ fn client_cmd() -> Command {
 // Defines all the arguments that 'server' can take in
 fn server_args() -> Vec<Arg> {
     vec![
-        Arg::new("Serial Port")
+        Arg::new("serial-port")
             .value_parser(clap::value_parser!(u16))
             .default_value("54321")
             .long("serial-port")
             .help("The port on which the server will receive input packets from controllers"),
-        Arg::new("Device Search Port")
+        Arg::new("device-search-port")
             .value_parser(clap::value_parser!(u16))
             .default_value("61000")
             .long("device-search-port")
             .help("The port on which the server will search for controllers running the starboard client"),
-        Arg::new("Name")
+        Arg::new("name")
             .default_value("Starboard Virtual Gamepad")
             .long("name")
             .short('n'),
@@ -83,7 +83,7 @@ fn server(subcommand_matches: &ArgMatches) -> Result<()> {
     // Safety of using `unwrap()`: `serial_port` and `device_search_port` both will default if unset
     let serial_port = *(subcommand_matches.get_one::<u16>("serial-port").unwrap());
     let device_search_port = *(subcommand_matches
-        .get_one::<u16>("device-search_port")
+        .get_one::<u16>("device-search-port")
         .unwrap());
     let name = subcommand_matches
         .get_one::<String>("name")
@@ -98,9 +98,9 @@ fn server(subcommand_matches: &ArgMatches) -> Result<()> {
 
 async fn client(subcommand_matches: &ArgMatches) -> Result<()> {
     // Safety of using `unwrap()`: `serial_port` and `device_search_port` both will default if unset
-    let serial_port = *(subcommand_matches.get_one::<u16>("serial_port").unwrap());
+    let serial_port = *(subcommand_matches.get_one::<u16>("serial-port").unwrap());
     let device_search_port = *(subcommand_matches
-        .get_one::<u16>("device_search_port")
+        .get_one::<u16>("device-search-port")
         .unwrap());
     StarboardClient::new("Starboard Gamepad", serial_port, device_search_port)?
         .run()
