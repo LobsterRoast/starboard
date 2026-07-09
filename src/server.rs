@@ -87,7 +87,7 @@ impl StarboardServerBuilder {
     }
 
     // Build the server
-    pub fn build(self) -> StarboardServer {
+    pub fn build(self, name: String) -> StarboardServer {
         let serial_port = self.serial_port;
         let device_search_port = self.device_search_port;
         let enabled_buttons = self.enabled_buttons;
@@ -102,6 +102,7 @@ impl StarboardServerBuilder {
             enabled_axes,
             detected_controllers,
             active_controllers,
+            name,
         }
     }
 
@@ -155,6 +156,7 @@ pub struct StarboardServer {
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
     detected_controllers: Arc<Mutex<ControllerMap>>,
     active_controllers: Arc<Mutex<Vec<u64>>>,
+    name: String,
 }
 
 impl StarboardServer {
@@ -179,7 +181,7 @@ impl StarboardServer {
         let mut virt_joystick = VirtualJoystickBuilder::new()?
             .enable_buttons_bitmask(self.enabled_buttons)?
             .enable_axes_bitmask(self.enabled_axes)?
-            .build("PLACEHOLDER")?; // TODO: Make name customizable
+            .build(&self.name)?;
         let sock = UdpSocket::bind(format_addr([0, 0, 0, 0], self.serial_port))?;
         loop {
             let _ = self.get_packet(&mut buf, &sock).await;
