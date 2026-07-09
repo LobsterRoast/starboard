@@ -30,12 +30,16 @@ use crate::{
 // Defines all the arguments that 'client' can take in
 fn client_args() -> Vec<Arg> {
     vec![
-        Arg::new("serial_port")
+        Arg::new("Serial Port")
             .value_parser(clap::value_parser!(u16))
-            .default_value("54321"),
-        Arg::new("device_search_port")
+            .default_value("54321")
+            .long("serial-port")
+            .help("The port on which the server will send input packets to servers"),
+        Arg::new("Device Search Port")
             .value_parser(clap::value_parser!(u16))
-            .default_value("61000"),
+            .default_value("61000")
+            .long("device-search-port")
+            .help("The port on which the server will broadcast its presence to servers"),
     ]
 }
 
@@ -48,13 +52,20 @@ fn client_cmd() -> Command {
 // Defines all the arguments that 'server' can take in
 fn server_args() -> Vec<Arg> {
     vec![
-        Arg::new("serial_port")
+        Arg::new("Serial Port")
             .value_parser(clap::value_parser!(u16))
-            .default_value("54321"),
-        Arg::new("device_search_port")
+            .default_value("54321")
+            .long("serial-port")
+            .help("The port on which the server will receive input packets from controllers"),
+        Arg::new("Device Search Port")
             .value_parser(clap::value_parser!(u16))
-            .default_value("61000"),
-        Arg::new("name").default_value("Starboard Virtual Gamepad"),
+            .default_value("61000")
+            .long("device-search-port")
+            .help("The port on which the server will search for controllers running the starboard client"),
+        Arg::new("Name")
+            .default_value("Starboard Virtual Gamepad")
+            .long("name")
+            .short('n'),
     ]
 }
 
@@ -70,9 +81,9 @@ fn starboard_commands() -> Vec<Command> {
 
 fn server(subcommand_matches: &ArgMatches) -> Result<()> {
     // Safety of using `unwrap()`: `serial_port` and `device_search_port` both will default if unset
-    let serial_port = *(subcommand_matches.get_one::<u16>("serial_port").unwrap());
+    let serial_port = *(subcommand_matches.get_one::<u16>("serial-port").unwrap());
     let device_search_port = *(subcommand_matches
-        .get_one::<u16>("device_search_port")
+        .get_one::<u16>("device-search_port")
         .unwrap());
     let name = subcommand_matches
         .get_one::<String>("name")
