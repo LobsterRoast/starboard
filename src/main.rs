@@ -66,6 +66,10 @@ fn server_args() -> Vec<Arg> {
             .default_value("Starboard Virtual Gamepad")
             .long("name")
             .short('n'),
+        #[cfg(feature = "debug")]
+        Arg::new("no-ui")
+            .action(ArgAction::SetTrue)
+            .long("no-ui"),
     ]
 }
 
@@ -89,9 +93,11 @@ fn server(subcommand_matches: &ArgMatches) -> Result<()> {
         .get_one::<String>("name")
         .unwrap()
         .to_owned();
+    let no_ui = *subcommand_matches.get_one::<bool>("no-ui").unwrap();
     StarboardServerBuilder::new(serial_port, device_search_port)
         .enable_buttons(SUPPORTED_BUTTONS)?
         .enable_axes(SUPPORTED_AXES)?
+        .disable_ui(no_ui)
         .build(name)
         .run()
 }

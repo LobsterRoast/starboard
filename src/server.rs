@@ -74,6 +74,7 @@ pub struct StarboardServerBuilder {
     device_search_port: u16,
     enabled_buttons: Bitmask,
     enabled_axes: Bitmask,
+    no_ui: bool,
 }
 
 impl StarboardServerBuilder {
@@ -83,6 +84,7 @@ impl StarboardServerBuilder {
             device_search_port,
             enabled_buttons: Bitmask::new(15),
             enabled_axes: Bitmask::new(15),
+            no_ui: false,
         }
     }
 
@@ -94,6 +96,7 @@ impl StarboardServerBuilder {
         let enabled_axes = self.enabled_axes;
         let detected_controllers: Arc<Mutex<ControllerMap>> = Arc::new(Mutex::new(HashMap::new()));
         let active_controllers: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(Vec::new()));
+        let no_ui = self.no_ui;
 
         StarboardServer {
             serial_port,
@@ -103,6 +106,7 @@ impl StarboardServerBuilder {
             detected_controllers,
             active_controllers,
             name,
+            no_ui,
         }
     }
 
@@ -145,6 +149,13 @@ impl StarboardServerBuilder {
         }
         Ok(builder)
     }
+
+    // Only available in debug mode
+    pub fn disable_ui(self, no_ui: bool) -> Self {
+        let mut builder = self;
+        builder.no_ui = no_ui;
+        builder
+    }
 }
 
 pub struct StarboardServer {
@@ -157,6 +168,7 @@ pub struct StarboardServer {
     detected_controllers: Arc<Mutex<ControllerMap>>,
     active_controllers: Arc<Mutex<Vec<u64>>>,
     name: String,
+    no_ui: bool,
 }
 
 impl StarboardServer {
@@ -169,9 +181,10 @@ impl StarboardServer {
 
         let device_search_port = self.device_search_port.clone();
         let detected_controllers = Arc::clone(&self.detected_controllers);
+        let no_ui = self.no_ui.clone();
         tokio::spawn(async move { self.server_loop() });
         tokio::spawn(manage_controllers(device_search_port, detected_controllers));
-        ui.launch_ui()
+        if no_ui { Ok(()) } else { ui.launch_ui() }
     }
 
     // This is the main loop for the server that receives packets and sends them to the input

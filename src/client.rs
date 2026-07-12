@@ -79,6 +79,7 @@ async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result
     let packet = serialize(packet)?;
     loop {
         socket.send(&packet).await?;
+        printdbg!("Device Search Packet Sent.");
         let _ = sleep(Duration::from_secs(15)).await;
     }
 }
