@@ -39,12 +39,12 @@ impl StarboardClient {
             self.name,
             self.device_search_port,
         ));
-        let bind_addr = format!("0.0.0.0:{}", self.serial_port);
         let dest_addr = format!("255.255.255.255:{}", self.serial_port);
         let device = DeviceWrapper::get_steam_deck()?;
-        let mut sock = UdpSocket::bind(bind_addr).await?;
+        let mut sock = UdpSocket::bind("0.0.0.0:0").await?;
         sock.set_broadcast(true)?;
-        let _ = sock.connect(dest_addr).await?;
+        let _ = sock.connect(&dest_addr).await?;
+        printdbg!("Serial Socket connected to {}.", dest_addr);
         loop {
             let packet = self.create_packet(&device)?;
             let _ = self.send_packet(packet, &sock).await?;
@@ -70,11 +70,11 @@ impl StarboardClient {
 
 // Broadcast a client's presence to server's on the local network
 async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result<()> {
-    let bind_addr = format!("0.0.0.0:{}", port);
     let dest_addr = format!("255.255.255.255:{}", port);
-    let mut socket = UdpSocket::bind(bind_addr).await?;
+    let mut socket = UdpSocket::bind("0.0.0.0:0").await?;
     let _ = socket.set_broadcast(true);
-    let _ = socket.connect(dest_addr).await?;
+    let _ = socket.connect(&dest_addr).await?;
+    printdbg!("Device Search Socket connected to {}.", dest_addr);
     let packet = BroadcastPacket::new(id, name)?;
     let packet = serialize(packet)?;
     loop {

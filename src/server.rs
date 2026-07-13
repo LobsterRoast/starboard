@@ -17,6 +17,7 @@ use crate::{
     evdev_sb::{self, VirtualJoystick, VirtualJoystickBuilder},
     fixed_queue::FixedQueue,
     input::{IntoID, StarboardInput, StarboardInputPacket},
+    printdbg,
     server_ui::StarboardServerUI,
     string::StarboardString,
 };
@@ -256,6 +257,7 @@ async fn detect_controllers(
     raw: &mut [u8],
 ) -> Result<()> {
     if let Ok(_) = sock.try_recv(raw) {
+        printdbg!("Balls");
         let packet: BroadcastPacket = deserialize(Vec::from(raw))?;
         insert_controller(detected_controllers, packet);
         Ok(())
