@@ -181,7 +181,7 @@ impl StarboardServer {
 
         let device_search_port = self.device_search_port.clone();
         let detected_controllers = Arc::clone(&self.detected_controllers);
-        let no_ui = self.no_ui.clone();
+        let no_ui = self.no_ui;
         tokio::spawn(async move { self.server_loop() });
         tokio::spawn(manage_controllers(device_search_port, detected_controllers));
         if no_ui { Ok(()) } else { ui.launch_ui() }
