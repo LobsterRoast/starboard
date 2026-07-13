@@ -10,6 +10,13 @@ use bincode::{Decode, Encode};
 use tokio::net::UdpSocket;
 use tokio::time::{Duration, sleep};
 
+// If testing both the client and server on the same device, the loopback address must be used
+// instead of the broadcast address.
+#[cfg(feature = "loopback")]
+static BC_ADDR: &'static str = "127.0.0.1";
+#[cfg(not(feature = "loopback"))]
+static BC_ADDR: &'static str = "255.255.255.255";
+
 // Since all the info needed for the server to see a client is contained
 // in the client struct itself, we can just directly encode and decode
 // the client instead of making a separate packet struct
@@ -39,10 +46,10 @@ impl StarboardClient {
             self.name,
             self.device_search_port,
         ));
-        let dest_addr = format!("255.255.255.255:{}", self.serial_port);
         let device = DeviceWrapper::get_steam_deck()?;
+        let dest_addr = format!("{}:{}", BC_ADDR, self.serial_port);
         let mut sock = UdpSocket::bind("0.0.0.0:0").await?;
-        sock.set_broadcast(true)?;
+        let _ = sock.set_broadcast(true)?;
         let _ = sock.connect(&dest_addr).await?;
         printdbg!("Serial Socket connected to {}.", dest_addr);
         loop {
@@ -70,7 +77,7 @@ impl StarboardClient {
 
 // Broadcast a client's presence to server's on the local network
 async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result<()> {
-    let dest_addr = format!("255.255.255.255:{}", port);
+    let dest_addr = format!("{}:{}", BC_ADDR, port);
     let mut socket = UdpSocket::bind("0.0.0.0:0").await?;
     let _ = socket.set_broadcast(true);
     let _ = socket.connect(&dest_addr).await?;
