@@ -93,7 +93,9 @@ fn server(subcommand_matches: &ArgMatches) -> Result<()> {
         .get_one::<String>("name")
         .unwrap()
         .to_owned();
-    let no_ui = *subcommand_matches.get_one::<bool>("no-ui").unwrap();
+    let no_ui = false;
+    #[cfg(feature = "debug")]
+    let no_ui = subcommand_matches.get_flag("no-ui");
     StarboardServerBuilder::new(serial_port, device_search_port)
         .enable_buttons(SUPPORTED_BUTTONS)?
         .enable_axes(SUPPORTED_AXES)?
