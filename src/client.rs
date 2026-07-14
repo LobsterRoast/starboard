@@ -1,4 +1,5 @@
 use core::iter::FromIterator;
+use std::io::ErrorKind;
 
 use crate::datagram::{BroadcastPacket, serialize};
 use crate::evdev_sb::DeviceWrapper;
@@ -70,7 +71,10 @@ impl StarboardClient {
     // Broadcast's `packet` to the local network
     async fn send_packet(&self, packet: StarboardInputPacket, sock: &UdpSocket) -> Result<()> {
         let raw = serialize(packet)?;
-        sock.send(&raw).await?;
+        let res = sock.send(&raw).await;
+        if let Err(e) = res {
+            err_check_connection_refused(e)?;
+        }
         Ok(())
     }
 }
@@ -85,8 +89,20 @@ async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result
     let packet = BroadcastPacket::new(id, name)?;
     let packet = serialize(packet)?;
     loop {
-        socket.send(&packet).await?;
+        let res = socket.send(&packet).await;
+        if let Err(e) = res {
+            err_check_connection_refused(e)?;
+        }
         printdbg!("Device Search Packet Sent.");
         let _ = sleep(Duration::from_secs(15)).await;
+    }
+}
+
+// Connection refused errors should be ignored
+fn err_check_connection_refused(err: std::io::Error) -> Result<()> {
+    if let ErrorKind::ConnectionRefused = err.kind() {
+        Ok(())
+    } else {
+        Err(err.into())
     }
 }
