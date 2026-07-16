@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{Mutex, MutexGuard};
 
-use crate::server::ControllerMap;
+use crate::server::{ControllerDiagnostic, ControllerMap};
 
 const LAVENDER: Color = Color::Rgb(150, 100, 175);
 
@@ -158,6 +158,7 @@ impl StarboardServerUI {
             (UIPage::Home, Some(0)) => self.page = UIPage::Controllers,
             (UIPage::Home, Some(1)) => self.page = UIPage::Settings,
             (UIPage::Home, Some(2)) => self.running = false,
+            (UIPage::Controllers, Some(v)) => self.toggle_controller(v),
             _ => {}
         }
     }
@@ -167,5 +168,13 @@ impl StarboardServerUI {
             UIPage::Controllers | UIPage::Settings => self.page = UIPage::Home,
             _ => {}
         }
+    }
+
+    fn toggle_controller(&self, selected: usize) {
+        let detected_controllers = self.detected_controllers.blocking_lock();
+        let mut active_controllers = self.active_controllers.blocking_lock();
+        let controller = detected_controllers.values().nth(selected).unwrap();
+        let id = controller.id();
+        // TODO: Add logic for actually toggling the controller
     }
 }
