@@ -175,22 +175,21 @@ pub struct StarboardServer {
 impl StarboardServer {
     // Public facing function to run the server
     pub fn run(mut self) -> Result<()> {
+        let device_search_port = self.device_search_port.clone();
+        let detected_controllers = Arc::clone(&self.detected_controllers);
         let mut ui = StarboardServerUI::new(
             self.detected_controllers.clone(),
             self.active_controllers.clone(),
         );
-
-        let device_search_port = self.device_search_port.clone();
-        let detected_controllers = Arc::clone(&self.detected_controllers);
-        let no_ui = self.no_ui;
+        if self.no_ui {
+            std::thread::park();
+        } else {
+            let handle = std::thread::spawn(move || ui.launch_ui());
+            let _ = handle.join();
+        }
         tokio::spawn(async move { self.server_loop() });
         tokio::spawn(manage_controllers(device_search_port, detected_controllers));
-        if no_ui {
-            loop {}
-            Ok(())
-        } else {
-            ui.launch_ui()
-        }
+        Ok(())
     }
 
     // This is the main loop for the server that receives packets and sends them to the input
