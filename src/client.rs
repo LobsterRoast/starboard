@@ -94,7 +94,7 @@ async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result
             err_check_connection_refused(e)?;
         }
         printdbg!("Device Search Packet Sent.");
-        let _ = sleep(Duration::from_secs(15)).await;
+        let _ = sleep(Duration::from_secs(5)).await;
     }
 }
 
