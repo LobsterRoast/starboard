@@ -1,6 +1,6 @@
 use core::{ops::RangeBounds, time::Duration};
 use std::collections::HashMap;
-use std::net::UdpSocket;
+use tokio::net::UdpSocket;
 
 use evdev::{AbsoluteAxisCode, KeyCode};
 
@@ -185,7 +185,12 @@ impl StarboardServer {
         let no_ui = self.no_ui;
         tokio::spawn(async move { self.server_loop() });
         tokio::spawn(manage_controllers(device_search_port, detected_controllers));
-        if no_ui { Ok(()) } else { ui.launch_ui() }
+        if no_ui {
+            loop {}
+            Ok(())
+        } else {
+            ui.launch_ui()
+        }
     }
 
     // This is the main loop for the server that receives packets and sends them to the input
@@ -196,7 +201,8 @@ impl StarboardServer {
             .enable_buttons_bitmask(self.enabled_buttons)?
             .enable_axes_bitmask(self.enabled_axes)?
             .build(&self.name)?;
-        let sock = UdpSocket::bind(format_addr([0, 0, 0, 0], self.serial_port))?;
+        let addr = format!("0.0.0.0:{}", self.serial_port);
+        let sock = UdpSocket::bind(addr).await?;
         loop {
             let _ = self.get_packet(&mut buf, &sock).await;
             let raw = Vec::from(&mut buf);
@@ -208,7 +214,7 @@ impl StarboardServer {
 
     // Waits for a packet to be received and writes the data into `buf`
     async fn get_packet(&self, buf: &mut [u8; 256], sock: &UdpSocket) -> Result<()> {
-        while sock.recv(buf)? <= 0 {}
+        while sock.recv(buf).await? <= 0 {}
         Ok(())
     }
 
@@ -231,8 +237,9 @@ async fn manage_controllers(
     port: u16,
     mut detected_controllers: Arc<Mutex<ControllerMap>>,
 ) -> Result<()> {
-    let sock = tokio::net::UdpSocket::bind(format_addr([0, 0, 0, 0], port)).await?;
-    let mut raw: [u8; 4] = [0; 4];
+    let addr = format!("0.0.0.0:{}", port);
+    let sock = UdpSocket::bind(addr).await?;
+    let mut raw: [u8; 256] = [0; 256];
     loop {
         {
             let mut detected_controllers = detected_controllers.lock().await;
@@ -253,11 +260,11 @@ fn manage_controller_timeouts(detected_controllers: &mut MutexGuard<'_, Controll
 // Detect controllers and add them to the detected_controllers list
 async fn detect_controllers(
     detected_controllers: &mut MutexGuard<'_, ControllerMap>,
-    sock: &tokio::net::UdpSocket,
+    sock: &UdpSocket,
     raw: &mut [u8],
 ) -> Result<()> {
     if let Ok(_) = sock.try_recv(raw) {
-        printdbg!("Balls");
+        printdbg!("Packet received.");
         let packet: BroadcastPacket = deserialize(Vec::from(raw))?;
         insert_controller(detected_controllers, packet);
         Ok(())
