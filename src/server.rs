@@ -1,5 +1,5 @@
 use core::{ops::RangeBounds, time::Duration};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use tokio::net::UdpSocket;
 
 use evdev::{AbsoluteAxisCode, KeyCode};
@@ -96,7 +96,7 @@ impl StarboardServerBuilder {
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
         let detected_controllers: Arc<Mutex<ControllerMap>> = Arc::new(Mutex::new(HashMap::new()));
-        let active_controllers: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(Vec::new()));
+        let active_controllers: Arc<Mutex<HashSet<u64>>> = Arc::new(Mutex::new(HashSet::new()));
         let no_ui = self.no_ui;
 
         StarboardServer {
@@ -167,7 +167,7 @@ pub struct StarboardServer {
     enabled_buttons: Bitmask, // Bitmask representing all the enabled buttons on the server
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
     detected_controllers: Arc<Mutex<ControllerMap>>,
-    active_controllers: Arc<Mutex<Vec<u64>>>,
+    active_controllers: Arc<Mutex<HashSet<u64>>>,
     name: String,
     no_ui: bool,
 }

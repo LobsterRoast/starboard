@@ -1,8 +1,8 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{Frame, Terminal, backend::Backend, layout::*, prelude::*, widgets::*};
-use std::sync::Arc;
 use std::time::Duration;
+use std::{collections::HashSet, sync::Arc};
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::server::{ControllerDiagnostic, ControllerMap};
@@ -24,13 +24,13 @@ pub struct StarboardServerUI {
     page: UIPage,
     selected: ListState,
     detected_controllers: Arc<Mutex<ControllerMap>>,
-    active_controllers: Arc<Mutex<Vec<u64>>>,
+    active_controllers: Arc<Mutex<HashSet<u64>>>,
 }
 
 impl StarboardServerUI {
     pub fn new(
         detected_controllers: Arc<Mutex<ControllerMap>>,
-        active_controllers: Arc<Mutex<Vec<u64>>>,
+        active_controllers: Arc<Mutex<HashSet<u64>>>,
     ) -> Self {
         Self {
             running: false,
@@ -170,11 +170,16 @@ impl StarboardServerUI {
         }
     }
 
+    // Toggles whether a detected controller is enabled or not
     fn toggle_controller(&self, selected: usize) {
         let detected_controllers = self.detected_controllers.blocking_lock();
         let mut active_controllers = self.active_controllers.blocking_lock();
         let controller = detected_controllers.values().nth(selected).unwrap();
         let id = controller.id();
-        // TODO: Add logic for actually toggling the controller
+        if active_controllers.contains(id) {
+            active_controllers.remove(id);
+        } else {
+            active_controllers.insert(*id);
+        }
     }
 }
