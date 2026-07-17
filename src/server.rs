@@ -191,14 +191,15 @@ impl StarboardServer {
             self.detected_controllers.clone(),
             self.active_controllers.clone(),
         );
-        if self.no_ui {
+        let no_ui = self.no_ui;
+        tokio::spawn(async move { self.server_loop() });
+        tokio::spawn(manage_controllers(device_search_port, detected_controllers));
+        if no_ui {
             std::thread::park();
         } else {
             let handle = std::thread::spawn(move || ui.launch_ui());
             let _ = handle.join();
         }
-        tokio::spawn(async move { self.server_loop() });
-        tokio::spawn(manage_controllers(device_search_port, detected_controllers));
         Ok(())
     }
 
