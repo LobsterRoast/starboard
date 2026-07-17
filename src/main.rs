@@ -67,7 +67,7 @@ fn server_args() -> Vec<Arg> {
             .short('n'),
         #[cfg(feature = "debug")]
         Arg::new("no-ui")
-            .action(ArgAction::SetTrue)
+            .action(clap::ArgAction::SetTrue)
             .long("no-ui"),
     ]
 }
