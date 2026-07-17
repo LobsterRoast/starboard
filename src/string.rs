@@ -1,10 +1,13 @@
-use core::iter::IntoIterator;
+use core::{
+    fmt::{Display, Formatter},
+    iter::IntoIterator,
+};
+
+use std::fmt;
 
 use bincode::{Decode, Encode};
 
 use anyhow::{anyhow, bail};
-
-use ratatui::prelude::Text;
 
 // This represents a string with a maximum capacity that can be stored without a heap allocation
 #[derive(Debug, Copy, Clone, Decode, Encode)]
@@ -26,6 +29,13 @@ impl TryFrom<String> for StarboardString {
                 .map_err(|_| anyhow!("`StarboardString` must be 30 characters or less."))?,
             count,
         })
+    }
+}
+
+impl Display for StarboardString {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let string = String::from_iter(self.inner);
+        write!(f, "{string}")
     }
 }
 

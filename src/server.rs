@@ -1,4 +1,8 @@
-use core::{ops::RangeBounds, time::Duration};
+use core::{
+    fmt::{self, Display},
+    ops::RangeBounds,
+    time::Duration,
+};
 use std::collections::{HashMap, HashSet};
 use tokio::net::UdpSocket;
 
@@ -60,6 +64,12 @@ impl ControllerDiagnostic {
 
     pub fn name(&self) -> &StarboardString {
         &self.name
+    }
+}
+
+impl Display for ControllerDiagnostic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: ({:?})", self.name, self.status)
     }
 }
 
