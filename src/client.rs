@@ -48,7 +48,7 @@ impl StarboardClient {
         ));
         let device = DeviceWrapper::get_steam_deck()?;
         let dest_addr = format!("{}:{}", BC_ADDR, self.serial_port);
-        let mut sock = UdpSocket::bind("0.0.0.0:0").await?;
+        let sock = UdpSocket::bind("0.0.0.0:0").await?;
         let _ = sock.set_broadcast(true)?;
         let _ = sock.connect(&dest_addr).await?;
         printdbg!("Serial Socket connected to {}.", dest_addr);
@@ -81,7 +81,7 @@ impl StarboardClient {
 // Broadcast a client's presence to server's on the local network
 async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result<()> {
     let dest_addr = format!("{}:{}", BC_ADDR, port);
-    let mut socket = UdpSocket::bind("0.0.0.0:0").await?;
+    let socket = UdpSocket::bind("0.0.0.0:0").await?;
     let _ = socket.set_broadcast(true);
     let _ = socket.connect(&dest_addr).await?;
     printdbg!("Device Search Socket connected to {}.", dest_addr);

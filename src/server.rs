@@ -192,7 +192,7 @@ pub struct StarboardServer {
 
 impl StarboardServer {
     // Public facing function to run the server
-    pub fn run(mut self) -> Result<()> {
+    pub fn run(self) -> Result<()> {
         let device_search_port = self.device_search_port.clone();
         let detected_controllers = Arc::clone(&self.detected_controllers);
         let mut ui = StarboardServerUI::new(
@@ -213,7 +213,7 @@ impl StarboardServer {
 
     // This is the main loop for the server that receives packets and sends them to the input
     // handling
-    async fn server_loop(mut self) -> Result<()> {
+    async fn server_loop(self) -> Result<()> {
         let mut buf: [u8; 256] = [0; 256];
         let mut virt_joystick = VirtualJoystickBuilder::new()?
             .enable_buttons_bitmask(self.enabled_buttons)?
@@ -256,7 +256,7 @@ impl StarboardServer {
 // Manage controller detection and timeouts
 async fn manage_controllers(
     port: u16,
-    mut detected_controllers: Arc<Mutex<ControllerMap>>,
+    detected_controllers: Arc<Mutex<ControllerMap>>,
 ) -> Result<()> {
     let addr = format!("0.0.0.0:{}", port);
     let sock = UdpSocket::bind(addr).await?;
