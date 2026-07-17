@@ -56,7 +56,6 @@ impl StarboardClient {
             let packet = self.create_packet(&device)?;
             let _ = self.send_packet(packet, &sock).await?;
         }
-        Ok(())
     }
 
     // Creates a `StarboardInputPacket` from the state of a device

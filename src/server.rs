@@ -230,7 +230,6 @@ impl StarboardServer {
                 self.handle_packet(&mut virt_joystick, packet)?;
             }
         }
-        Ok(())
     }
 
     // Waits for a packet to be received and writes the data into `buf`
