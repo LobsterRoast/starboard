@@ -1,6 +1,6 @@
 use core::{convert::TryInto, iter::IntoIterator};
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 use evdev::{
     AbsoluteAxisCode, AttributeSet, Device, InputEvent, KeyCode, enumerate,
     uinput::{VirtualDevice, VirtualDeviceBuilder},

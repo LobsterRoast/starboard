@@ -1,6 +1,5 @@
 use core::{
     fmt::{self, Display, Formatter},
-    ops::RangeBounds,
     time::Duration,
 };
 use std::collections::{HashMap, HashSet};
@@ -16,11 +15,10 @@ use std::sync::Arc;
 
 use crate::{
     bitmask::Bitmask,
-    client::StarboardClient,
-    datagram::{BroadcastPacket, deserialize, format_addr, serialize},
-    evdev_sb::{self, VirtualJoystick, VirtualJoystickBuilder},
+    datagram::{BroadcastPacket, deserialize},
+    evdev_sb::{VirtualJoystick, VirtualJoystickBuilder},
     fixed_queue::FixedQueue,
-    input::{IntoID, StarboardInput, StarboardInputPacket},
+    input::{IntoID, StarboardInputPacket},
     printdbg,
     server_ui::StarboardServerUI,
     string::StarboardString,

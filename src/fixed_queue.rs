@@ -1,6 +1,5 @@
 use core::iter::IntoIterator;
 use std::{
-    collections::{self, VecDeque},
     iter::Take,
     ops::{Index, IndexMut},
 };

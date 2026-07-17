@@ -1,7 +1,7 @@
 use anyhow::Result;
 use bincode::{Decode, Encode, config::Configuration, decode_from_slice, encode_to_vec};
 
-use crate::{input::StarboardInputPacket, string::StarboardString};
+use crate::string::StarboardString;
 
 static BINCODE_CONFIG: Configuration = bincode::config::standard();
 

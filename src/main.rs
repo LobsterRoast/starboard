@@ -17,10 +17,9 @@ mod test;
 
 use anyhow::Result;
 
-use clap::{Arg, ArgAction, ArgMatches, Command, value_parser};
+use clap::{Arg, ArgMatches, Command};
 
 use crate::{
-    bitmask::Bitmask,
     client::StarboardClient,
     evdev_sb::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
     server::StarboardServerBuilder,

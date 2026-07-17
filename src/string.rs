@@ -7,7 +7,7 @@ use std::fmt;
 
 use bincode::{Decode, Encode};
 
-use anyhow::{anyhow, bail};
+use anyhow::anyhow;
 
 // This represents a string with a maximum capacity that can be stored without a heap allocation
 #[derive(Debug, Copy, Clone, Decode, Encode)]

@@ -1,6 +1,6 @@
 use crate::{
     datagram::{deserialize, serialize},
-    input::{StarboardAxisStates, StarboardButtonStates, StarboardInput, StarboardInputPacket},
+    input::{StarboardAxisStates, StarboardButtonStates, StarboardInputPacket},
 };
 
 const TEST_BUTTON_STATES: StarboardButtonStates = StarboardButtonStates { raw: 13 }; // 0b1101

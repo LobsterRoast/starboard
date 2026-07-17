@@ -1,9 +1,8 @@
-use core::iter::FromIterator;
 use std::io::ErrorKind;
 
 use crate::datagram::{BroadcastPacket, serialize};
 use crate::evdev_sb::DeviceWrapper;
-use crate::input::{IntoByte, StarboardInputPacket};
+use crate::input::StarboardInputPacket;
 use crate::printdbg;
 use crate::string::StarboardString;
 use anyhow::Result;

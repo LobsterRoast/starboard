@@ -1,11 +1,11 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{Frame, Terminal, backend::Backend, layout::*, prelude::*, text::ToText, widgets::*};
+use ratatui::{Frame, layout::*, prelude::*, text::ToText, widgets::*};
 use std::time::Duration;
 use std::{collections::HashSet, sync::Arc};
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 
-use crate::server::{ControllerDiagnostic, ControllerMap};
+use crate::server::ControllerMap;
 
 const LAVENDER: Color = Color::Rgb(150, 100, 175);
 
