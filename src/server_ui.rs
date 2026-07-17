@@ -99,11 +99,10 @@ impl StarboardServerUI {
             // for some reason are present in
             // `active_controllers` but absent
             // from `detected_controllers`
-
             let active_controller_names = active_controllers
                 .iter()
                 .filter_map(|id| detected_controllers.get(id))
-                .map(|diagnostic| diagnostic.to_text());
+                .map(|diagnostic| diagnostic.name().to_text());
 
             let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]).horizontal_margin(5);
             let active_list = List::new(active_controller_names)

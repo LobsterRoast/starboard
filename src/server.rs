@@ -1,5 +1,5 @@
 use core::{
-    fmt::{self, Display},
+    fmt::{self, Display, Formatter},
     ops::RangeBounds,
     time::Duration,
 };
@@ -37,6 +37,16 @@ pub enum ControllerState {
     NotResponding,
 }
 
+impl Display for ControllerState {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let string = match self {
+            Self::Online => "Online",
+            Self::NotResponding => "Not Responding",
+        };
+        write!(f, "{string}")
+    }
+}
+
 // Records various information about a controller
 #[derive(Debug, Copy, Clone)]
 pub struct ControllerDiagnostic {
@@ -69,7 +79,7 @@ impl ControllerDiagnostic {
 
 impl Display for ControllerDiagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: ({:?})", self.name, self.status)
+        write!(f, "{}: {}", self.name, self.status)
     }
 }
 
@@ -217,7 +227,10 @@ impl StarboardServer {
             let _ = self.get_packet(&mut buf, &sock).await;
             let raw = Vec::from(&mut buf);
             let packet: StarboardInputPacket = deserialize(raw)?;
-            self.handle_packet(&mut virt_joystick, packet)?;
+            let active_controllers = self.active_controllers.lock().await;
+            if active_controllers.contains(packet.client_id()) {
+                self.handle_packet(&mut virt_joystick, packet)?;
+            }
         }
         Ok(())
     }
