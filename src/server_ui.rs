@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{Frame, Terminal, backend::Backend, layout::*, prelude::*, widgets::*};
+use ratatui::{Frame, Terminal, backend::Backend, layout::*, prelude::*, text::ToText, widgets::*};
 use std::time::Duration;
 use std::{collections::HashSet, sync::Arc};
 use tokio::sync::{Mutex, MutexGuard};
@@ -92,7 +92,7 @@ impl StarboardServerUI {
         {
             let detected_controller_names = detected_controllers
                 .values()
-                .map(|diagnostic| -> String { (*diagnostic.name()).into() });
+                .map(|diagnostic| diagnostic.to_text());
 
             // The `None` values
             // being filtered out are ID's that
@@ -103,7 +103,7 @@ impl StarboardServerUI {
             let active_controller_names = active_controllers
                 .iter()
                 .filter_map(|id| detected_controllers.get(id))
-                .map(|diagnostic| -> String { (*diagnostic.name()).into() });
+                .map(|diagnostic| diagnostic.to_text());
 
             let layout = Layout::horizontal([Constraint::Ratio(1, 2); 2]).horizontal_margin(5);
             let active_list = List::new(active_controller_names)
