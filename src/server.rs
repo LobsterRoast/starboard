@@ -207,8 +207,11 @@ impl StarboardServer {
         if !no_ui {
             join_set.spawn_blocking(move || ui.launch_ui());
         }
-        join_set.join_next().await;
-        join_set.abort_all();
+        if let Some(Ok(Err(e))) = join_set.join_next().await {
+            panic!("{e}");
+        } else {
+            join_set.abort_all();
+        }
         Ok(())
     }
 
@@ -267,7 +270,6 @@ async fn manage_controllers(
             manage_controller_timeouts(&mut detected_controllers);
             detect_controllers(&mut detected_controllers, &sock, &mut raw).await?;
         }
-        tokio::task::yield_now().await;
         tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }
