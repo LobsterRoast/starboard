@@ -8,6 +8,7 @@ use tokio::net::UdpSocket;
 use evdev::{AbsoluteAxisCode, KeyCode};
 
 use tokio::sync::{Mutex, MutexGuard};
+use tokio::task::JoinSet;
 
 use chrono::Local;
 
@@ -192,22 +193,22 @@ pub struct StarboardServer {
 
 impl StarboardServer {
     // Public facing function to run the server
-    pub fn run(self) -> Result<()> {
+    pub async fn run(self) -> Result<()> {
         let device_search_port = self.device_search_port.clone();
         let detected_controllers = Arc::clone(&self.detected_controllers);
         let mut ui = StarboardServerUI::new(
             self.detected_controllers.clone(),
             self.active_controllers.clone(),
         );
+        let mut join_set = JoinSet::new();
         let no_ui = self.no_ui;
-        tokio::spawn(async move { self.server_loop() });
-        tokio::spawn(manage_controllers(device_search_port, detected_controllers));
-        if no_ui {
-            std::thread::park();
-        } else {
-            let handle = std::thread::spawn(move || ui.launch_ui());
-            let _ = handle.join();
+        join_set.spawn(self.server_loop());
+        join_set.spawn(manage_controllers(device_search_port, detected_controllers));
+        if !no_ui {
+            let abort_handle = join_set.spawn_blocking(move || ui.launch_ui());
         }
+        join_set.join_next().await;
+        join_set.abort_all();
         Ok(())
     }
 
@@ -266,6 +267,7 @@ async fn manage_controllers(
             manage_controller_timeouts(&mut detected_controllers);
             detect_controllers(&mut detected_controllers, &sock, &mut raw).await?;
         }
+        tokio::task::yield_now().await;
         tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }

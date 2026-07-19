@@ -82,7 +82,7 @@ fn starboard_commands() -> Vec<Command> {
     vec![client_cmd(), server_cmd()]
 }
 
-fn server(subcommand_matches: &ArgMatches) -> Result<()> {
+async fn server(subcommand_matches: &ArgMatches) -> Result<()> {
     // Safety of using `unwrap()`: `serial_port` and `device_search_port` both will default if unset
     let serial_port = *(subcommand_matches.get_one::<u16>("serial-port").unwrap());
     let device_search_port = *(subcommand_matches
@@ -101,6 +101,7 @@ fn server(subcommand_matches: &ArgMatches) -> Result<()> {
         .disable_ui(no_ui)
         .build(name)
         .run()
+        .await
 }
 
 async fn client(subcommand_matches: &ArgMatches) -> Result<()> {
@@ -127,7 +128,7 @@ async fn main() -> Result<()> {
     let (subcommand_name, subcommand_matches) = matches.subcommand().unwrap();
 
     match subcommand_name {
-        "server" => server(subcommand_matches)?,
+        "server" => server(subcommand_matches).await?,
         "client" => client(subcommand_matches).await?,
         &_ => {}
     }
