@@ -200,7 +200,7 @@ impl FromByte<KeyCode> for u32 {
             4096 => KeyCode::BTN_TRIGGER_HAPPY3,
             8192 => KeyCode::BTN_TRIGGER_HAPPY4,
             16384 => KeyCode::BTN_MODE,
-            _ => bail!("Couldn't convert given u32 into `KeyCode`"),
+            _ => bail!("Couldn't convert given u32 '{self}' into `KeyCode`"),
         })
     }
 }
@@ -223,7 +223,7 @@ impl IntoByte for KeyCode {
             KeyCode::BTN_TRIGGER_HAPPY3 => 4096,
             KeyCode::BTN_TRIGGER_HAPPY4 => 8192,
             KeyCode::BTN_MODE => 16384,
-            _ => bail!("Couldn't convert given KeyCode into `u32`"),
+            _ => bail!("Couldn't convert given KeyCode '{self:?}' into `u32`"),
         })
     }
 }
@@ -239,7 +239,7 @@ impl FromByte<AbsoluteAxisCode> for u32 {
             32 => AbsoluteAxisCode::ABS_RZ,
             64 => AbsoluteAxisCode::ABS_HAT0X,
             128 => AbsoluteAxisCode::ABS_HAT0Y,
-            _ => bail!("Couldn't convert given u32 into `AbsoluteAxisCode`"),
+            _ => bail!("Couldn't convert given u32 '{self:?}' into `AbsoluteAxisCode`"),
         })
     }
 }
@@ -255,7 +255,7 @@ impl IntoByte for AbsoluteAxisCode {
             AbsoluteAxisCode::ABS_RZ => 32,
             AbsoluteAxisCode::ABS_HAT0X => 64,
             AbsoluteAxisCode::ABS_HAT0Y => 128,
-            _ => bail!("Couldn't convert given AbsoluteAxisCode into `u32`"),
+            _ => bail!("Couldn't convert given AbsoluteAxisCode '{self:?}' into `u32`"),
         })
     }
 }
@@ -278,7 +278,7 @@ impl FromByte<AbsInfo> for u32 {
             32 => AbsInfo::new(0, 0, 255, 0, 0, 0),
             64 => AbsInfo::new(0, -1, 1, 0, 0, 2),
             128 => AbsInfo::new(0, -1, 1, 0, 0, 2),
-            _ => bail!("Couldn't convert given u32 into `AbsInfo`"),
+            _ => bail!("Couldn't convert given u32 '{self}' into `AbsInfo`"),
         })
     }
 }
@@ -297,7 +297,7 @@ impl FromByte<UinputAbsSetup> for u32 {
             32 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
             64 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
             128 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
-            _ => bail!("Couldn't convert given u32 into `UinputAbsSetup`"),
+            _ => bail!("Couldn't convert given u32 '{self}' into `UinputAbsSetup`"),
         })
     }
 }
@@ -320,10 +320,7 @@ impl IntoID for KeyCode {
             KeyCode::BTN_TRIGGER_HAPPY3 => 12,
             KeyCode::BTN_TRIGGER_HAPPY4 => 13,
             KeyCode::BTN_MODE => 14,
-            _ => bail!(
-                "Couldn't convert given KeyCode {:?} into a Starboard ID.",
-                self
-            ),
+            _ => bail!("Couldn't convert given KeyCode '{self:?}' into a Starboard ID.",),
         })
     }
 }
@@ -349,10 +346,7 @@ impl FromID<KeyCode> for u32 {
             12 => KeyCode::BTN_TRIGGER_HAPPY3,
             13 => KeyCode::BTN_TRIGGER_HAPPY4,
             14 => KeyCode::BTN_MODE,
-            _ => bail!(
-                "Couldn't convert given Starboard ID {} into `KeyCode`.",
-                self
-            ),
+            _ => bail!("Couldn't convert given Starboard ID '{self}' into `KeyCode`."),
         })
     }
 }
@@ -368,10 +362,7 @@ impl IntoID for AbsoluteAxisCode {
             AbsoluteAxisCode::ABS_RZ => 5,
             AbsoluteAxisCode::ABS_HAT0X => 6,
             AbsoluteAxisCode::ABS_HAT0Y => 7,
-            _ => bail!(
-                "Couldn't convert given AbsoluteAxisCode {:?} into a Starboard ID.",
-                self
-            ),
+            _ => bail!("Couldn't convert given AbsoluteAxisCode {self:?} into a Starboard ID."),
         })
     }
 }
@@ -387,10 +378,7 @@ impl FromID<AbsoluteAxisCode> for u32 {
             5 => AbsoluteAxisCode::ABS_RZ,
             6 => AbsoluteAxisCode::ABS_HAT0X,
             7 => AbsoluteAxisCode::ABS_HAT0Y,
-            _ => bail!(
-                "Couldn't convert given Starboard ID {} into `AbsoluteAxisCode`.",
-                self
-            ),
+            _ => bail!("Couldn't convert given Starboard ID {self} into `AbsoluteAxisCode`."),
         })
     }
 }
