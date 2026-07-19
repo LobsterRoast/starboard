@@ -205,7 +205,7 @@ impl StarboardServer {
         join_set.spawn(self.server_loop());
         join_set.spawn(manage_controllers(device_search_port, detected_controllers));
         if !no_ui {
-            let abort_handle = join_set.spawn_blocking(move || ui.launch_ui());
+            join_set.spawn_blocking(move || ui.launch_ui());
         }
         join_set.join_next().await;
         join_set.abort_all();
