@@ -1,8 +1,8 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{Frame, layout::*, prelude::*, text::ToText, widgets::*};
+use ratatui::{Frame, backend::CrosstermBackend, layout::*, prelude::*, text::ToText, widgets::*};
 use std::time::Duration;
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, io::stdout, sync::Arc};
 use tokio::sync::Mutex;
 
 use crate::server::ControllerMap;
@@ -43,7 +43,8 @@ impl StarboardServerUI {
 
     pub fn launch_ui(&mut self) -> Result<()> {
         self.running = true;
-        ratatui::run(|term| self.ui_loop(term))
+        let mut term = Terminal::new(CrosstermBackend::new(stdout()))?;
+        ratatui::run(move |_| self.ui_loop(&mut term))
     }
 
     // The main loop that the UI will call every frame
