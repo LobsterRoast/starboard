@@ -80,7 +80,7 @@ impl VirtualJoystickBuilder<'_> {
     pub fn enable_buttons_bitmask(self, buttons: Bitmask) -> Result<Self> {
         let mut attribute_set: AttributeSet<KeyCode> = AttributeSet::new();
         for (bit, state) in buttons.into_iter().enumerate() {
-            if state {
+            if !state {
                 continue;
             }
             if let Ok(key_code) = FromByte::<KeyCode>::from_byte(1 << bit) {
@@ -95,7 +95,7 @@ impl VirtualJoystickBuilder<'_> {
     pub fn enable_axes_bitmask(self, axes: Bitmask) -> Result<Self> {
         let mut raw = self.raw;
         for (bit, state) in axes.into_iter().enumerate() {
-            if state {
+            if !state {
                 continue;
             }
             raw = raw.with_absolute_axis(&(1 << bit).from_byte()?)?;
