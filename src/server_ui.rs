@@ -4,6 +4,7 @@ use ratatui::{Frame, backend::CrosstermBackend, layout::*, prelude::*, text::ToT
 use std::time::Duration;
 use std::{collections::HashSet, io::stdout, sync::Arc};
 use tokio::sync::Mutex;
+use tokio_util::sync::CancellationToken;
 
 use crate::server::ControllerMap;
 
@@ -25,12 +26,14 @@ pub struct StarboardServerUI {
     selected: ListState,
     detected_controllers: Arc<Mutex<ControllerMap>>,
     active_controllers: Arc<Mutex<HashSet<u64>>>,
+    cancellation_token: CancellationToken,
 }
 
 impl StarboardServerUI {
     pub fn new(
         detected_controllers: Arc<Mutex<ControllerMap>>,
         active_controllers: Arc<Mutex<HashSet<u64>>>,
+        cancellation_token: CancellationToken,
     ) -> Self {
         Self {
             running: false,
@@ -38,6 +41,7 @@ impl StarboardServerUI {
             selected: ListState::default().with_selected(Some(0)),
             detected_controllers,
             active_controllers,
+            cancellation_token,
         }
     }
 
@@ -47,9 +51,13 @@ impl StarboardServerUI {
         ratatui::run(move |_| self.ui_loop(&mut term))
     }
 
+    fn stop(&mut self) {
+        self.cancellation_token.cancel();
+    }
+
     // The main loop that the UI will call every frame
     fn ui_loop(&mut self, terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
-        while self.running {
+        while !self.cancellation_token.is_cancelled() {
             self.poll_events()?;
             let _ = terminal.draw(|frame| self.render(frame))?;
         }
@@ -141,7 +149,12 @@ impl StarboardServerUI {
     // Handled `Key` events
     fn on_key_event(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
-            KeyCode::Char('c') => self.running = !key.modifiers.contains(KeyModifiers::CONTROL),
+            KeyCode::Char('c') => {
+                // TODO: Clean up this nested logic. Yes, I was lazy when I wrote it.
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
+                    self.stop();
+                }
+            }
             KeyCode::Up => self.selected.scroll_up_by(1),
             KeyCode::Down => self.selected.scroll_down_by(1),
             KeyCode::Enter => self.on_enter(),
@@ -157,7 +170,7 @@ impl StarboardServerUI {
         match (self.page, selected) {
             (UIPage::Home, Some(0)) => self.page = UIPage::Controllers,
             (UIPage::Home, Some(1)) => self.page = UIPage::Settings,
-            (UIPage::Home, Some(2)) => self.running = false,
+            (UIPage::Home, Some(2)) => self.stop(),
             (UIPage::Controllers, Some(v)) => self.toggle_controller(v),
             _ => {}
         }

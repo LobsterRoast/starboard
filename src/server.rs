@@ -9,6 +9,7 @@ use evdev::{AbsoluteAxisCode, KeyCode};
 
 use tokio::sync::{Mutex, MutexGuard};
 use tokio::task::JoinSet;
+use tokio_util::sync::CancellationToken;
 
 use chrono::Local;
 
@@ -196,9 +197,11 @@ impl StarboardServer {
     pub async fn run(self) -> Result<()> {
         let device_search_port = self.device_search_port.clone();
         let detected_controllers = Arc::clone(&self.detected_controllers);
+        let cancellation_token = CancellationToken::new();
         let mut ui = StarboardServerUI::new(
             self.detected_controllers.clone(),
             self.active_controllers.clone(),
+            cancellation_token.clone(),
         );
         let mut join_set = JoinSet::new();
         let no_ui = self.no_ui;
@@ -208,6 +211,8 @@ impl StarboardServer {
             join_set.spawn_blocking(move || ui.launch_ui());
         }
         if let Some(Ok(Err(e))) = join_set.join_next().await {
+            cancellation_token.cancel();
+            join_set.shutdown().await;
             panic!("{e}");
         } else {
             join_set.abort_all();
