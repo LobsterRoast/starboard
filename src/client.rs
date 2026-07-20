@@ -41,17 +41,17 @@ impl StarboardClient {
 
     // Run the client loop
     pub async fn run(&self) -> Result<()> {
-        tokio::spawn(broadcast_presence(
-            self.id,
-            self.name,
-            self.device_search_port,
-        ));
         let device = DeviceWrapper::get_steam_deck()?;
         let dest_addr = format!("{}:{}", BC_ADDR, self.serial_port);
         let sock = UdpSocket::bind("0.0.0.0:0").await?;
         let _ = sock.set_broadcast(true)?;
         let _ = sock.connect(&dest_addr).await?;
         printdbg!("Serial Socket connected to {}.", dest_addr);
+        tokio::spawn(broadcast_presence(
+            self.id,
+            self.name,
+            self.device_search_port,
+        ));
         loop {
             let packet = self.create_packet(&device)?;
             let _ = self.send_packet(packet, &sock).await?;
