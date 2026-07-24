@@ -1,3 +1,4 @@
+use core::time::Duration;
 use std::io::ErrorKind;
 
 use crate::datagram::{BroadcastPacket, serialize};
@@ -55,6 +56,7 @@ impl StarboardClient {
         loop {
             let packet = self.create_packet(&device)?;
             let _ = self.send_packet(packet, &sock).await?;
+            tokio::time::sleep(Duration::from_millis(16)).await;
         }
     }
 
