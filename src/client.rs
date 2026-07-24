@@ -1,4 +1,3 @@
-use core::time::Duration;
 use std::io::ErrorKind;
 
 use crate::datagram::{BroadcastPacket, serialize};
