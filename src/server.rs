@@ -86,8 +86,8 @@ impl ControllerDiagnostic {
 
 impl Display for ControllerDiagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // A received packet should always have a value for latency[0]
-        let latency = self.latency[0].unwrap();
+        // A received packet should always have a value for latency.last()
+        let latency = self.latency.last().unwrap();
         write!(f, "{}: {} ({}ms)", self.name, self.status, latency)
     }
 }

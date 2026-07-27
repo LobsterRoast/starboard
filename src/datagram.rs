@@ -28,7 +28,7 @@ where
 }
 
 // Packet for a client to broadcast its presence on the network
-#[derive(Decode, Encode)]
+#[derive(Copy, Clone, Decode, Encode)]
 pub struct BroadcastPacket {
     id: u64,
     name: StarboardString,
@@ -46,6 +46,10 @@ impl BroadcastPacket {
             name: StarboardString::try_from(name)?,
             sent_at: chrono::Local::now().timestamp_millis(),
         })
+    }
+
+    pub fn update(&mut self) {
+        self.sent_at = chrono::Local::now().timestamp_millis();
     }
 
     pub fn id(&self) -> &u64 {

@@ -29,6 +29,15 @@ where
         }
     }
 
+    // Returns a reference to the earliest element in the queue, or none if nothing is present
+    pub fn last(&self) -> Option<T> {
+        if self.count == 0 {
+            None
+        } else {
+            self[self.count - 1]
+        }
+    }
+
     // Push an element to the back of the queue, and pop from the front if the maximum capacity is
     // exceeded
     pub fn push_back(&mut self, value: Option<T>) {

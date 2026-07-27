@@ -85,10 +85,13 @@ async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result
     let _ = socket.set_broadcast(true);
     let _ = socket.connect(&dest_addr).await?;
     printdbg!("Device Search Socket connected to {}.", dest_addr);
-    let packet = BroadcastPacket::new(id, name)?;
-    let packet = serialize(packet)?;
+    let mut packet = BroadcastPacket::new(id, name)?;
     loop {
-        let res = socket.send(&packet).await;
+        // The packet only needs to be created once, but it needs to be updated and serialized on
+        // every loop to keep the timestamp up-to-date
+        packet.update();
+        let packet_raw = serialize(packet)?;
+        let res = socket.send(&packet_raw).await;
         if let Err(e) = res {
             err_check_connection_refused(e)?;
         }
