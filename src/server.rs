@@ -11,7 +11,7 @@ use tokio::sync::{Mutex, MutexGuard};
 use tokio::task::JoinSet;
 use tokio_util::sync::CancellationToken;
 
-use chrono::Local;
+use chrono::{DateTime, Local};
 
 use std::sync::Arc;
 
@@ -58,13 +58,20 @@ pub struct ControllerDiagnostic {
 }
 
 impl ControllerDiagnostic {
-    pub fn new(id: u64, name: StarboardString, status: ControllerState) -> Self {
+    pub fn new(
+        id: u64,
+        name: StarboardString,
+        status: ControllerState,
+        initial_latency: i64,
+    ) -> Self {
+        let mut latency = FixedQueue::new();
+        latency.push_back(Some(initial_latency));
         Self {
             id,
             name,
             status,
             last_ping: Local::now().timestamp(),
-            latency: FixedQueue::new(),
+            latency,
         }
     }
 
@@ -79,13 +86,20 @@ impl ControllerDiagnostic {
 
 impl Display for ControllerDiagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.name, self.status)
+        // A received packet should always have a value for latency[0]
+        let latency = self.latency[0].unwrap();
+        write!(f, "{}: {} ({}ms)", self.name, self.status, latency)
     }
 }
 
 impl From<BroadcastPacket> for ControllerDiagnostic {
     fn from(value: BroadcastPacket) -> Self {
-        Self::new(*value.id(), *value.name(), ControllerState::Online)
+        Self::new(
+            *value.id(),
+            *value.name(),
+            ControllerState::Online,
+            value.latency(),
+        )
     }
 }
 
@@ -308,6 +322,7 @@ fn insert_controller(detected_controllers: &mut ControllerMap, packet: Broadcast
         let diagnostic: ControllerDiagnostic = packet.into();
         detected_controllers.insert(*diagnostic.id(), diagnostic);
     } else if let Some(diagnostic) = detected_controllers.get_mut(packet.id()) {
+        diagnostic.latency.push_back(Some(packet.latency()));
         diagnostic.last_ping = Local::now().timestamp();
     }
 }

@@ -2,6 +2,7 @@ use anyhow::Result;
 use bincode::{Decode, Encode, config::Configuration, decode_from_slice, encode_to_vec};
 
 use crate::string::StarboardString;
+use chrono::{DateTime, Local};
 
 static BINCODE_CONFIG: Configuration = bincode::config::standard();
 
@@ -43,7 +44,7 @@ impl BroadcastPacket {
         Ok(Self {
             id,
             name: StarboardString::try_from(name)?,
-            sent_at: chrono::Local::now().timestamp(),
+            sent_at: chrono::Local::now().timestamp_millis(),
         })
     }
 
@@ -57,5 +58,14 @@ impl BroadcastPacket {
 
     pub fn sent_at(&self) -> &i64 {
         &self.sent_at
+    }
+
+    // Returns the number of milliseconds it's been since the packet was sent
+    pub fn latency(&self) -> i64 {
+        // Safety: `self.sent_at()` is initialized via. `Local::now().timestamp()`, so it's
+        // guaranteed valid
+        let sent_at = DateTime::from_timestamp_millis(self.sent_at).unwrap();
+        let delta = Local::now().signed_duration_since(sent_at);
+        delta.num_milliseconds()
     }
 }
