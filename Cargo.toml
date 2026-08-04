@@ -21,3 +21,7 @@ server = []
 client = []
 dummy-steam-deck = []
 loopback = []
+
+[profile.dev]
+debug = true
+strip = false
