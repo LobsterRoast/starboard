@@ -2,7 +2,12 @@ use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{Frame, backend::CrosstermBackend, layout::*, prelude::*, text::ToText, widgets::*};
 use std::time::Duration;
-use std::{collections::HashSet, io::stdout, sync::Arc};
+use std::{
+    collections::HashSet,
+    io::{Stdout, stdout},
+    rc::Rc,
+    sync::Arc,
+};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
@@ -200,12 +205,23 @@ impl StarboardServerUI {
 // This will eventually replace `StarboardServerUI`.
 // It is an optimized version of the UI that can be run in the main thread and does not need to
 // re-render on every single CPU cycle.
-pub struct StarboardSyncUI {}
+pub struct StarboardSyncUI {
+    terminal: Terminal<CrosstermBackend<Stdout>>,
+    detected_controllers: Rc<ControllerMap>,
+    active_controllers: Rc<HashSet<u64>>,
+}
 
 impl StarboardSyncUI {
-    pub fn new() -> Self {
+    pub fn new(
+        detected_controllers: Rc<ControllerMap>,
+        active_controllers: Rc<HashSet<u64>>,
+    ) -> Result<Self> {
         ratatui::init();
-        Self {}
+        Ok(Self {
+            terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
+            detected_controllers,
+            active_controllers,
+        })
     }
 }
 
