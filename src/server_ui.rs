@@ -223,6 +223,10 @@ impl StarboardSyncUI {
             active_controllers,
         })
     }
+
+    pub fn render(&self) -> Result<()> {
+        Ok(())
+    }
 }
 
 impl Drop for StarboardSyncUI {

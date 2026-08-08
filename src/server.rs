@@ -17,7 +17,7 @@ use tokio_util::sync::CancellationToken;
 
 use chrono::{DateTime, Local};
 
-use std::sync::Arc;
+use std::sync::{Arc, atomic::AtomicBool};
 
 use crate::{
     bitmask::Bitmask,
@@ -26,7 +26,7 @@ use crate::{
     fixed_queue::FixedQueue,
     input::{IntoID, StarboardInputPacket},
     printdbg,
-    server_ui::StarboardServerUI,
+    server_ui::{StarboardServerUI, StarboardSyncUI},
     string::StarboardString,
 };
 
@@ -146,6 +146,7 @@ impl StarboardServerBuilder {
             active_controllers,
             name,
             no_ui,
+            mutated: AtomicBool::new(false),
         }
     }
 
@@ -208,6 +209,7 @@ pub struct StarboardServer {
     active_controllers: Arc<Mutex<HashSet<u64>>>,
     name: String,
     no_ui: bool,
+    mutated: AtomicBool,
 }
 
 impl StarboardServer {
