@@ -1569,7 +1569,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "starboard_new"
+name = "starboard"
 version = "0.1.0"
 dependencies = [
  "anyhow",
