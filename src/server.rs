@@ -17,7 +17,10 @@ use tokio_util::sync::CancellationToken;
 
 use chrono::{DateTime, Local};
 
-use std::sync::{Arc, atomic::AtomicBool};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 
 use crate::{
     bitmask::Bitmask,
@@ -223,6 +226,17 @@ impl StarboardServer {
             self.active_controllers.clone(),
             cancellation_token.clone(),
         );
+        let sync_ui = StarboardSyncUI::new(
+            self.detected_controllers.clone(),
+            self.active_controllers.clone(),
+        )?;
+        if self
+            .mutated
+            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+            .or_else(|_| anyhow::bail!("Could not write to atomic boolean variable."))?
+        {
+            sync_ui.render()?;
+        }
         let mut join_set = JoinSet::new();
         let no_ui = self.no_ui;
         join_set.spawn(self.server_loop());

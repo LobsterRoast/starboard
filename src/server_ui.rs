@@ -207,14 +207,14 @@ impl StarboardServerUI {
 // re-render on every single CPU cycle.
 pub struct StarboardSyncUI {
     terminal: Terminal<CrosstermBackend<Stdout>>,
-    detected_controllers: Rc<ControllerMap>,
-    active_controllers: Rc<HashSet<u64>>,
+    detected_controllers: Arc<Mutex<ControllerMap>>,
+    active_controllers: Arc<Mutex<HashSet<u64>>>,
 }
 
 impl StarboardSyncUI {
     pub fn new(
-        detected_controllers: Rc<ControllerMap>,
-        active_controllers: Rc<HashSet<u64>>,
+        detected_controllers: Arc<Mutex<ControllerMap>>,
+        active_controllers: Arc<Mutex<HashSet<u64>>>,
     ) -> Result<Self> {
         ratatui::init();
         Ok(Self {
