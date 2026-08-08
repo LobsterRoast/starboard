@@ -196,3 +196,21 @@ impl StarboardServerUI {
         }
     }
 }
+
+// This will eventually replace `StarboardServerUI`.
+// It is an optimized version of the UI that can be run in the main thread and does not need to
+// re-render on every single CPU cycle.
+pub struct StarboardSyncUI {}
+
+impl StarboardSyncUI {
+    pub fn new() -> Self {
+        ratatui::init();
+        Self {}
+    }
+}
+
+impl Drop for StarboardSyncUI {
+    fn drop(&mut self) {
+        ratatui::restore();
+    }
+}
