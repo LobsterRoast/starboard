@@ -9,7 +9,7 @@ use evdev::{AbsoluteAxisCode, KeyCode};
 
 use tokio::{
     select,
-    sync::{Mutex, MutexGuard},
+    sync::{MutexGuard, RwLock, RwLockWriteGuard},
     task::JoinSet,
     time::{Interval, interval},
 };
@@ -138,8 +138,9 @@ impl StarboardServerBuilder {
         let device_search_port = self.device_search_port;
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
-        let detected_controllers: Arc<Mutex<ControllerMap>> = Arc::new(Mutex::new(HashMap::new()));
-        let active_controllers: Arc<Mutex<HashSet<u64>>> = Arc::new(Mutex::new(HashSet::new()));
+        let detected_controllers: Arc<RwLock<ControllerMap>> =
+            Arc::new(RwLock::new(HashMap::new()));
+        let active_controllers: Arc<RwLock<HashSet<u64>>> = Arc::new(RwLock::new(HashSet::new()));
         let no_ui = self.no_ui;
 
         StarboardServer {
@@ -211,8 +212,8 @@ pub struct StarboardServer {
     device_search_port: u16,
     enabled_buttons: Bitmask, // Bitmask representing all the enabled buttons on the server
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
-    detected_controllers: Arc<Mutex<ControllerMap>>,
-    active_controllers: Arc<Mutex<HashSet<u64>>>,
+    detected_controllers: Arc<RwLock<ControllerMap>>,
+    active_controllers: Arc<RwLock<HashSet<u64>>>,
     name: String,
     no_ui: bool,
     mutated: AtomicBool,
@@ -276,7 +277,7 @@ impl StarboardServer {
             let _ = self.get_packet(&mut buf, &sock).await;
             let raw = Vec::from(&mut buf);
             let packet: StarboardInputPacket = deserialize(raw)?;
-            let active_controllers = self.active_controllers.lock().await;
+            let active_controllers = self.active_controllers.read().await;
             if active_controllers.contains(packet.client_id()) {
                 self.handle_packet(&mut virt_joystick, packet)?;
             }
@@ -301,89 +302,4 @@ impl StarboardServer {
         }
         Ok(())
     }
-}
-
-// Manage controller detection and timeouts
-async fn manage_controllers(
-    port: u16,
-    detected_controllers: Arc<Mutex<ControllerMap>>,
-) -> Result<()> {
-    let addr = format!("0.0.0.0:{}", port);
-    let sock = UdpSocket::bind(addr).await?;
-    let mut raw: [u8; 256] = [0; 256];
-    let mut interval = interval(Duration::from_secs(1));
-    loop {
-        wait_for_controller_update(&detected_controllers, &sock, &mut interval, &mut raw).await?;
-    }
-}
-
-// Wait for a tick or for a packet to be received, and then update controller diagnostics
-// accordingly
-async fn wait_for_controller_update(
-    detected_controllers: &Arc<Mutex<ControllerMap>>,
-    socket: &UdpSocket,
-    interval: &mut Interval,
-    raw: &mut [u8; 256],
-) -> Result<()> {
-    tokio::select! {
-        _ = interval.tick() => {}
-        _ = socket.recv(raw) => {
-            let packet: BroadcastPacket = deserialize(Vec::from(&mut *raw))?;
-            insert_controller(&mut detected_controllers.lock().await, packet);
-        }
-    }
-    let mut detected_controllers = detected_controllers.lock().await;
-    manage_controller_timeouts(&mut detected_controllers);
-    detect_controllers(&mut detected_controllers, &socket, raw).await?;
-    Ok(())
-}
-
-// For each controller, ensures that it is not timed out
-fn manage_controller_timeouts(detected_controllers: &mut MutexGuard<'_, ControllerMap>) {
-    for state in detected_controllers.values_mut() {
-        replace_if_timed_out(state);
-    }
-}
-
-// Detect controllers and add them to the detected_controllers list
-async fn detect_controllers(
-    detected_controllers: &mut MutexGuard<'_, ControllerMap>,
-    sock: &UdpSocket,
-    raw: &mut [u8],
-) -> Result<()> {
-    if let Ok(_) = sock.try_recv(raw) {
-        printdbg!("Packet received.");
-        let packet: BroadcastPacket = deserialize(Vec::from(raw))?;
-        insert_controller(detected_controllers, packet);
-        Ok(())
-    } else {
-        Ok(())
-    }
-}
-
-// Inserts a controller at key `id` if it does not already exist
-fn insert_controller(
-    detected_controllers: &mut MutexGuard<'_, ControllerMap>,
-    packet: BroadcastPacket,
-) {
-    if !detected_controllers.contains_key(packet.id()) {
-        let diagnostic: ControllerDiagnostic = packet.into();
-        detected_controllers.insert(*diagnostic.id(), diagnostic);
-    } else if let Some(diagnostic) = detected_controllers.get_mut(packet.id()) {
-        diagnostic.latency.push_back(Some(packet.latency()));
-        diagnostic.last_ping = Local::now().timestamp();
-    }
-}
-
-// Takes a mutable reference to a controller state, and sets it to `NotResponding` if it has timed
-// out
-fn replace_if_timed_out(diagnostic: &mut ControllerDiagnostic) {
-    if !check_controller_responding(diagnostic) {
-        diagnostic.status = ControllerState::NotResponding;
-    }
-}
-
-// Checks if a controller has sent a ping in less than 15 seconds, and returns true if so
-fn check_controller_responding(diagnostic: &ControllerDiagnostic) -> bool {
-    Local::now().timestamp() - diagnostic.last_ping < 15
 }

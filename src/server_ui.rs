@@ -8,7 +8,7 @@ use std::{
     rc::Rc,
     sync::Arc,
 };
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 use tokio_util::sync::CancellationToken;
 
 use crate::server::ControllerMap;
@@ -207,15 +207,15 @@ impl StarboardServerUI {
 // re-render on every single CPU cycle.
 pub struct StarboardSyncUI {
     terminal: Terminal<CrosstermBackend<Stdout>>,
-    detected_controllers: Arc<Mutex<ControllerMap>>,
-    active_controllers: Arc<Mutex<HashSet<u64>>>,
+    detected_controllers: Arc<RwLock<ControllerMap>>,
+    active_controllers: Arc<RwLock<HashSet<u64>>>,
     cancellation_token: CancellationToken,
 }
 
 impl StarboardSyncUI {
     pub fn new(
-        detected_controllers: Arc<Mutex<ControllerMap>>,
-        active_controllers: Arc<Mutex<HashSet<u64>>>,
+        detected_controllers: Arc<RwLock<ControllerMap>>,
+        active_controllers: Arc<RwLock<HashSet<u64>>>,
         cancellation_token: CancellationToken,
     ) -> Result<Self> {
         ratatui::init();
