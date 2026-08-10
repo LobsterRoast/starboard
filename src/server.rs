@@ -133,7 +133,7 @@ impl StarboardServerBuilder {
     }
 
     // Build the server
-    pub fn build(self, name: String) -> StarboardServer {
+    pub fn build(self, name: String) -> Arc<StarboardServer> {
         let serial_port = self.serial_port;
         let device_search_port = self.device_search_port;
         let enabled_buttons = self.enabled_buttons;
@@ -143,7 +143,7 @@ impl StarboardServerBuilder {
         let active_controllers: Arc<RwLock<HashSet<u64>>> = Arc::new(RwLock::new(HashSet::new()));
         let no_ui = self.no_ui;
 
-        StarboardServer {
+        Arc::new(StarboardServer {
             serial_port,
             device_search_port,
             enabled_buttons,
@@ -154,7 +154,7 @@ impl StarboardServerBuilder {
             no_ui,
             mutated: AtomicBool::new(false),
             cancellation_token: CancellationToken::new(),
-        }
+        })
     }
 
     // Enable `button` on the server
@@ -236,8 +236,8 @@ impl StarboardServer {
             self.cancellation_token.clone(),
         )?;
         while (&self).cancellation_token.is_cancelled() {
-            &self.poll_events(&mut ui)?;
-            &self.update_ui(&ui)?;
+            let _ = &self.poll_events(&mut ui)?;
+            let _ = &self.update_ui(&ui)?;
         }
         Ok(())
     }
