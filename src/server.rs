@@ -150,6 +150,7 @@ impl StarboardServerBuilder {
             name,
             no_ui,
             mutated: AtomicBool::new(false),
+            cancellation_token: CancellationToken::new(),
         }
     }
 
@@ -213,45 +214,42 @@ pub struct StarboardServer {
     name: String,
     no_ui: bool,
     mutated: AtomicBool,
+    cancellation_token: CancellationToken,
 }
 
 impl StarboardServer {
     // Public facing function to run the server
-    pub async fn run(self) -> Result<()> {
-        let device_search_port = self.device_search_port.clone();
-        let detected_controllers = Arc::clone(&self.detected_controllers);
-        let cancellation_token = CancellationToken::new();
-        let mut ui = StarboardServerUI::new(
-            self.detected_controllers.clone(),
-            self.active_controllers.clone(),
-            cancellation_token.clone(),
-        );
-        let sync_ui = StarboardSyncUI::new(
-            self.detected_controllers.clone(),
-            self.active_controllers.clone(),
-        )?;
-        if self
-            .mutated
-            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
-            .or_else(|_| anyhow::bail!("Could not write to atomic boolean variable."))?
-        {
-            sync_ui.render()?;
-        }
-        let mut join_set = JoinSet::new();
-        let no_ui = self.no_ui;
-        join_set.spawn(self.server_loop());
-        join_set.spawn(manage_controllers(device_search_port, detected_controllers));
-        if !no_ui {
-            join_set.spawn_blocking(move || ui.launch_ui());
-        }
-        if let Some(Ok(Err(e))) = join_set.join_next().await {
-            cancellation_token.cancel();
-            join_set.shutdown().await;
-            panic!("{e}");
-        } else {
-            join_set.abort_all();
+    pub async fn run(mut self) -> Result<()> {
+        if !self.no_ui {
+            self.run_ui()?;
         }
         Ok(())
+    }
+
+    fn run_ui(&mut self) -> Result<()> {
+        let ui = StarboardSyncUI::new(
+            self.detected_controllers.clone(),
+            self.active_controllers.clone(),
+            self.cancellation_token.clone(),
+        )?;
+        while !self.cancellation_token.is_cancelled() {
+            self.update_ui(&ui)?
+        }
+        Ok(())
+    }
+
+    fn update_ui(&mut self, ui: &StarboardSyncUI) -> Result<()> {
+        if self.poll_program_state_change()? {
+            ui.render()?;
+        }
+        Ok(())
+    }
+
+    fn poll_program_state_change(&mut self) -> Result<bool> {
+        Ok(self
+            .mutated
+            .compare_exchange(true, false, Ordering::Acquire, Ordering::Relaxed)
+            .or_else(|_| anyhow::bail!("Could not compare and exchange values on `StarboardServer::mutated` atomic boolean"))?)
     }
 
     // This is the main loop for the server that receives packets and sends them to the input

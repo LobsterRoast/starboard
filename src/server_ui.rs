@@ -209,18 +209,21 @@ pub struct StarboardSyncUI {
     terminal: Terminal<CrosstermBackend<Stdout>>,
     detected_controllers: Arc<Mutex<ControllerMap>>,
     active_controllers: Arc<Mutex<HashSet<u64>>>,
+    cancellation_token: CancellationToken,
 }
 
 impl StarboardSyncUI {
     pub fn new(
         detected_controllers: Arc<Mutex<ControllerMap>>,
         active_controllers: Arc<Mutex<HashSet<u64>>>,
+        cancellation_token: CancellationToken,
     ) -> Result<Self> {
         ratatui::init();
         Ok(Self {
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             detected_controllers,
             active_controllers,
+            cancellation_token,
         })
     }
 
