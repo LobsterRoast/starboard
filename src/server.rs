@@ -224,6 +224,7 @@ impl StarboardServer {
     // Public facing function to run the server
     pub async fn run(self: Arc<Self>) -> Result<()> {
         tokio::spawn(self.clone().run_serial_loop());
+        tokio::spawn(self.clone().run_device_search_loop());
         if !self.no_ui {
             self.run_ui()?;
         }
@@ -305,6 +306,66 @@ impl StarboardServer {
     }
 
     async fn run_device_search_loop(self: Arc<Self>) -> Result<()> {
+        let addr = format!("0.0.0.0:{}", self.device_search_port);
+        let sock = UdpSocket::bind(addr).await?;
+        let mut interval = interval(Duration::from_secs(3));
+        let mut buf: [u8; 256] = [0; 256];
+        while !(&self).cancellation_token.is_cancelled() {
+            let _ = &self
+                .poll_device_search_state(&sock, &mut interval, &mut buf)
+                .await;
+        }
         Ok(())
+    }
+
+    async fn poll_device_search_state(
+        self: &Arc<Self>,
+        sock: &UdpSocket,
+        interval: &mut Interval,
+        buf: &mut [u8; 256],
+    ) -> Result<()> {
+        tokio::select! {
+            _ = interval.tick() => {}
+            _ = sock.recv(buf) => self.handle_device_search_packet(buf).await?
+
+        }
+        self.update_timeout_statuses().await;
+        Ok(())
+    }
+
+    async fn handle_device_search_packet(self: &Arc<Self>, buf: &mut [u8; 256]) -> Result<()> {
+        let packet: BroadcastPacket = deserialize(Vec::from(&mut *buf))?;
+        self.update_device_info_with_packet(packet).await;
+        Ok(())
+    }
+
+    async fn update_device_info_with_packet(self: &Arc<Self>, packet: BroadcastPacket) {
+        let mut detected_controllers = self.detected_controllers.write().await;
+        if !detected_controllers.contains_key(packet.id()) {
+            let diagnostic: ControllerDiagnostic = packet.into();
+            detected_controllers.insert(*diagnostic.id(), diagnostic);
+        } else if let Some(diagnostic) = detected_controllers.get_mut(packet.id()) {
+            diagnostic.latency.push_back(Some(packet.latency()));
+            diagnostic.last_ping = Local::now().timestamp();
+        }
+        self.mutated.store(true, Ordering::Relaxed);
+    }
+
+    async fn update_timeout_statuses(self: &Arc<Self>) {
+        let mut detected_controllers = self.detected_controllers.write().await;
+        for diagnostic in detected_controllers.values_mut() {
+            Self::update_timeout_status(diagnostic);
+        }
+    }
+
+    fn update_timeout_status(diagnostic: &mut ControllerDiagnostic) {
+        if Self::poll_device_timed_out(diagnostic) {
+            diagnostic.status = ControllerState::NotResponding;
+        }
+    }
+
+    #[inline]
+    fn poll_device_timed_out(diagnostic: &ControllerDiagnostic) -> bool {
+        Local::now().timestamp() - diagnostic.last_ping >= 15
     }
 }
