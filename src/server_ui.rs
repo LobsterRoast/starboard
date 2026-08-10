@@ -230,6 +230,25 @@ impl StarboardSyncUI {
     pub fn render(&self) -> Result<()> {
         Ok(())
     }
+
+    pub fn handle_event(&mut self, event: Event) {
+        match event {
+            Event::Key(key) => self.handle_key_press(key),
+            _ => {}
+        }
+    }
+
+    fn handle_key_press(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Char('c') => {
+                // TODO: Clean up this nested logic. Yes, I was lazy when I wrote it.
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
+                    self.cancellation_token.cancel();
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 impl Drop for StarboardSyncUI {
