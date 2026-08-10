@@ -222,41 +222,41 @@ pub struct StarboardServer {
 
 impl StarboardServer {
     // Public facing function to run the server
-    pub async fn run(mut self) -> Result<()> {
+    pub async fn run(self: Arc<Self>) -> Result<()> {
         if !self.no_ui {
             self.run_ui()?;
         }
         Ok(())
     }
 
-    fn run_ui(&mut self) -> Result<()> {
+    fn run_ui(self: Arc<Self>) -> Result<()> {
         let mut ui = StarboardSyncUI::new(
             self.detected_controllers.clone(),
             self.active_controllers.clone(),
             self.cancellation_token.clone(),
         )?;
-        while !self.cancellation_token.is_cancelled() {
-            self.poll_events(&mut ui)?;
-            self.update_ui(&ui)?;
+        while (&self).cancellation_token.is_cancelled() {
+            &self.poll_events(&mut ui)?;
+            &self.update_ui(&ui)?;
         }
         Ok(())
     }
 
-    fn poll_events(&self, ui: &mut StarboardSyncUI) -> Result<()> {
+    fn poll_events(self: &Arc<Self>, ui: &mut StarboardSyncUI) -> Result<()> {
         while event::poll(Duration::default())? {
             ui.handle_event(event::read()?);
         }
         Ok(())
     }
 
-    fn update_ui(&mut self, ui: &StarboardSyncUI) -> Result<()> {
+    fn update_ui(self: &Arc<Self>, ui: &StarboardSyncUI) -> Result<()> {
         if let Ok(true) = self.poll_program_state_change() {
             ui.render()?;
         }
         Ok(())
     }
 
-    fn poll_program_state_change(&mut self) -> Result<bool> {
+    fn poll_program_state_change(self: &Arc<Self>) -> Result<bool> {
         Ok(self
             .mutated
             .compare_exchange(true, false, Ordering::Acquire, Ordering::Relaxed)
@@ -265,7 +265,7 @@ impl StarboardServer {
 
     // This is the main loop for the server that receives packets and sends them to the input
     // handling
-    async fn server_loop(self) -> Result<()> {
+    async fn run_serial_loop(self: Arc<Self>) -> Result<()> {
         let mut buf: [u8; 256] = [0; 256];
         let mut virt_joystick = VirtualJoystickBuilder::new()?
             .enable_buttons_bitmask(self.enabled_buttons)?
@@ -300,6 +300,10 @@ impl StarboardServer {
         for input in inputs {
             virt_joystick.send_input(input)?;
         }
+        Ok(())
+    }
+
+    async fn run_device_search_loop(self: Arc<Self>) -> Result<()> {
         Ok(())
     }
 }
