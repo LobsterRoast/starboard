@@ -223,11 +223,13 @@ pub struct StarboardServer {
 impl StarboardServer {
     // Public facing function to run the server
     pub async fn run(self: Arc<Self>) -> Result<()> {
-        tokio::spawn(self.clone().run_serial_loop());
-        tokio::spawn(self.clone().run_device_search_loop());
+        let mut join_set = JoinSet::new();
+        join_set.spawn(self.clone().run_serial_loop());
+        join_set.spawn(self.clone().run_device_search_loop());
         if !self.no_ui {
-            tokio::task::spawn_blocking(|| self.run_ui().unwrap());
+            join_set.spawn_blocking(|| self.run_ui());
         }
+        join_set.join_next().await;
         Ok(())
     }
 
