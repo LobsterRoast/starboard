@@ -31,7 +31,7 @@ use crate::{
     fixed_queue::FixedQueue,
     input::{IntoID, StarboardInputPacket},
     printdbg,
-    server_ui::{StarboardServerUI, StarboardSyncUI},
+    server_ui::StarboardServerUI,
     string::StarboardString,
 };
 
@@ -232,7 +232,7 @@ impl StarboardServer {
     }
 
     fn run_ui(self: Arc<Self>) -> Result<()> {
-        let mut ui = StarboardSyncUI::new(
+        let mut ui = StarboardServerUI::new(
             self.detected_controllers.clone(),
             self.active_controllers.clone(),
             self.cancellation_token.clone(),
@@ -244,16 +244,16 @@ impl StarboardServer {
         Ok(())
     }
 
-    fn poll_events(self: &Arc<Self>, ui: &mut StarboardSyncUI) -> Result<()> {
+    fn poll_events(self: &Arc<Self>, ui: &mut StarboardServerUI) -> Result<()> {
         while event::poll(Duration::default())? {
             ui.handle_event(event::read()?);
         }
         Ok(())
     }
 
-    fn update_ui(self: &Arc<Self>, ui: &StarboardSyncUI) -> Result<()> {
+    fn update_ui(self: &Arc<Self>, ui: &StarboardServerUI) -> Result<()> {
         if let Ok(true) = self.poll_program_state_change() {
-            ui.render()?;
+            //ui.render()?;
         }
         Ok(())
     }
