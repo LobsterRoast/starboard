@@ -47,7 +47,7 @@ impl StarboardServerUI {
         let terminal = ratatui::init();
         let ui_state = UIState {
             page: UIPage::Home,
-            selection_state: ListState::default(),
+            selection_state: ListState::default().with_selected(Some(0)),
             detected_controllers,
             active_controllers,
         };
@@ -146,20 +146,23 @@ impl StarboardServerUI {
     // Execute behavior based on the currently selected button
     fn on_enter(&mut self) {
         let selected = self.ui_state.selection_state.selected();
-        let mut page = self.ui_state.page;
-        match (page, selected) {
-            (UIPage::Home, Some(0)) => page = UIPage::Controllers,
-            (UIPage::Home, Some(1)) => page = UIPage::Settings,
+        match (self.ui_state.page, selected) {
+            (UIPage::Home, Some(0)) => self.switch_page(UIPage::Controllers),
+            (UIPage::Home, Some(1)) => self.switch_page(UIPage::Settings),
             (UIPage::Home, Some(2)) => self.cancellation_token.cancel(),
             (UIPage::Controllers, Some(v)) => self.toggle_controller(v),
             _ => {}
         }
     }
 
+    fn switch_page(&mut self, page: UIPage) {
+        self.ui_state.page = page;
+        self.ui_state.selection_state.select(Some(0));
+    }
+
     fn on_backspace(&mut self) {
-        let mut page = self.ui_state.page;
-        match page {
-            UIPage::Controllers | UIPage::Settings => page = UIPage::Home,
+        match self.ui_state.page {
+            UIPage::Controllers | UIPage::Settings => self.switch_page(UIPage::Home),
             _ => {}
         }
     }
