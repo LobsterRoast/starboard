@@ -152,7 +152,7 @@ impl StarboardServerBuilder {
             active_controllers,
             name,
             no_ui,
-            mutated: AtomicBool::new(false),
+            mutated: AtomicBool::new(true), // Initialized to true to render the UI
             cancellation_token: CancellationToken::new(),
         })
     }
@@ -237,7 +237,6 @@ impl StarboardServer {
             self.active_controllers.clone(),
             self.cancellation_token.clone(),
         )?;
-        let _ = &self.update_ui(&mut ui);
         while !(&self).cancellation_token.is_cancelled() {
             let _ = &self.poll_events(&mut ui)?;
             let _ = &self.update_ui(&mut ui);
