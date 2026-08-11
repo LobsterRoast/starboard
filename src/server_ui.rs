@@ -44,8 +44,7 @@ impl StarboardServerUI {
         active_controllers: Arc<RwLock<HashSet<u64>>>,
         cancellation_token: CancellationToken,
     ) -> Result<Self> {
-        ratatui::init();
-        let terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+        let terminal = ratatui::init();
         let ui_state = UIState {
             page: UIPage::Home,
             selection_state: ListState::default(),
