@@ -136,6 +136,8 @@ impl StarboardServerUI {
                     self.cancellation_token.cancel();
                 }
             }
+            KeyCode::Enter => self.on_enter(),
+            KeyCode::Backspace => self.on_backspace(),
             _ => {}
         }
     }
