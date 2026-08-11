@@ -135,6 +135,8 @@ impl StarboardServerUI {
                     self.cancellation_token.cancel();
                 }
             }
+            KeyCode::Up => self.ui_state.selection_state.scroll_up_by(1),
+            KeyCode::Down => self.ui_state.selection_state.scroll_down_by(1),
             KeyCode::Enter => self.on_enter(),
             KeyCode::Backspace => self.on_backspace(),
             _ => {}
