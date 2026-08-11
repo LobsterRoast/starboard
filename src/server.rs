@@ -226,7 +226,7 @@ impl StarboardServer {
         tokio::spawn(self.clone().run_serial_loop());
         tokio::spawn(self.clone().run_device_search_loop());
         if !self.no_ui {
-            self.run_ui()?;
+            tokio::task::spawn_blocking(|| self.run_ui().unwrap());
         }
         Ok(())
     }
