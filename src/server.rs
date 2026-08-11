@@ -247,6 +247,7 @@ impl StarboardServer {
     fn poll_events(self: &Arc<Self>, ui: &mut StarboardServerUI) -> Result<()> {
         while event::poll(Duration::default())? {
             ui.handle_event(event::read()?);
+            self.mutated.store(true, Ordering::Relaxed);
         }
         Ok(())
     }
