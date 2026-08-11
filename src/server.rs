@@ -237,9 +237,10 @@ impl StarboardServer {
             self.active_controllers.clone(),
             self.cancellation_token.clone(),
         )?;
+        let _ = &self.update_ui(&mut ui);
         while !(&self).cancellation_token.is_cancelled() {
             let _ = &self.poll_events(&mut ui)?;
-            let _ = &self.update_ui(&mut ui)?;
+            let _ = &self.update_ui(&mut ui);
         }
         Ok(())
     }
@@ -251,11 +252,10 @@ impl StarboardServer {
         Ok(())
     }
 
-    fn update_ui(self: &Arc<Self>, ui: &mut StarboardServerUI) -> Result<()> {
+    fn update_ui(self: &Arc<Self>, ui: &mut StarboardServerUI) {
         if let Ok(true) = self.poll_program_state_change() {
             ui.render();
         }
-        Ok(())
     }
 
     fn poll_program_state_change(self: &Arc<Self>) -> Result<bool> {

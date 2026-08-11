@@ -65,7 +65,7 @@ impl StarboardServerUI {
             .draw(|frame| Self::render_all(frame, &mut self.ui_state));
     }
     // Renders all components of the UI
-    pub fn render_all(frame: &mut Frame, ui_state: &mut UIState) {
+    fn render_all(frame: &mut Frame, ui_state: &mut UIState) {
         match ui_state.page {
             UIPage::Home => Self::render_home(frame, ui_state),
             UIPage::Controllers => Self::render_controllers(frame, ui_state),
