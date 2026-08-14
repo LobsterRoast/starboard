@@ -39,6 +39,7 @@ impl DummySteamDeck {
             let y_input = StarboardInput::Axis { id: 1, value: y };
             self.inner.send_input(x_input);
             self.inner.send_input(y_input);
+            self.inner.sync();
         }
     }
 }

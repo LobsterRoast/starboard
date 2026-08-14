@@ -64,6 +64,15 @@ impl VirtualJoystick {
         self.raw.emit(&[event])?;
         Ok(())
     }
+
+    // Emits a `sync` input to the virtual device
+    pub fn sync(&mut self) -> Result<()> {
+        const EVENT_TYPE: u16 = evdev::EventType::SYNCHRONIZATION.0;
+        const EVENT_CODE: u16 = evdev::SynchronizationCode::SYN_REPORT.0;
+        let event = InputEvent::new(EVENT_TYPE, EVENT_CODE, 0);
+        self.raw.emit(&[event])?;
+        Ok(())
+    }
 }
 
 // Builder struct for VirtualJoystick

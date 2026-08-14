@@ -301,6 +301,7 @@ impl StarboardServer {
         let inputs = packet.unpack(self.enabled_buttons, self.enabled_axes);
         for input in inputs {
             virt_joystick.send_input(input)?;
+            virt_joystick.sync()?;
         }
         Ok(())
     }
