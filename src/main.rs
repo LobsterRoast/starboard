@@ -118,9 +118,7 @@ async fn client(subcommand_matches: &ArgMatches) -> Result<()> {
 #[tokio::main]
 async fn main() -> Result<()> {
     #[cfg(feature = "dummy-steam-deck")]
-    let dummy_steam_deck = crate::dummy_steam_deck::DummySteamDeck::new()?;
-    #[cfg(feature = "dummy-steam-deck")]
-    tokio::spawn(dummy_steam_deck.create_dummy_inputs());
+    let dummy_steam_deck = crate::dummy_steam_deck::DummySteamDeck::new()?.launch();
 
     let matches = Command::new("starboard")
         .subcommands(starboard_commands())

@@ -21,7 +21,11 @@ impl DummySteamDeck {
         })
     }
 
-    pub async fn create_dummy_inputs(mut self) {
+    pub fn launch(mut self) {
+        tokio::spawn(self.create_dummy_inputs());
+    }
+
+    async fn create_dummy_inputs(mut self) {
         const SPEED: f64 = 0.2;
         let mut interval = tokio::time::interval(Duration::from_millis(16));
         let mut counter: u16 = 0;
