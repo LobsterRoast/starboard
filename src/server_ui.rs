@@ -11,7 +11,9 @@ use std::{
 use tokio::sync::{Mutex, RwLock};
 use tokio_util::sync::CancellationToken;
 
-use crate::server::ControllerMap;
+use crate::evdev_sb::VirtualJoystick;
+use crate::server::{ControllerMap, DiagnosticMap};
+use crate::string::StarboardString;
 
 const LAVENDER: Color = Color::Rgb(150, 100, 175);
 
@@ -26,8 +28,8 @@ enum UIPage {
 pub struct UIState {
     page: UIPage,
     selection_state: ListState,
-    detected_controllers: Arc<RwLock<ControllerMap>>,
-    active_controllers: Arc<RwLock<HashSet<u64>>>,
+    detected_controllers: Arc<RwLock<DiagnosticMap>>,
+    active_controllers: Arc<RwLock<ControllerMap>>,
 }
 
 // This is an optimized version of the UI that can be run in the main thread and does not need to
@@ -40,8 +42,8 @@ pub struct StarboardServerUI {
 
 impl StarboardServerUI {
     pub fn new(
-        detected_controllers: Arc<RwLock<ControllerMap>>,
-        active_controllers: Arc<RwLock<HashSet<u64>>>,
+        detected_controllers: Arc<RwLock<DiagnosticMap>>,
+        active_controllers: Arc<RwLock<ControllerMap>>,
         cancellation_token: CancellationToken,
     ) -> Result<Self> {
         let terminal = ratatui::init();
@@ -102,7 +104,7 @@ impl StarboardServerUI {
         // `active_controllers` but absent
         // from `detected_controllers`
         let active_controller_names = active_controllers
-            .iter()
+            .keys()
             .filter_map(|id| detected_controllers.get(id))
             .map(|diagnostic| diagnostic.name().to_text());
 
@@ -120,14 +122,15 @@ impl StarboardServerUI {
         frame.render_stateful_widget(detected_list, detected_rect, &mut ui_state.selection_state);
     }
 
-    pub fn handle_event(&mut self, event: Event) {
+    pub fn handle_event(&mut self, event: Event) -> Result<()> {
         match event {
-            Event::Key(key) => self.handle_key_press(key),
+            Event::Key(key) => self.handle_key_press(key)?,
             _ => {}
         }
+        Ok(())
     }
 
-    fn handle_key_press(&mut self, key: KeyEvent) {
+    fn handle_key_press(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
             KeyCode::Char('c') => {
                 // TODO: Clean up this nested logic. Yes, I was lazy when I wrote it.
@@ -137,22 +140,24 @@ impl StarboardServerUI {
             }
             KeyCode::Up => self.ui_state.selection_state.scroll_up_by(1),
             KeyCode::Down => self.ui_state.selection_state.scroll_down_by(1),
-            KeyCode::Enter => self.on_enter(),
+            KeyCode::Enter => self.on_enter()?,
             KeyCode::Backspace => self.on_backspace(),
             _ => {}
         }
+        Ok(())
     }
 
     // Execute behavior based on the currently selected button
-    fn on_enter(&mut self) {
+    fn on_enter(&mut self) -> Result<()> {
         let selected = self.ui_state.selection_state.selected();
         match (self.ui_state.page, selected) {
             (UIPage::Home, Some(0)) => self.switch_page(UIPage::Controllers),
             (UIPage::Home, Some(1)) => self.switch_page(UIPage::Settings),
             (UIPage::Home, Some(2)) => self.cancellation_token.cancel(),
-            (UIPage::Controllers, Some(v)) => self.toggle_controller(v),
+            (UIPage::Controllers, Some(v)) => self.toggle_controller(v)?,
             _ => {}
         }
+        Ok(())
     }
 
     fn switch_page(&mut self, page: UIPage) {
@@ -168,16 +173,18 @@ impl StarboardServerUI {
     }
 
     // Toggles whether a detected controller is enabled or not
-    fn toggle_controller(&self, selected: usize) {
+    fn toggle_controller(&self, selected: usize) -> Result<()> {
         let detected_controllers = self.ui_state.detected_controllers.blocking_read();
         let mut active_controllers = self.ui_state.active_controllers.blocking_write();
         let controller = detected_controllers.values().nth(selected).unwrap();
         let id = controller.id();
-        if active_controllers.contains(id) {
+        let name = controller.name();
+        if active_controllers.contains_key(id) {
             active_controllers.remove(id);
         } else {
-            active_controllers.insert(*id);
+            active_controllers.insert(*id, VirtualJoystick::steam_deck_template(*name)?);
         }
+        Ok(())
     }
 }
 

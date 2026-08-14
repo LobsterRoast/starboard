@@ -10,6 +10,7 @@ use crate::{
     bitmask::Bitmask,
     input::{FromByte, IntoID, StarboardInput},
     printdbg,
+    string::StarboardString,
 };
 
 pub const SUPPORTED_BUTTONS: [KeyCode; 15] = [
@@ -47,6 +48,16 @@ pub struct VirtualJoystick {
 }
 
 impl VirtualJoystick {
+    pub fn steam_deck_template(name: StarboardString) -> Result<Self> {
+        let buttons = SUPPORTED_BUTTONS.iter().map(|button| *button).collect();
+        let axes = SUPPORTED_AXES.iter().map(|axis| *axis).collect();
+        let name: &str = &(<StarboardString as Into<String>>::into(name));
+        Ok(VirtualJoystickBuilder::new()?
+            .enable_buttons_bitmask(buttons)?
+            .enable_axes_bitmask(axes)?
+            .build(name)?)
+    }
+
     // Sends `input` to your system's input handling
     pub fn send_input(&mut self, input: StarboardInput) -> Result<()> {
         let event: InputEvent = input.try_into()?;

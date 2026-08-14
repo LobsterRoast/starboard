@@ -2,20 +2,20 @@ use core::{
     fmt::{self, Display, Formatter},
     time::Duration,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use tokio::net::UdpSocket;
 
 use evdev::{AbsoluteAxisCode, KeyCode};
 
 use tokio::{
     select,
-    sync::{MutexGuard, RwLock, RwLockWriteGuard},
+    sync::{RwLock, RwLockWriteGuard},
     task::JoinSet,
     time::{Interval, interval},
 };
 use tokio_util::sync::CancellationToken;
 
-use chrono::{DateTime, Local};
+use chrono::Local;
 
 use std::sync::{
     Arc,
@@ -27,7 +27,7 @@ use crossterm::event;
 use crate::{
     bitmask::Bitmask,
     datagram::{BroadcastPacket, deserialize},
-    evdev_sb::{VirtualJoystick, VirtualJoystickBuilder},
+    evdev_sb::VirtualJoystick,
     fixed_queue::FixedQueue,
     input::{IntoID, StarboardInputPacket},
     printdbg,
@@ -37,7 +37,8 @@ use crate::{
 
 use anyhow::Result;
 
-pub type ControllerMap = HashMap<u64, ControllerDiagnostic>;
+pub type DiagnosticMap = HashMap<u64, ControllerDiagnostic>;
+pub type ControllerMap = HashMap<u64, VirtualJoystick>;
 
 // Records the current state of a detected controller
 #[derive(Debug, Copy, Clone)]
@@ -138,9 +139,9 @@ impl StarboardServerBuilder {
         let device_search_port = self.device_search_port;
         let enabled_buttons = self.enabled_buttons;
         let enabled_axes = self.enabled_axes;
-        let detected_controllers: Arc<RwLock<ControllerMap>> =
+        let detected_controllers: Arc<RwLock<DiagnosticMap>> =
             Arc::new(RwLock::new(HashMap::new()));
-        let active_controllers: Arc<RwLock<HashSet<u64>>> = Arc::new(RwLock::new(HashSet::new()));
+        let active_controllers: Arc<RwLock<ControllerMap>> = Arc::new(RwLock::new(HashMap::new()));
         let no_ui = self.no_ui;
 
         Arc::new(StarboardServer {
@@ -212,8 +213,8 @@ pub struct StarboardServer {
     device_search_port: u16,
     enabled_buttons: Bitmask, // Bitmask representing all the enabled buttons on the server
     enabled_axes: Bitmask,    // Bitmask representing all the enabled axes on the server
-    detected_controllers: Arc<RwLock<ControllerMap>>,
-    active_controllers: Arc<RwLock<HashSet<u64>>>,
+    detected_controllers: Arc<RwLock<DiagnosticMap>>,
+    active_controllers: Arc<RwLock<ControllerMap>>,
     name: String,
     no_ui: bool,
     mutated: AtomicBool,
@@ -271,18 +272,15 @@ impl StarboardServer {
     // handling
     async fn run_serial_loop(self: Arc<Self>) -> Result<()> {
         let mut buf: [u8; 256] = [0; 256];
-        let mut virt_joystick = VirtualJoystickBuilder::new()?
-            .enable_buttons_bitmask(self.enabled_buttons)?
-            .enable_axes_bitmask(self.enabled_axes)?
-            .build(&self.name)?;
         let addr = format!("0.0.0.0:{}", self.serial_port);
         let sock = UdpSocket::bind(addr).await?;
         loop {
             let _ = self.get_packet(&mut buf, &sock).await;
             let raw = Vec::from(&mut buf);
             let packet: StarboardInputPacket = deserialize(raw)?;
-            let active_controllers = self.active_controllers.read().await;
-            if active_controllers.contains(packet.client_id()) {
+            printdbg!("{:?}", packet);
+            let mut active_controllers = self.active_controllers.write().await;
+            if let Some(mut virt_joystick) = active_controllers.get_mut(packet.client_id()) {
                 self.handle_packet(&mut virt_joystick, packet)?;
             }
         }
