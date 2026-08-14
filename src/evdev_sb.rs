@@ -108,6 +108,10 @@ impl VirtualJoystickBuilder<'_> {
 fn get_device_supported_attributes_score(device: &Device) -> u8 {
     let mut score: u8 = 0;
 
+    if let Some("Dummy Steam Deck") = device.name() {
+        return u8::MAX;
+    }
+
     device
         .supported_keys()
         .unwrap_or(&AttributeSet::new())
@@ -120,7 +124,6 @@ fn get_device_supported_attributes_score(device: &Device) -> u8 {
         .iter()
         .filter(|code| SUPPORTED_AXES.contains(code))
         .for_each(|_| score += 1);
-
     score
 }
 
