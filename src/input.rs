@@ -142,14 +142,14 @@ impl TryInto<InputEvent> for StarboardInput {
     fn try_into(self) -> Result<InputEvent> {
         Ok(match self {
             StarboardInput::Axis { id, value } => {
-                let event_type = EventType::ABSOLUTE.0;
-                let event_code = FromID::<AbsoluteAxisCode>::from_id(id)?;
-                InputEvent::new(event_type, event_code.0, value.into())
+                const EVENT_TYPE: u16 = EventType::ABSOLUTE.0;
+                let event_code = FromID::<AbsoluteAxisCode>::from_id(id)?.0;
+                InputEvent::new(EVENT_TYPE, event_code, value.into())
             }
             StarboardInput::Button { id, value } => {
-                let event_type = EventType::KEY.0;
-                let event_code = FromID::<KeyCode>::from_id(id)?;
-                InputEvent::new(event_type, event_code.0, value.into())
+                const EVENT_TYPE: u16 = EventType::KEY.0;
+                let event_code = FromID::<KeyCode>::from_id(id)?.0;
+                InputEvent::new(EVENT_TYPE, event_code, value.into())
             }
         })
     }
