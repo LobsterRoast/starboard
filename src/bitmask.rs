@@ -94,7 +94,9 @@ impl FromIterator<KeyCode> for Bitmask {
         value
             .into_iter()
             .filter_map(|code| code.into_id().ok())
-            .for_each(|code| raw |= code);
+            .for_each(|code| {
+                raw |= 1 << code;
+            });
         Bitmask { raw, size: LEN }
     }
 }
@@ -109,7 +111,7 @@ impl FromIterator<AbsoluteAxisCode> for Bitmask {
         value
             .into_iter()
             .filter_map(|code| code.into_id().ok())
-            .for_each(|code| raw |= code);
+            .for_each(|code| raw |= 1 << code);
         Bitmask { raw, size: LEN }
     }
 }
