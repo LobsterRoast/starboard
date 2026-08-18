@@ -249,7 +249,7 @@ impl StarboardServer {
 
     fn poll_events(self: &Arc<Self>, ui: &mut StarboardServerUI) -> Result<()> {
         while event::poll(Duration::default())? {
-            ui.handle_event(event::read()?);
+            ui.handle_event(event::read()?)?;
             self.mutated.store(true, Ordering::Relaxed);
         }
         Ok(())
@@ -355,13 +355,14 @@ impl StarboardServer {
     async fn update_timeout_statuses(self: &Arc<Self>) {
         let mut detected_controllers = self.detected_controllers.write().await;
         for diagnostic in detected_controllers.values_mut() {
-            Self::update_timeout_status(diagnostic);
+            self.update_timeout_status(diagnostic);
         }
     }
 
-    fn update_timeout_status(diagnostic: &mut ControllerDiagnostic) {
+    fn update_timeout_status(self: &Arc<Self>, diagnostic: &mut ControllerDiagnostic) {
         if Self::poll_device_timed_out(diagnostic) {
             diagnostic.status = ControllerState::NotResponding;
+            self.mutated.store(true, Ordering::Relaxed);
         }
     }
 
