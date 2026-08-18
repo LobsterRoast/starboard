@@ -13,7 +13,7 @@ use crate::{
     string::StarboardString,
 };
 
-pub const SUPPORTED_BUTTONS: [KeyCode; 15] = [
+pub const SUPPORTED_BUTTONS: [KeyCode; 17] = [
     KeyCode::BTN_NORTH,
     KeyCode::BTN_SOUTH,
     KeyCode::BTN_EAST,
@@ -29,6 +29,8 @@ pub const SUPPORTED_BUTTONS: [KeyCode; 15] = [
     KeyCode::BTN_TRIGGER_HAPPY3,
     KeyCode::BTN_TRIGGER_HAPPY4,
     KeyCode::BTN_MODE,
+    KeyCode::BTN_THUMB,
+    KeyCode::BTN_THUMB2,
 ];
 
 pub const SUPPORTED_AXES: [AbsoluteAxisCode; 8] = [

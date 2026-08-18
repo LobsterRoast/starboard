@@ -200,6 +200,8 @@ impl FromByte<KeyCode> for u32 {
             4096 => KeyCode::BTN_TRIGGER_HAPPY3,
             8192 => KeyCode::BTN_TRIGGER_HAPPY4,
             16384 => KeyCode::BTN_MODE,
+            32768 => KeyCode::BTN_THUMB,
+            65536 => KeyCode::BTN_THUMB2,
             _ => bail!("Couldn't convert given u32 '{self}' into `KeyCode`"),
         })
     }
@@ -223,6 +225,8 @@ impl IntoByte for KeyCode {
             KeyCode::BTN_TRIGGER_HAPPY3 => 4096,
             KeyCode::BTN_TRIGGER_HAPPY4 => 8192,
             KeyCode::BTN_MODE => 16384,
+            KeyCode::BTN_THUMB => 32768,
+            KeyCode::BTN_THUMB2 => 65536,
             _ => bail!("Couldn't convert given KeyCode '{self:?}' into `u32`"),
         })
     }
@@ -320,6 +324,8 @@ impl IntoID for KeyCode {
             KeyCode::BTN_TRIGGER_HAPPY3 => 12,
             KeyCode::BTN_TRIGGER_HAPPY4 => 13,
             KeyCode::BTN_MODE => 14,
+            KeyCode::BTN_THUMB => 15,
+            KeyCode::BTN_THUMB2 => 16,
             _ => bail!("Couldn't convert given KeyCode '{self:?}' into a Starboard ID.",),
         })
     }
@@ -346,6 +352,8 @@ impl FromID<KeyCode> for u32 {
             12 => KeyCode::BTN_TRIGGER_HAPPY3,
             13 => KeyCode::BTN_TRIGGER_HAPPY4,
             14 => KeyCode::BTN_MODE,
+            15 => KeyCode::BTN_THUMB,
+            16 => KeyCode::BTN_THUMB2,
             _ => bail!("Couldn't convert given Starboard ID '{self}' into `KeyCode`."),
         })
     }
