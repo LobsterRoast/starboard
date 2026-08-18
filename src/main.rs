@@ -120,6 +120,8 @@ async fn main() -> Result<()> {
     #[cfg(feature = "dummy-steam-deck")]
     let _dummy_steam_deck = {
         let dummy_steam_deck = crate::dummy_steam_deck::DummySteamDeck::new()?.launch();
+        // The Dummy Steam Deck takes a bit of time to initialize. The main thread must wait for it
+        // to finish before continuing.
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     };
 
