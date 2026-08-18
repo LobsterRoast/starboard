@@ -10,38 +10,12 @@ use bincode::{Decode, Encode};
 use tokio::net::UdpSocket;
 use tokio::time::{Duration, sleep};
 
-type SteamworksClient = steamworks::Client;
-type SteamworksInput = steamworks::Input;
-
 // If testing both the client and server on the same device, the loopback address must be used
 // instead of the broadcast address.
 #[cfg(feature = "loopback")]
 static BC_ADDR: &'static str = "127.0.0.1";
 #[cfg(not(feature = "loopback"))]
 static BC_ADDR: &'static str = "255.255.255.255";
-
-// This is a wrapper that will initialize steamworks and automatically deinitializes when it goes
-// out of scope.
-// Steamworks requires an app ID in `steam_appid.txt` to run. For the sake of this app, the ID '480' (the official ID
-// for 'Spacewars', provided by Valve for testing Steamworks apps) will be used.
-struct SteamworksWrapper {
-    client: SteamworksClient,
-    input: SteamworksInput,
-}
-
-impl SteamworksWrapper {
-    pub fn init() -> Result<Self> {
-        let client = SteamworksClient::init()?;
-        let input = client.input();
-        Ok(Self { client, input })
-    }
-}
-
-impl Drop for SteamworksWrapper {
-    fn drop(&mut self) {
-        self.input.shutdown();
-    }
-}
 
 // Since all the info needed for the server to see a client is contained
 // in the client struct itself, we can just directly encode and decode
@@ -67,7 +41,6 @@ impl StarboardClient {
 
     // Run the client loop
     pub async fn run(&self) -> Result<()> {
-        let _steamworks = SteamworksWrapper::init()?;
         let device = DeviceWrapper::get_steam_deck()?;
         let dest_addr = format!("{}:{}", BC_ADDR, self.serial_port);
         let sock = UdpSocket::bind("0.0.0.0:0").await?;
