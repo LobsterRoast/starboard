@@ -8,7 +8,7 @@ use evdev::{
 
 use crate::{
     bitmask::Bitmask,
-    input::{FromByte, IntoID, StarboardInput},
+    input::{FromByte, FromID, IntoID, StarboardInput},
     printdbg,
     string::StarboardString,
 };
@@ -105,7 +105,8 @@ impl VirtualJoystickBuilder<'_> {
             if !state {
                 continue;
             }
-            if let Ok(key_code) = FromByte::<KeyCode>::from_byte(1 << bit) {
+            let id: u32 = bit.try_into()?;
+            if let Ok(key_code) = FromID::<KeyCode>::from_id(id) {
                 attribute_set.insert(key_code);
             }
         }
