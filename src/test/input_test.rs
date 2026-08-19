@@ -129,21 +129,9 @@ fn test_into_byte_evdev() {
 }
 
 #[test]
-fn test_from_byte_evdev() {
-    let key_code: KeyCode = 1024.from_byte().unwrap();
-    assert_eq!(key_code, KeyCode::BTN_TRIGGER_HAPPY1);
-}
-
-#[test]
 #[should_panic]
 fn test_into_byte_evdev_panics() {
     KeyCode::KEY_BRIGHTNESS_MAX.into_byte().unwrap();
-}
-
-#[test]
-#[should_panic]
-fn test_from_byte_evdev_panics() {
-    FromByte::<KeyCode>::from_byte(246).unwrap();
 }
 
 #[test]

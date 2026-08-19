@@ -1,6 +1,9 @@
 use core::{convert::TryInto, iter::IntoIterator};
 
-use crate::bitmask::Bitmask;
+use crate::{
+    bitmask::Bitmask,
+    evdev_sb::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
+};
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
 use evdev::{AbsInfo, AbsoluteAxisCode, EventType, InputEvent, KeyCode, UinputAbsSetup};
@@ -179,6 +182,8 @@ pub trait FromID<T> {
         T: Sized;
 }
 
+// This is deprecated but I'm keeping it here just in case
+/*
 impl FromByte<KeyCode> for u32 {
     fn from_byte(self) -> Result<KeyCode>
     where
@@ -206,6 +211,7 @@ impl FromByte<KeyCode> for u32 {
         })
     }
 }
+*/
 
 impl IntoByte for KeyCode {
     fn into_byte(self) -> Result<u32> {
@@ -336,26 +342,12 @@ impl FromID<KeyCode> for u32 {
     where
         KeyCode: Sized,
     {
-        Ok(match self {
-            0 => KeyCode::BTN_NORTH,
-            1 => KeyCode::BTN_SOUTH,
-            2 => KeyCode::BTN_EAST,
-            3 => KeyCode::BTN_WEST,
-            4 => KeyCode::BTN_THUMBL,
-            5 => KeyCode::BTN_THUMBR,
-            6 => KeyCode::BTN_TL,
-            7 => KeyCode::BTN_TR,
-            8 => KeyCode::BTN_START,
-            9 => KeyCode::BTN_SELECT,
-            10 => KeyCode::BTN_TRIGGER_HAPPY1,
-            11 => KeyCode::BTN_TRIGGER_HAPPY2,
-            12 => KeyCode::BTN_TRIGGER_HAPPY3,
-            13 => KeyCode::BTN_TRIGGER_HAPPY4,
-            14 => KeyCode::BTN_MODE,
-            15 => KeyCode::BTN_THUMB,
-            16 => KeyCode::BTN_THUMB2,
-            _ => bail!("Couldn't convert given Starboard ID '{self}' into `KeyCode`."),
-        })
+        let index = self as usize;
+        if index < SUPPORTED_BUTTONS.len() {
+            Ok(SUPPORTED_BUTTONS[index])
+        } else {
+            bail!("Couldn't convert given Starboard ID '{self}' into `KeyCode`.")
+        }
     }
 }
 
@@ -377,16 +369,11 @@ impl IntoID for AbsoluteAxisCode {
 
 impl FromID<AbsoluteAxisCode> for u32 {
     fn from_id(self) -> Result<AbsoluteAxisCode> {
-        Ok(match self {
-            0 => AbsoluteAxisCode::ABS_X,
-            1 => AbsoluteAxisCode::ABS_Y,
-            2 => AbsoluteAxisCode::ABS_Z,
-            3 => AbsoluteAxisCode::ABS_RX,
-            4 => AbsoluteAxisCode::ABS_RY,
-            5 => AbsoluteAxisCode::ABS_RZ,
-            6 => AbsoluteAxisCode::ABS_HAT0X,
-            7 => AbsoluteAxisCode::ABS_HAT0Y,
-            _ => bail!("Couldn't convert given Starboard ID {self} into `AbsoluteAxisCode`."),
-        })
+        let index = self as usize;
+        if index < SUPPORTED_AXES.len() {
+            Ok(SUPPORTED_AXES[index])
+        } else {
+            bail!("Couldn't convert given Starboard ID '{self}' into `KeyCode`.")
+        }
     }
 }
