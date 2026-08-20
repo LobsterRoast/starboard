@@ -2,7 +2,7 @@ use core::{convert::TryInto, iter::IntoIterator};
 
 use crate::{
     bitmask::Bitmask,
-    evdev_sb::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
+    supported_actions::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
 };
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
@@ -343,11 +343,10 @@ impl FromID<KeyCode> for u32 {
         KeyCode: Sized,
     {
         let index = self as usize;
-        if index < SUPPORTED_BUTTONS.len() {
-            Ok(SUPPORTED_BUTTONS[index])
-        } else {
-            bail!("Couldn't convert given Starboard ID '{self}' into `KeyCode`.")
-        }
+        Ok(match SUPPORTED_BUTTONS.get_index(index) {
+            Some(v) => *v.0,
+            _ => bail!("Couldn't convert given Starboard ID '{self}' into `KeyCode`."),
+        })
     }
 }
 
@@ -370,10 +369,9 @@ impl IntoID for AbsoluteAxisCode {
 impl FromID<AbsoluteAxisCode> for u32 {
     fn from_id(self) -> Result<AbsoluteAxisCode> {
         let index = self as usize;
-        if index < SUPPORTED_AXES.len() {
-            Ok(SUPPORTED_AXES[index])
-        } else {
-            bail!("Couldn't convert given Starboard ID '{self}' into `KeyCode`.")
-        }
+        Ok(match SUPPORTED_AXES.get_index(index) {
+            Some(v) => *v.0,
+            _ => bail!("Couldn't convert given Starboard ID '{self}' into `AbsoluteAxisCode`."),
+        })
     }
 }

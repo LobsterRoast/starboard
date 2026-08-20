@@ -5,44 +5,15 @@ use evdev::{
     AbsoluteAxisCode, AttributeSet, Device, InputEvent, KeyCode, enumerate,
     uinput::{VirtualDevice, VirtualDeviceBuilder},
 };
+use heapless::index_map::FnvIndexMap;
 
 use crate::{
     bitmask::Bitmask,
     input::{FromByte, FromID, IntoID, StarboardInput},
     printdbg,
     string::StarboardString,
+    supported_actions::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
 };
-
-pub const SUPPORTED_BUTTONS: [KeyCode; 17] = [
-    KeyCode::BTN_NORTH,
-    KeyCode::BTN_SOUTH,
-    KeyCode::BTN_EAST,
-    KeyCode::BTN_WEST,
-    KeyCode::BTN_THUMBL,
-    KeyCode::BTN_THUMBR,
-    KeyCode::BTN_TL,
-    KeyCode::BTN_TR,
-    KeyCode::BTN_START,
-    KeyCode::BTN_SELECT,
-    KeyCode::BTN_TRIGGER_HAPPY1,
-    KeyCode::BTN_TRIGGER_HAPPY2,
-    KeyCode::BTN_TRIGGER_HAPPY3,
-    KeyCode::BTN_TRIGGER_HAPPY4,
-    KeyCode::BTN_MODE,
-    KeyCode::BTN_THUMB,
-    KeyCode::BTN_THUMB2,
-];
-
-pub const SUPPORTED_AXES: [AbsoluteAxisCode; 8] = [
-    AbsoluteAxisCode::ABS_X,
-    AbsoluteAxisCode::ABS_Y,
-    AbsoluteAxisCode::ABS_Z,
-    AbsoluteAxisCode::ABS_RX,
-    AbsoluteAxisCode::ABS_RY,
-    AbsoluteAxisCode::ABS_RZ,
-    AbsoluteAxisCode::ABS_HAT0X,
-    AbsoluteAxisCode::ABS_HAT0Y,
-];
 
 // Wrapper for Virtual Joysticks using uinput instead of SDL3
 pub struct VirtualJoystick {
@@ -51,8 +22,8 @@ pub struct VirtualJoystick {
 
 impl VirtualJoystick {
     pub fn steam_deck_template(name: StarboardString) -> Result<Self> {
-        let buttons = SUPPORTED_BUTTONS.iter().map(|button| *button).collect();
-        let axes = SUPPORTED_AXES.iter().map(|axis| *axis).collect();
+        let buttons = SUPPORTED_BUTTONS.keys().map(|button| *button).collect();
+        let axes = SUPPORTED_AXES.keys().map(|axis| *axis).collect();
         let name: &str = &(<StarboardString as Into<String>>::into(name));
         Ok(VirtualJoystickBuilder::new()?
             .enable_buttons_bitmask(buttons)?
@@ -139,13 +110,13 @@ fn get_device_supported_attributes_score(device: &Device) -> u8 {
         .supported_keys()
         .unwrap_or(&AttributeSet::new())
         .iter()
-        .filter(|code| SUPPORTED_BUTTONS.contains(code))
+        .filter(|code| SUPPORTED_BUTTONS.contains_key(code))
         .for_each(|_| score += 1);
     device
         .supported_absolute_axes()
         .unwrap_or(&AttributeSet::new())
         .iter()
-        .filter(|code| SUPPORTED_AXES.contains(code))
+        .filter(|code| SUPPORTED_AXES.contains_key(code))
         .for_each(|_| score += 1);
     score
 }

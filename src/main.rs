@@ -8,6 +8,7 @@ mod input;
 mod server;
 mod server_ui;
 mod string;
+mod supported_actions;
 
 #[cfg(feature = "dummy-steam-deck")]
 mod dummy_steam_deck;
@@ -21,8 +22,8 @@ use clap::{Arg, ArgMatches, Command};
 
 use crate::{
     client::StarboardClient,
-    evdev_sb::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
     server::StarboardServerBuilder,
+    supported_actions::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
 };
 
 // TODO: Implement the args
@@ -95,9 +96,11 @@ async fn server(subcommand_matches: &ArgMatches) -> Result<()> {
     let no_ui = false;
     #[cfg(feature = "debug")]
     let no_ui = subcommand_matches.get_flag("no-ui");
+    let supported_buttons = SUPPORTED_BUTTONS.keys().map(|code| *code);
+    let supported_axes = SUPPORTED_AXES.keys().map(|code| *code);
     StarboardServerBuilder::new(serial_port, device_search_port)
-        .enable_buttons(SUPPORTED_BUTTONS)?
-        .enable_axes(SUPPORTED_AXES)?
+        .enable_buttons(supported_buttons)?
+        .enable_axes(supported_axes)?
         .disable_ui(no_ui)
         .build(name)
         .run()

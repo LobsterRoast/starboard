@@ -138,7 +138,6 @@ fn test_into_byte_evdev_panics() {
 fn test_starboard_input_into_evdev_input() {
     let starboard_input = StarboardInput::Axis { id: 0, value: 50 };
     let evdev_input: InputEvent = starboard_input.try_into().unwrap();
-
     assert_eq!(evdev_input.event_type(), EventType::ABSOLUTE);
     assert_eq!(evdev_input.code(), AbsoluteAxisCode::ABS_X.0);
     assert_eq!(evdev_input.value(), 50);
