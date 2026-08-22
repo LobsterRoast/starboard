@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
+auto-const-array = "0.2.2"
 bincode = "2.0.1"
 chrono = "0.4.45"
 clap = "4.6.1"

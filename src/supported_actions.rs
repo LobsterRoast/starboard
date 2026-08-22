@@ -1,9 +1,11 @@
+use auto_const_array::auto_const_array_attr as auto_const_array;
 use core::{fmt::Debug, hash::Hash};
 use evdev::{AbsoluteAxisCode, KeyCode};
 use heapless::index_map::FnvIndexMap;
 use std::sync::LazyLock;
 
-const SUPPORTED_BUTTONS_BLUEPRINT: [KeyCode; 24] = [
+#[auto_const_array]
+const SUPPORTED_BUTTONS_BLUEPRINT: [KeyCode; _] = [
     KeyCode::BTN_THUMB,
     KeyCode::BTN_THUMB2,
     KeyCode::BTN_BASE,
@@ -32,7 +34,8 @@ const SUPPORTED_BUTTONS_BLUEPRINT: [KeyCode; 24] = [
 
 pub const BUTTON_COUNT: u32 = SUPPORTED_BUTTONS_BLUEPRINT.len() as u32;
 
-const SUPPORTED_AXES_BLUEPRINT: [AbsoluteAxisCode; 8] = [
+#[auto_const_array]
+const SUPPORTED_AXES_BLUEPRINT: [AbsoluteAxisCode; _] = [
     AbsoluteAxisCode::ABS_X,
     AbsoluteAxisCode::ABS_Y,
     AbsoluteAxisCode::ABS_Z,
