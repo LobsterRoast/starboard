@@ -2,7 +2,7 @@ use core::{convert::TryInto, iter::IntoIterator};
 
 use crate::{
     bitmask::Bitmask,
-    supported_actions::{SUPPORTED_AXES, SUPPORTED_BUTTONS},
+    supported_actions::{AXIS_COUNT, BUTTON_COUNT, SUPPORTED_AXES, SUPPORTED_BUTTONS},
 };
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
@@ -11,18 +11,20 @@ use evdev::{AbsInfo, AbsoluteAxisCode, EventType, InputEvent, KeyCode, UinputAbs
 // There are 25 different buttons in SDL3, requiring at least a u32 to cover them all.
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
 pub struct StarboardButtonStates {
-    pub raw: u32,
+    pub raw: Bitmask,
 }
 
 impl StarboardButtonStates {
     pub fn new() -> Self {
-        Self { raw: 0 }
+        Self {
+            raw: Bitmask::new(BUTTON_COUNT),
+        }
     }
 
     // returns a StarboardInput indicating whether the button at the id-th bit in `raw` is
     // pressed or not
     pub fn get_state(&self, id: u32) -> StarboardInput {
-        let value = (self.raw & (1 << id)) > 0;
+        let value = self.raw.read_bit(id);
         StarboardInput::Button { id, value }
     }
 
@@ -41,19 +43,21 @@ impl StarboardButtonStates {
         if id >= 16 {
             bail!("Could not pack button with id {}; id is out of bounds", id);
         }
-        self.raw |= 1 << id;
+        self.raw.write_bit(id, true);
         Ok(())
     }
 }
 
 #[derive(PartialEq, Eq, Debug, Decode, Encode)]
 pub struct StarboardAxisStates {
-    pub axes: [i16; 8],
+    pub axes: [i16; AXIS_COUNT as usize],
 }
 
 impl StarboardAxisStates {
     pub fn new() -> Self {
-        Self { axes: [0; 8] }
+        Self {
+            axes: [0; AXIS_COUNT as usize],
+        }
     }
 
     // returns a StarboardInput indicating the state of the id-th axis

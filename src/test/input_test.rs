@@ -9,7 +9,14 @@ use crate::{
 };
 use evdev::{AbsoluteAxisCode, EventType, InputEvent, KeyCode};
 
-const TEST_BUTTON_STATES: StarboardButtonStates = StarboardButtonStates { raw: 13 }; // 0b1101
+fn test_button_states() -> StarboardButtonStates {
+    let mut raw = Bitmask::new(32);
+    raw.write_bit(0, true);
+    raw.write_bit(2, true);
+    raw.write_bit(3, true);
+    StarboardButtonStates { raw }
+}
+
 const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
     axes: [0, 145, 223, 1125, 102, 255, 0, 0],
 };
@@ -17,12 +24,12 @@ const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
 #[test]
 fn test_button_get_state() {
     assert_eq!(
-        TEST_BUTTON_STATES.get_state(0),
+        test_button_states().get_state(0),
         StarboardInput::Button { id: 0, value: true }
     );
 
     assert_eq!(
-        TEST_BUTTON_STATES.get_state(1),
+        test_button_states().get_state(1),
         StarboardInput::Button {
             id: 1,
             value: false
@@ -30,12 +37,12 @@ fn test_button_get_state() {
     );
 
     assert_eq!(
-        TEST_BUTTON_STATES.get_state(2),
+        test_button_states().get_state(2),
         StarboardInput::Button { id: 2, value: true }
     );
 
     assert_eq!(
-        TEST_BUTTON_STATES.get_state(3),
+        test_button_states().get_state(3),
         StarboardInput::Button { id: 3, value: true }
     );
 }
@@ -43,7 +50,7 @@ fn test_button_get_state() {
 #[test]
 fn test_button_get_states() {
     let mask = Bitmask::new_from_u32(4, 0b1010);
-    let states = TEST_BUTTON_STATES.get_state_with_mask(mask);
+    let states = test_button_states().get_state_with_mask(mask);
     assert_eq!(
         states,
         vec![
@@ -101,12 +108,12 @@ fn test_axis_get_states() {
 #[test]
 fn test_packet_unwrap() {
     let packet = StarboardInputPacket {
-        buttons: TEST_BUTTON_STATES,
+        buttons: test_button_states(),
         axes: TEST_AXIS_STATES,
         id: 0,
     };
 
-    let buttons = TEST_BUTTON_STATES.get_state_with_mask(Bitmask::MAX);
+    let buttons = test_button_states().get_state_with_mask(Bitmask::MAX);
     let axes = TEST_AXIS_STATES.get_state_with_mask(Bitmask::MAX);
 
     let mut combined_inputs: Vec<StarboardInput> = Vec::new();
