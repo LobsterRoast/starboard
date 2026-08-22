@@ -146,6 +146,6 @@ fn test_starboard_input_into_evdev_input() {
     let evdev_input: InputEvent = starboard_input.try_into().unwrap();
 
     assert_eq!(evdev_input.event_type(), EventType::KEY);
-    assert_eq!(evdev_input.code(), KeyCode::BTN_NORTH.0);
+    assert_eq!(evdev_input.code(), KeyCode::BTN_THUMB.0);
     assert_eq!(evdev_input.value(), 1);
 }

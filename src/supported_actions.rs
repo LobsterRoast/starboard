@@ -3,24 +3,31 @@ use evdev::{AbsoluteAxisCode, KeyCode};
 use heapless::index_map::FnvIndexMap;
 use std::sync::LazyLock;
 
-const SUPPORTED_BUTTONS_BLUEPRINT: [KeyCode; 17] = [
-    KeyCode::BTN_NORTH,
+const SUPPORTED_BUTTONS_BLUEPRINT: [KeyCode; 24] = [
+    KeyCode::BTN_THUMB,
+    KeyCode::BTN_THUMB2,
+    KeyCode::BTN_BASE,
     KeyCode::BTN_SOUTH,
     KeyCode::BTN_EAST,
+    KeyCode::BTN_NORTH,
     KeyCode::BTN_WEST,
-    KeyCode::BTN_THUMBL,
-    KeyCode::BTN_THUMBR,
     KeyCode::BTN_TL,
     KeyCode::BTN_TR,
-    KeyCode::BTN_START,
+    KeyCode::BTN_TL2,
+    KeyCode::BTN_TR2,
     KeyCode::BTN_SELECT,
+    KeyCode::BTN_START,
+    KeyCode::BTN_MODE,
+    KeyCode::BTN_THUMBL,
+    KeyCode::BTN_THUMBR,
+    KeyCode::BTN_DPAD_UP,
+    KeyCode::BTN_DPAD_DOWN,
+    KeyCode::BTN_DPAD_LEFT,
+    KeyCode::BTN_DPAD_RIGHT,
     KeyCode::BTN_TRIGGER_HAPPY1,
     KeyCode::BTN_TRIGGER_HAPPY2,
     KeyCode::BTN_TRIGGER_HAPPY3,
     KeyCode::BTN_TRIGGER_HAPPY4,
-    KeyCode::BTN_MODE,
-    KeyCode::BTN_THUMB,
-    KeyCode::BTN_THUMB2,
 ];
 
 pub const BUTTON_COUNT: u32 = SUPPORTED_BUTTONS_BLUEPRINT.len() as u32;
