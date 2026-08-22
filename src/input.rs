@@ -40,7 +40,7 @@ impl StarboardButtonStates {
 
     // Registers `button` as pressed and packs it ino the `self`
     fn pack_button(&mut self, id: u32) -> Result<()> {
-        if id >= 16 {
+        if id >= BUTTON_COUNT {
             bail!("Could not pack button with id {}; id is out of bounds", id);
         }
         self.raw.write_bit(id, true);
