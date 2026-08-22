@@ -215,26 +215,7 @@ impl FromByte<KeyCode> for u32 {
 
 impl IntoByte for KeyCode {
     fn into_byte(self) -> Result<u32> {
-        Ok(match self {
-            KeyCode::BTN_NORTH => 1,
-            KeyCode::BTN_SOUTH => 2,
-            KeyCode::BTN_EAST => 4,
-            KeyCode::BTN_WEST => 8,
-            KeyCode::BTN_THUMBL => 16,
-            KeyCode::BTN_THUMBR => 32,
-            KeyCode::BTN_TL => 64,
-            KeyCode::BTN_TR => 128,
-            KeyCode::BTN_START => 256,
-            KeyCode::BTN_SELECT => 512,
-            KeyCode::BTN_TRIGGER_HAPPY1 => 1024,
-            KeyCode::BTN_TRIGGER_HAPPY2 => 2048,
-            KeyCode::BTN_TRIGGER_HAPPY3 => 4096,
-            KeyCode::BTN_TRIGGER_HAPPY4 => 8192,
-            KeyCode::BTN_MODE => 16384,
-            KeyCode::BTN_THUMB => 32768,
-            KeyCode::BTN_THUMB2 => 65536,
-            _ => bail!("Couldn't convert given KeyCode '{self:?}' into `u32`"),
-        })
+        Ok((2 as u32).pow(self.into_id()?))
     }
 }
 
@@ -314,26 +295,10 @@ impl FromByte<UinputAbsSetup> for u32 {
 
 impl IntoID for KeyCode {
     fn into_id(self) -> Result<u32> {
-        Ok(match self {
-            KeyCode::BTN_NORTH => 0,
-            KeyCode::BTN_SOUTH => 1,
-            KeyCode::BTN_EAST => 2,
-            KeyCode::BTN_WEST => 3,
-            KeyCode::BTN_THUMBL => 4,
-            KeyCode::BTN_THUMBR => 5,
-            KeyCode::BTN_TL => 6,
-            KeyCode::BTN_TR => 7,
-            KeyCode::BTN_START => 8,
-            KeyCode::BTN_SELECT => 9,
-            KeyCode::BTN_TRIGGER_HAPPY1 => 10,
-            KeyCode::BTN_TRIGGER_HAPPY2 => 11,
-            KeyCode::BTN_TRIGGER_HAPPY3 => 12,
-            KeyCode::BTN_TRIGGER_HAPPY4 => 13,
-            KeyCode::BTN_MODE => 14,
-            KeyCode::BTN_THUMB => 15,
-            KeyCode::BTN_THUMB2 => 16,
-            _ => bail!("Couldn't convert given KeyCode '{self:?}' into a Starboard ID.",),
-        })
+        match SUPPORTED_BUTTONS.get_index_of(&self) {
+            Some(v) => Ok(v as u32),
+            None => bail!("Couldn't convert given KeyCode '{self:?}' into a Starboard ID.",),
+        }
     }
 }
 
@@ -352,17 +317,12 @@ impl FromID<KeyCode> for u32 {
 
 impl IntoID for AbsoluteAxisCode {
     fn into_id(self) -> Result<u32> {
-        Ok(match self {
-            AbsoluteAxisCode::ABS_X => 0,
-            AbsoluteAxisCode::ABS_Y => 1,
-            AbsoluteAxisCode::ABS_Z => 2,
-            AbsoluteAxisCode::ABS_RX => 3,
-            AbsoluteAxisCode::ABS_RY => 4,
-            AbsoluteAxisCode::ABS_RZ => 5,
-            AbsoluteAxisCode::ABS_HAT0X => 6,
-            AbsoluteAxisCode::ABS_HAT0Y => 7,
-            _ => bail!("Couldn't convert given AbsoluteAxisCode {self:?} into a Starboard ID."),
-        })
+        match SUPPORTED_AXES.get_index_of(&self) {
+            Some(v) => Ok(v as u32),
+            None => {
+                bail!("Couldn't convert given AbsoluteAxisCode '{self:?}' into a Starboard ID.",)
+            }
+        }
     }
 }
 

@@ -124,8 +124,8 @@ fn test_packet_unwrap() {
 
 #[test]
 fn test_into_byte_evdev() {
-    assert_eq!(KeyCode::BTN_NORTH.into_byte().unwrap(), 1);
-    assert_eq!(KeyCode::BTN_TRIGGER_HAPPY1.into_byte().unwrap(), 1024);
+    assert_eq!(KeyCode::BTN_THUMB.into_byte().unwrap(), 1);
+    assert_eq!(KeyCode::BTN_TR2.into_byte().unwrap(), 1024);
 }
 
 #[test]
