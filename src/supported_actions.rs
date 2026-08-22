@@ -23,6 +23,8 @@ const SUPPORTED_BUTTONS_BLUEPRINT: [KeyCode; 17] = [
     KeyCode::BTN_THUMB2,
 ];
 
+pub const BUTTON_COUNT: u32 = SUPPORTED_BUTTONS_BLUEPRINT.len() as u32;
+
 const SUPPORTED_AXES_BLUEPRINT: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_X,
     AbsoluteAxisCode::ABS_Y,
@@ -33,6 +35,8 @@ const SUPPORTED_AXES_BLUEPRINT: [AbsoluteAxisCode; 8] = [
     AbsoluteAxisCode::ABS_HAT0X,
     AbsoluteAxisCode::ABS_HAT0Y,
 ];
+
+pub const AXIS_COUNT: u32 = SUPPORTED_AXES_BLUEPRINT.len() as u32;
 
 fn gen_support_map<T, const N: usize>(source: [T; N]) -> FnvIndexMap<T, usize, 32>
 where

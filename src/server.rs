@@ -33,6 +33,7 @@ use crate::{
     printdbg,
     server_ui::StarboardServerUI,
     string::StarboardString,
+    supported_actions::{AXIS_COUNT, BUTTON_COUNT},
 };
 
 use anyhow::Result;
@@ -127,8 +128,8 @@ impl StarboardServerBuilder {
         Self {
             serial_port,
             device_search_port,
-            enabled_buttons: Bitmask::new(15),
-            enabled_axes: Bitmask::new(15),
+            enabled_buttons: Bitmask::new(BUTTON_COUNT),
+            enabled_axes: Bitmask::new(AXIS_COUNT),
             no_ui: false,
         }
     }
