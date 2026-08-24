@@ -36,11 +36,11 @@ impl StarboardButtonStates {
     }
 
     // Registers `button` as pressed and packs it ino the `self`
-    fn pack_button(&mut self, id: u32) -> Result<()> {
+    fn pack_button(&mut self, id: u32, value: bool) -> Result<()> {
         if id >= BUTTON_COUNT {
             bail!("Could not pack button with id {}; id is out of bounds", id);
         }
-        self.raw.write_bit(id, true);
+        self.raw.write_bit(id, value);
         Ok(())
     }
 }
@@ -112,7 +112,7 @@ impl StarboardInputPacket {
     // Pack `input` into the packet
     pub fn pack(&mut self, input: StarboardInput) -> Result<()> {
         Ok(match input {
-            StarboardInput::Button { id, .. } => self.buttons.pack_button(id)?,
+            StarboardInput::Button { id, value } => self.buttons.pack_button(id, value)?,
             StarboardInput::Axis { id, value } => self.axes.pack_axis(id.try_into()?, value)?,
         })
     }
