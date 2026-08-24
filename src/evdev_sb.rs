@@ -141,7 +141,8 @@ pub struct DeviceWrapper {
 impl DeviceWrapper {
     // Initialized a `DeviceWrapper` using `find_best_evdev_device()` to find the best device
     pub fn get_steam_deck() -> Result<Self> {
-        let device = find_best_evdev_device()?;
+        let mut device = find_best_evdev_device()?;
+        device.grab()?;
         printdbg!("Selected Device: {}", device.name().unwrap());
 
         let supported_buttons: Vec<KeyCode> = device
@@ -214,5 +215,11 @@ impl DeviceWrapper {
             })
             .collect();
         inputs
+    }
+}
+
+impl Drop for DeviceWrapper {
+    fn drop(&mut self) {
+        self.device.ungrab().unwrap();
     }
 }
