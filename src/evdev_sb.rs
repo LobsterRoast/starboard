@@ -2,7 +2,7 @@ use core::{convert::TryInto, iter::IntoIterator};
 
 use anyhow::Result;
 use evdev::{
-    AbsoluteAxisCode, AttributeSet, Device, InputEvent, KeyCode, enumerate,
+    AbsoluteAxisCode, AttributeSet, Device, InputEvent, InputId, KeyCode, enumerate,
     uinput::{VirtualDevice, VirtualDeviceBuilder},
 };
 use heapless::index_map::FnvIndexMap;
@@ -63,7 +63,8 @@ impl VirtualJoystickBuilder<'_> {
     // Build a VirtualJoystick
     // A name is required to build a joystick, so it's passed in here to ensure that it's set
     pub fn build(self, name: &str) -> Result<VirtualJoystick> {
-        let raw = self.raw.name(name);
+        let input_id = InputId::new(evdev::BusType::BUS_VIRTUAL, 54345, 0, 1);
+        let raw = self.raw.name(name).input_id(input_id);
         Ok(VirtualJoystick {
             raw: { raw.build()? },
         })
@@ -104,6 +105,10 @@ fn get_device_supported_attributes_score(device: &Device) -> u8 {
 
     if let Some("Dummy Steam Deck") = device.name() {
         return u8::MAX;
+    }
+    // Return an attribute score of 0 if the controller is itself a Starboard Virtual Gamepad
+    if device.input_id().vendor() == 54345 {
+        return 0;
     }
 
     device

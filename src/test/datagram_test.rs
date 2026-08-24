@@ -13,7 +13,7 @@ fn test_button_states() -> StarboardButtonStates {
 }
 
 const TEST_AXIS_STATES: StarboardAxisStates = StarboardAxisStates {
-    axes: [0, 101, -63, 112, -1, 127, 0, 0, 0, 0],
+    axes: [0, 101, -63, 112, -1, 127, 0, 0, 0, 0, 0, 0],
 };
 
 #[test]
