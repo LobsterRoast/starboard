@@ -92,7 +92,7 @@ impl VirtualJoystickBuilder<'_> {
             if !state {
                 continue;
             }
-            raw = raw.with_absolute_axis(&(1 << bit).from_byte()?)?;
+            raw = raw.with_absolute_axis(&(bit as u32).from_id()?)?;
         }
         Ok(Self { raw })
     }

@@ -1,9 +1,6 @@
 use core::{convert::TryInto, iter::IntoIterator};
 
-use crate::{
-    bitmask::Bitmask,
-    supported_actions::{AXIS_COUNT, BUTTON_COUNT, SUPPORTED_AXES, SUPPORTED_BUTTONS},
-};
+use crate::{bitmask::Bitmask, supported_actions::*};
 use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
 use evdev::{AbsInfo, AbsoluteAxisCode, EventType, InputEvent, KeyCode, UinputAbsSetup};
@@ -186,114 +183,27 @@ pub trait FromID<T> {
         T: Sized;
 }
 
-// This is deprecated but I'm keeping it here just in case
-/*
-impl FromByte<KeyCode> for u32 {
-    fn from_byte(self) -> Result<KeyCode>
-    where
-        KeyCode: Sized,
-    {
-        Ok(match self {
-            1 => KeyCode::BTN_NORTH,
-            2 => KeyCode::BTN_SOUTH,
-            4 => KeyCode::BTN_EAST,
-            8 => KeyCode::BTN_WEST,
-            16 => KeyCode::BTN_THUMBL,
-            32 => KeyCode::BTN_THUMBR,
-            64 => KeyCode::BTN_TL,
-            128 => KeyCode::BTN_TR,
-            256 => KeyCode::BTN_START,
-            512 => KeyCode::BTN_SELECT,
-            1024 => KeyCode::BTN_TRIGGER_HAPPY1,
-            2048 => KeyCode::BTN_TRIGGER_HAPPY2,
-            4096 => KeyCode::BTN_TRIGGER_HAPPY3,
-            8192 => KeyCode::BTN_TRIGGER_HAPPY4,
-            16384 => KeyCode::BTN_MODE,
-            32768 => KeyCode::BTN_THUMB,
-            65536 => KeyCode::BTN_THUMB2,
-            _ => bail!("Couldn't convert given u32 '{self}' into `KeyCode`"),
-        })
-    }
-}
-*/
-
 impl IntoByte for KeyCode {
     fn into_byte(self) -> Result<u32> {
         Ok((2 as u32).pow(self.into_id()?))
     }
 }
 
-impl FromByte<AbsoluteAxisCode> for u32 {
-    fn from_byte(self) -> Result<AbsoluteAxisCode> {
-        Ok(match self {
-            1 => AbsoluteAxisCode::ABS_X,
-            2 => AbsoluteAxisCode::ABS_Y,
-            4 => AbsoluteAxisCode::ABS_Z,
-            8 => AbsoluteAxisCode::ABS_RX,
-            16 => AbsoluteAxisCode::ABS_RY,
-            32 => AbsoluteAxisCode::ABS_RZ,
-            64 => AbsoluteAxisCode::ABS_HAT0X,
-            128 => AbsoluteAxisCode::ABS_HAT0Y,
-            _ => bail!("Couldn't convert given u32 '{self:?}' into `AbsoluteAxisCode`"),
-        })
-    }
-}
-
 impl IntoByte for AbsoluteAxisCode {
     fn into_byte(self) -> Result<u32> {
-        Ok(match self {
-            AbsoluteAxisCode::ABS_X => 1,
-            AbsoluteAxisCode::ABS_Y => 2,
-            AbsoluteAxisCode::ABS_Z => 4,
-            AbsoluteAxisCode::ABS_RX => 8,
-            AbsoluteAxisCode::ABS_RY => 16,
-            AbsoluteAxisCode::ABS_RZ => 32,
-            AbsoluteAxisCode::ABS_HAT0X => 64,
-            AbsoluteAxisCode::ABS_HAT0Y => 128,
-            _ => bail!("Couldn't convert given AbsoluteAxisCode '{self:?}' into `u32`"),
-        })
+        Ok((2 as u32).pow(self.into_id()?))
     }
 }
 
-// Some of the traits of axes (i.e. deadzones) should be customizable
-// at runtime rather than at compile time, but evdev requires certain
-// values for these traits. We implement this trait for AbsInfo
-// instead of just AbsoluteAxisCode so we can bake it default neutral values.
-impl FromByte<AbsInfo> for u32 {
-    fn from_byte(self) -> Result<AbsInfo>
-    where
-        AbsInfo: Sized,
-    {
-        Ok(match self {
-            1 => AbsInfo::new(0, -32768, 32767, 16, 128, 0),
-            2 => AbsInfo::new(0, -32768, 32767, 16, 128, 0),
-            4 => AbsInfo::new(0, 0, 255, 0, 0, 0),
-            8 => AbsInfo::new(0, -32768, 32767, 16, 128, 0),
-            16 => AbsInfo::new(0, -32768, 32767, 16, 128, 0),
-            32 => AbsInfo::new(0, 0, 255, 0, 0, 0),
-            64 => AbsInfo::new(0, -1, 1, 0, 0, 2),
-            128 => AbsInfo::new(0, -1, 1, 0, 0, 2),
-            _ => bail!("Couldn't convert given u32 '{self}' into `AbsInfo`"),
-        })
-    }
-}
-
-impl FromByte<UinputAbsSetup> for u32 {
-    fn from_byte(self) -> Result<UinputAbsSetup>
+impl FromID<UinputAbsSetup> for u32 {
+    fn from_id(self) -> Result<UinputAbsSetup>
     where
         UinputAbsSetup: Sized,
     {
-        Ok(match self {
-            1 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
-            2 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
-            4 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
-            8 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
-            16 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
-            32 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
-            64 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
-            128 => UinputAbsSetup::new(self.from_byte()?, self.from_byte()?),
-            _ => bail!("Couldn't convert given u32 '{self}' into `UinputAbsSetup`"),
-        })
+        Ok(UinputAbsSetup::new(
+            self.from_id()?,
+            AXIS_METADATA[self as usize],
+        ))
     }
 }
 

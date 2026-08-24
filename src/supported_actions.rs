@@ -1,8 +1,9 @@
 use auto_const_array::auto_const_array_attr as auto_const_array;
 use core::{fmt::Debug, hash::Hash};
-use evdev::{AbsoluteAxisCode, KeyCode};
+use evdev::{AbsInfo, AbsoluteAxisCode, KeyCode};
 use heapless::index_map::FnvIndexMap;
-use std::sync::LazyLock;
+use libc::input_absinfo;
+use std::{mem::transmute, sync::LazyLock};
 
 #[auto_const_array]
 const SUPPORTED_BUTTONS_BLUEPRINT: [KeyCode; _] = [
@@ -34,6 +35,39 @@ const SUPPORTED_BUTTONS_BLUEPRINT: [KeyCode; _] = [
 
 pub const BUTTON_COUNT: u32 = SUPPORTED_BUTTONS_BLUEPRINT.len() as u32;
 
+const THUMBSTICK: AbsInfo = unsafe {
+    transmute::<input_absinfo, AbsInfo>(input_absinfo {
+        value: 0,
+        minimum: -32767,
+        maximum: 32767,
+        fuzz: 0,
+        flat: 0,
+        resolution: 6553,
+    })
+};
+
+const TOUCHPAD: AbsInfo = unsafe {
+    transmute::<input_absinfo, AbsInfo>(input_absinfo {
+        value: 0,
+        minimum: -32767,
+        maximum: 32767,
+        fuzz: 256,
+        flat: 0,
+        resolution: 1638,
+    })
+};
+
+const TRIGGER: AbsInfo = unsafe {
+    transmute::<input_absinfo, AbsInfo>(input_absinfo {
+        value: 0,
+        minimum: 0,
+        maximum: 32767,
+        fuzz: 0,
+        flat: 0,
+        resolution: 5461,
+    })
+};
+
 #[auto_const_array]
 const SUPPORTED_AXES_BLUEPRINT: [AbsoluteAxisCode; _] = [
     AbsoluteAxisCode::ABS_X,
@@ -46,6 +80,11 @@ const SUPPORTED_AXES_BLUEPRINT: [AbsoluteAxisCode; _] = [
     AbsoluteAxisCode::ABS_HAT1Y,
     AbsoluteAxisCode::ABS_HAT2X,
     AbsoluteAxisCode::ABS_HAT2Y,
+];
+
+pub const AXIS_METADATA: [AbsInfo; SUPPORTED_AXES_BLUEPRINT.len()] = [
+    THUMBSTICK, THUMBSTICK, THUMBSTICK, THUMBSTICK, TOUCHPAD, TOUCHPAD, TOUCHPAD, TOUCHPAD,
+    TRIGGER, TRIGGER,
 ];
 
 pub const AXIS_COUNT: u32 = SUPPORTED_AXES_BLUEPRINT.len() as u32;
