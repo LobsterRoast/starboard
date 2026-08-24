@@ -72,8 +72,10 @@ const TRIGGER: AbsInfo = unsafe {
 const SUPPORTED_AXES_BLUEPRINT: [AbsoluteAxisCode; _] = [
     AbsoluteAxisCode::ABS_X,
     AbsoluteAxisCode::ABS_Y,
+    AbsoluteAxisCode::ABS_Z,
     AbsoluteAxisCode::ABS_RX,
     AbsoluteAxisCode::ABS_RY,
+    AbsoluteAxisCode::ABS_RZ,
     AbsoluteAxisCode::ABS_HAT0X,
     AbsoluteAxisCode::ABS_HAT0Y,
     AbsoluteAxisCode::ABS_HAT1X,
@@ -83,8 +85,8 @@ const SUPPORTED_AXES_BLUEPRINT: [AbsoluteAxisCode; _] = [
 ];
 
 pub const AXIS_METADATA: [AbsInfo; SUPPORTED_AXES_BLUEPRINT.len()] = [
-    THUMBSTICK, THUMBSTICK, THUMBSTICK, THUMBSTICK, TOUCHPAD, TOUCHPAD, TOUCHPAD, TOUCHPAD,
-    TRIGGER, TRIGGER,
+    THUMBSTICK, THUMBSTICK, THUMBSTICK, THUMBSTICK, THUMBSTICK, THUMBSTICK, TOUCHPAD, TOUCHPAD,
+    TOUCHPAD, TOUCHPAD, TRIGGER, TRIGGER,
 ];
 
 pub const AXIS_COUNT: u32 = SUPPORTED_AXES_BLUEPRINT.len() as u32;
