@@ -42,7 +42,7 @@ pub type DiagnosticMap = HashMap<u64, ControllerDiagnostic>;
 pub type ControllerMap = HashMap<u64, VirtualJoystick>;
 
 // Records the current state of a detected controller
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ControllerState {
     Online,
     NotResponding,
@@ -361,8 +361,13 @@ impl StarboardServer {
     }
 
     fn update_timeout_status(self: &Arc<Self>, diagnostic: &mut ControllerDiagnostic) {
+        let current_state = diagnostic.status;
         if Self::poll_device_timed_out(diagnostic) {
             diagnostic.status = ControllerState::NotResponding;
+        } else {
+            diagnostic.status = ControllerState::Online;
+        }
+        if current_state != diagnostic.status {
             self.mutated.store(true, Ordering::Relaxed);
         }
     }
