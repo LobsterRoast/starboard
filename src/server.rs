@@ -24,9 +24,11 @@ use std::sync::{
 
 use crossterm::event;
 
+use rsntp::{AsyncSntpClient, SntpDateTime};
+
 use crate::{
     bitmask::Bitmask,
-    datagram::{BroadcastPacket, deserialize},
+    datagram::{BroadcastPacket, NTP_ADDR, deserialize},
     evdev_sb::VirtualJoystick,
     fixed_queue::FixedQueue,
     input::{IntoID, StarboardInputPacket},
@@ -93,6 +95,15 @@ impl ControllerDiagnostic {
     pub fn name(&self) -> &StarboardString {
         &self.name
     }
+
+    pub fn from_packet(packet: BroadcastPacket, ntp_time: SntpDateTime) -> Result<Self> {
+        Ok(Self::new(
+            *packet.id(),
+            *packet.name(),
+            ControllerState::Online,
+            packet.latency(ntp_time)?,
+        ))
+    }
 }
 
 impl Display for ControllerDiagnostic {
@@ -100,17 +111,6 @@ impl Display for ControllerDiagnostic {
         // A received packet should always have a value for latency.last()
         let latency = self.latency.last().unwrap();
         write!(f, "{}: {} ({}ms)", self.name, self.status, latency)
-    }
-}
-
-impl From<BroadcastPacket> for ControllerDiagnostic {
-    fn from(value: BroadcastPacket) -> Self {
-        Self::new(
-            *value.id(),
-            *value.name(),
-            ControllerState::Online,
-            value.latency(),
-        )
     }
 }
 
@@ -156,6 +156,7 @@ impl StarboardServerBuilder {
             no_ui,
             mutated: AtomicBool::new(true), // Initialized to true to render the UI
             cancellation_token: CancellationToken::new(),
+            ntp_client: AsyncSntpClient::new(),
         })
     }
 
@@ -220,6 +221,7 @@ pub struct StarboardServer {
     no_ui: bool,
     mutated: AtomicBool,
     cancellation_token: CancellationToken,
+    ntp_client: AsyncSntpClient,
 }
 
 impl StarboardServer {
@@ -341,16 +343,25 @@ impl StarboardServer {
         Ok(())
     }
 
-    async fn update_device_info_with_packet(self: &Arc<Self>, packet: BroadcastPacket) {
+    async fn update_device_info_with_packet(
+        self: &Arc<Self>,
+        packet: BroadcastPacket,
+    ) -> Result<()> {
         let mut detected_controllers = self.detected_controllers.write().await;
         if !detected_controllers.contains_key(packet.id()) {
-            let diagnostic: ControllerDiagnostic = packet.into();
+            let ntp_time = self.ntp_client.synchronize(NTP_ADDR).await?.datetime();
+            let diagnostic: ControllerDiagnostic =
+                ControllerDiagnostic::from_packet(packet, ntp_time)?;
             detected_controllers.insert(*diagnostic.id(), diagnostic);
         } else if let Some(diagnostic) = detected_controllers.get_mut(packet.id()) {
-            diagnostic.latency.push_back(Some(packet.latency()));
+            let ntp_time = self.ntp_client.synchronize(NTP_ADDR).await?.datetime();
+            diagnostic
+                .latency
+                .push_back(Some(packet.latency(ntp_time)?));
             diagnostic.last_ping = Local::now().timestamp();
         }
         self.mutated.store(true, Ordering::Relaxed);
+        Ok(())
     }
 
     async fn update_timeout_statuses(self: &Arc<Self>) {

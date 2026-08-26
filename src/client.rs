@@ -1,12 +1,13 @@
 use std::io::ErrorKind;
 
-use crate::datagram::{BroadcastPacket, serialize};
+use crate::datagram::{BroadcastPacket, NTP_ADDR, serialize};
 use crate::evdev_sb::DeviceWrapper;
 use crate::input::StarboardInputPacket;
 use crate::printdbg;
 use crate::string::StarboardString;
 use anyhow::Result;
 use bincode::{Decode, Encode};
+use rsntp::AsyncSntpClient;
 use tokio::net::UdpSocket;
 use tokio::time::{Duration, sleep};
 
@@ -80,6 +81,7 @@ impl StarboardClient {
 
 // Broadcast a client's presence to server's on the local network
 async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result<()> {
+    let ntp_client = AsyncSntpClient::new();
     let dest_addr = format!("{}:{}", BC_ADDR, port);
     let socket = UdpSocket::bind("0.0.0.0:0").await?;
     let _ = socket.set_broadcast(true);
@@ -89,7 +91,8 @@ async fn broadcast_presence(id: u64, name: StarboardString, port: u16) -> Result
     loop {
         // The packet only needs to be created once, but it needs to be updated and serialized on
         // every loop to keep the timestamp up-to-date
-        packet.update();
+        let time = ntp_client.synchronize(NTP_ADDR).await?.datetime();
+        packet.update(time)?;
         let packet_raw = serialize(packet)?;
         let res = socket.send(&packet_raw).await;
         if let Err(e) = res {

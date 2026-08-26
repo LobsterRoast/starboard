@@ -4,7 +4,11 @@ use bincode::{Decode, Encode, config::Configuration, decode_from_slice, encode_t
 use crate::string::StarboardString;
 use chrono::{DateTime, Local};
 
+use rsntp::SntpDateTime;
+
 static BINCODE_CONFIG: Configuration = bincode::config::standard();
+
+pub static NTP_ADDR: &str = "pool.ntp.org";
 
 // Return a formatted address (i.e. 255.255.255.255:8080) or a specified default
 pub fn format_addr(ip: [u8; 4], port: u16) -> String {
@@ -48,8 +52,9 @@ impl BroadcastPacket {
         })
     }
 
-    pub fn update(&mut self) {
-        self.sent_at = chrono::Local::now().timestamp_millis();
+    pub fn update(&mut self, ntp_time: SntpDateTime) -> Result<()> {
+        self.sent_at = ntp_time.into_chrono_datetime()?.timestamp_millis();
+        Ok(())
     }
 
     pub fn id(&self) -> &u64 {
@@ -65,11 +70,13 @@ impl BroadcastPacket {
     }
 
     // Returns the number of milliseconds it's been since the packet was sent
-    pub fn latency(&self) -> i64 {
+    pub fn latency(&self, ntp_time: SntpDateTime) -> Result<i64> {
         // Safety: `self.sent_at()` is initialized via. `Local::now().timestamp()`, so it's
         // guaranteed valid
         let sent_at = DateTime::from_timestamp_millis(self.sent_at).unwrap();
-        let delta = Local::now().signed_duration_since(sent_at);
-        delta.num_milliseconds()
+        let delta = ntp_time
+            .into_chrono_datetime()?
+            .signed_duration_since(sent_at);
+        Ok(delta.num_milliseconds())
     }
 }
